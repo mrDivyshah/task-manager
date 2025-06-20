@@ -1,3 +1,4 @@
+
 // src/ai/flows/smart-sort.ts
 'use server';
 /**
@@ -36,22 +37,34 @@ const smartSortPrompt = ai.definePrompt({
   name: 'smartSortPrompt',
   input: {schema: SmartSortInputSchema},
   output: {schema: SmartSortOutputSchema},
-  prompt: `You are a task management expert. You will be provided with a list of tasks, and you will categorize and prioritize each task based on the content of the task notes.
+  prompt: `You are a task management expert. You will be provided with a list of tasks. Your goal is to:
+1.  Determine a relevant 'category' for each task based on its content (e.g., "Work", "Personal", "Finance", "Project X").
+2.  Assign a 'priority' to each task: "high", "medium", or "low".
 
-Tasks:
+Prioritization Guidelines:
+-   'high': Impending deadlines, significant financial implications, critical problems, or tasks blocking others.
+-   'medium': Important tasks that are not immediately urgent.
+-   'low': All other tasks.
+
+Input Tasks:
 {{#each this}}
-Task ID: {{id}}
-Title: {{title}}
-Notes: {{notes}}
+- Task ID: {{id}}
+  Title: {{title}}
+  Notes: {{notes}}
 {{/each}}
 
-Prioritization should be based on the impact or urgency conveyed in the notes. A task should be marked as 'high' priority if it relates to an impending deadline, financial cost or opportunity, serious problem, or a critical blocking issue. It should be marked as 'medium' if is is important, but not urgent. Otherwise it should be marked as 'low'.
+Please provide your response as a JSON array. Each object in the array must correspond to one of the input tasks and MUST contain the following fields:
+-   "id": (string) The original ID of the task.
+-   "category": (string) The category you've assigned.
+-   "priority": (string) The priority you've assigned ("high", "medium", or "low").
 
-{{#each this}}
-{ id:"{{id}}", category:"", priority:"" }
-{{/each}}
+Example of the expected JSON output format:
+[
+  { "id": "task_id_1", "category": "Work", "priority": "high" },
+  { "id": "task_id_2", "category": "Home Errands", "priority": "medium" }
+]
 
-Output in JSON format:
+Ensure your output is ONLY this JSON array. Do not include any other text or explanations.
 `,
 });
 
@@ -63,6 +76,10 @@ const smartSortFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await smartSortPrompt(input);
-    return output!;
+    if (!output) {
+      throw new Error('AI model did not return an output for smart sort.');
+    }
+    return output;
   }
 );
+
