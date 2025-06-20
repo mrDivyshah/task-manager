@@ -5,7 +5,7 @@ import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Moon, Sun, Cog, PanelRightClose, AppWindow } from "lucide-react";
+import { ArrowLeft, Moon, Sun, Cog, PanelRightClose, AppWindow, Settings2 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
@@ -165,6 +165,21 @@ export default function SettingsPage() {
                 </RadioGroup>
                 <p className="text-xs text-muted-foreground">
                   Selected notification style: {notificationStyle.charAt(0).toUpperCase() + notificationStyle.slice(1)}
+                </p>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div>
+              <h3 className="text-lg font-medium text-foreground mb-3 flex items-center">
+                <Settings2 className="mr-2 h-5 w-5 text-muted-foreground" />
+                Advanced User Options
+              </h3>
+              <div className="space-y-4 mt-2">
+                <p className="text-sm text-muted-foreground p-4 border rounded-lg bg-muted/30">
+                  This section will contain settings for power users, such as experimental features or developer tools.
+                  More options coming soon!
                 </p>
               </div>
             </div>
