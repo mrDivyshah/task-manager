@@ -11,7 +11,7 @@ import { TaskList } from "@/components/TaskList";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { useToast } from "@/hooks/use-toast";
 import type { Task } from "@/types";
-import { PlusCircle, Wand2, Loader2, LogIn, Mail, Eye, EyeOff, Search, Filter, SearchX, CheckCircle2, AlertTriangle, Info } from "lucide-react";
+import { PlusCircle, Wand2, Loader2, LogIn, Mail, Eye, EyeOff, Search, Filter, SearchX, CheckCircle2, AlertTriangle, Info, Plus } from "lucide-react";
 import { smartSortTasksAction } from "./actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -364,75 +364,88 @@ export default function Home() {
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-          <div className="flex items-baseline gap-2">
-            <h2 className="text-2xl font-headline font-semibold text-foreground">Your Tasks</h2>
-            <span className="text-sm text-muted-foreground">
-              {allTasksAreDisplayed
-                ? `(${tasks.length} task${tasks.length === 1 ? "" : "s"})`
-                : `(${displayedTasks.length} of ${tasks.length} task${tasks.length === 1 ? "" : "s"} shown)`}
-            </span>
-          </div>
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto flex-wrap">
-            <div className="relative w-full sm:w-auto sm:min-w-[200px] md:min-w-[230px]">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-              <Input
-                type="search"
-                placeholder="Search tasks..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-full bg-background border-input focus:ring-primary shadow-sm"
-              />
+        {mounted && (
+          <>
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+              <div className="flex items-baseline gap-2">
+                <h2 className="text-2xl font-headline font-semibold text-foreground">Your Tasks</h2>
+                <span className="text-sm text-muted-foreground">
+                  {allTasksAreDisplayed
+                    ? `(${tasks.length} task${tasks.length === 1 ? "" : "s"})`
+                    : `(${displayedTasks.length} of ${tasks.length} task${tasks.length === 1 ? "" : "s"} shown)`}
+                </span>
+              </div>
+              <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto flex-wrap">
+                <div className="relative w-full sm:w-auto sm:min-w-[200px] md:min-w-[230px]">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                  <Input
+                    type="search"
+                    placeholder="Search tasks..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 w-full bg-background border-input focus:ring-primary shadow-sm"
+                  />
+                </div>
+                <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                  <SelectTrigger className="w-full sm:w-auto sm:min-w-[170px] bg-background border-input focus:ring-primary shadow-sm">
+                    <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <SelectValue placeholder="Filter by priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Priorities</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="none">No Priority</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button onClick={handleSmartSort} disabled={isSorting || tasks.length === 0} variant="outline" className="shadow-sm hover:shadow-md transition-shadow w-full sm:w-auto">
+                  {isSorting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Wand2 className="mr-2 h-4 w-4 text-accent" />
+                  )}
+                  Smart Sort
+                </Button>
+                <Button onClick={() => handleOpenTaskForm()} className="shadow-sm hover:shadow-md transition-shadow bg-primary hover:bg-primary/90 w-full sm:w-auto">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add New Task
+                </Button>
+              </div>
             </div>
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-full sm:w-auto sm:min-w-[170px] bg-background border-input focus:ring-primary shadow-sm">
-                <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
-                <SelectValue placeholder="Filter by priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Priorities</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="none">No Priority</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button onClick={handleSmartSort} disabled={isSorting || tasks.length === 0} variant="outline" className="shadow-sm hover:shadow-md transition-shadow w-full sm:w-auto">
-              {isSorting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Wand2 className="mr-2 h-4 w-4 text-accent" />
-              )}
-              Smart Sort
-            </Button>
-            <Button onClick={() => handleOpenTaskForm()} className="shadow-sm hover:shadow-md transition-shadow bg-primary hover:bg-primary/90 w-full sm:w-auto">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Add New Task
-            </Button>
-          </div>
-        </div>
 
-        {tasks.length > 0 && displayedTasks.length === 0 && (
-          <div className="mt-12 flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-2 border-dashed border-border rounded-xl bg-card/50">
-            <SearchX size={64} className="mb-4 opacity-50" />
-            <h3 className="text-xl font-semibold mb-2 text-foreground">No Matching Tasks</h3>
-            <p className="max-w-sm">
-              Try adjusting your search or filter criteria.
-            </p>
-          </div>
+            {tasks.length > 0 && displayedTasks.length === 0 && (
+              <div className="mt-12 flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-2 border-dashed border-border rounded-xl bg-card/50">
+                <SearchX size={64} className="mb-4 opacity-50" />
+                <h3 className="text-xl font-semibold mb-2 text-foreground">No Matching Tasks</h3>
+                <p className="max-w-sm">
+                  Try adjusting your search or filter criteria.
+                </p>
+              </div>
+            )}
+
+            { (tasks.length === 0 || displayedTasks.length > 0) && (
+                <TaskList
+                  tasks={displayedTasks}
+                  onEditTask={handleOpenTaskForm}
+                  onDeleteTask={handleDeleteTask}
+                  onReorderTasks={handleReorderTasks}
+                />
+              )
+            }
+          </>
         )}
-
-        { (tasks.length === 0 || displayedTasks.length > 0) && (
-            <TaskList
-              tasks={displayedTasks}
-              onEditTask={handleOpenTaskForm}
-              onDeleteTask={handleDeleteTask}
-              onReorderTasks={handleReorderTasks}
-            />
-          )
-        }
-
       </main>
+
+      {session && mounted && (
+        <Button
+          onClick={() => handleOpenTaskForm()}
+          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-xl bg-primary hover:bg-primary/90 p-0 z-50"
+          aria-label="Quick Add Task"
+        >
+          <Plus className="h-7 w-7" />
+        </Button>
+      )}
 
       <TaskForm
         isOpen={isTaskFormOpen}
