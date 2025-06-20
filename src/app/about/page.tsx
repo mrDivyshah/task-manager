@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowLeft, Sparkles, Users, Zap } from "lucide-react";
+import { ArrowLeft, Sparkles, Users, Zap, Tag } from "lucide-react";
 import Image from "next/image";
 
 export default function AboutPage() {
@@ -89,6 +89,16 @@ export default function AboutPage() {
               </h2>
               <p className="text-base text-foreground/80 leading-relaxed">
                 TaskTango is proudly built using modern web technologies including Next.js, React, Tailwind CSS, ShadCN UI components for a polished look and feel, and Genkit for its intelligent features. We prioritize performance, accessibility, and a delightful user experience.
+              </p>
+            </section>
+
+            <section className="space-y-3">
+              <h2 className="text-2xl font-semibold text-foreground flex items-center">
+                <Tag className="mr-3 h-6 w-6 text-primary" />
+                Version Information
+              </h2>
+              <p className="text-base text-foreground/80 leading-relaxed">
+                Current version: 0.1.0
               </p>
             </section>
 
