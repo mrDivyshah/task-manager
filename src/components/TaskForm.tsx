@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,12 +24,14 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Task } from "@/types";
 import { useEffect } from "react";
 
 const taskFormSchema = z.object({
   title: z.string().min(1, "Title is required").max(100, "Title must be 100 characters or less"),
   notes: z.string().max(500, "Notes must be 500 characters or less").optional(),
+  priority: z.string().optional(),
 });
 
 type TaskFormValues = z.infer<typeof taskFormSchema>;
@@ -46,6 +49,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
     defaultValues: {
       title: "",
       notes: "",
+      priority: "",
     },
   });
 
@@ -54,11 +58,13 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
       form.reset({
         title: taskToEdit.title,
         notes: taskToEdit.notes,
+        priority: taskToEdit.priority || "",
       });
     } else {
       form.reset({
         title: "",
         notes: "",
+        priority: "",
       });
     }
   }, [taskToEdit, form, isOpen]);
@@ -66,7 +72,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
 
   const handleSubmit = (data: TaskFormValues) => {
     onSubmit(data, taskToEdit);
-    form.reset(); // Reset form after submission
+    form.reset();
   };
 
   return (
@@ -105,10 +111,33 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
                     <Textarea
                       placeholder="Add any relevant details or context..."
                       className="resize-none bg-background border-input focus:ring-primary"
-                      rows={4}
+                      rows={3}
                       {...field}
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="priority"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-foreground/80">Priority</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="bg-background border-input focus:ring-primary">
+                        <SelectValue placeholder="Select priority" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

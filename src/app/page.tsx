@@ -50,21 +50,22 @@ export default function Home() {
   };
 
   const handleSaveTask = (
-    data: { title: string; notes?: string },
+    data: { title: string; notes?: string; priority?: string },
     existingTask?: Task
   ) => {
     if (existingTask) {
       setTasks(
         tasks.map((task) =>
-          task.id === existingTask.id ? { ...task, ...data, createdAt: task.createdAt || Date.now() } : task
+          task.id === existingTask.id ? { ...task, ...data, priority: data.priority as Task['priority'] || undefined, createdAt: task.createdAt || Date.now() } : task
         )
       );
       toast({ title: "Task Updated", description: `"${data.title}" has been updated.` });
     } else {
       const newTask: Task = {
         id: generateId(),
-        ...data,
+        title: data.title,
         notes: data.notes || "",
+        priority: data.priority as Task['priority'] || undefined,
         createdAt: Date.now(),
       };
       setTasks([...tasks, newTask]);
@@ -335,4 +336,3 @@ export default function Home() {
     </div>
   );
 }
-
