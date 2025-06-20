@@ -17,20 +17,27 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials, req) {
-        if (!credentials?.email || !credentials?.password) {
-          // This error will be caught by NextAuth and returned in result.error
-          throw new Error("Please enter both email and password.");
+        if (!credentials) {
+          // Should not happen if NextAuth receives a well-formed request, but as a safeguard.
+          return null;
+        }
+
+        const { email, password } = credentials;
+
+        if (!email || !password) {
+          // If specific fields are missing.
+          // Returning null allows NextAuth to handle it as a failed authorization.
+          return null;
         }
 
         // IMPORTANT: This is mocked authentication.
         // In a real application, you would validate credentials against a database.
         // Ensure you hash passwords and compare hashed values.
-        if (credentials.email === "user@example.com" && credentials.password === "password123") {
-          return { id: "creds-user-1", name: "Test User", email: "user@example.com", image: null };
+        if (email === "user@example.com" && password === "password123") {
+          return { id: "creds-user-1", name: "Test User", email: email, image: null };
         }
         
         // If credentials are not valid, return null.
-        // next-auth will then set result.error on the client to "CredentialsSignin" or similar.
         return null;
       }
     })
@@ -40,31 +47,9 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
   pages: {
-    // signIn: '/auth/signin', // Default is fine since form is on main page
+    // signIn: '/auth/signin', // Default is fine
   },
   debug: process.env.NODE_ENV === 'development',
-  // You can add callbacks here if you need to customize the session or JWT
-  // callbacks: {
-  //   async jwt({ token, account, user }) { // user is only passed on first sign-in with CredentialsProvider
-  //     // Persist the OAuth access_token or user id to the token right after signin
-  //     if (account) { // For OAuth providers
-  //       token.accessToken = account.access_token
-  //       token.id = account.providerAccountId 
-  //     }
-  //     if (user) { // For Credentials provider, user is available on first login
-  //        token.id = user.id // Add user id to token
-  //     }
-  //     return token
-  //   },
-  //   async session({ session, token }) {
-  //     // Send properties to the client, like an access_token or user id from a provider.
-  //     session.accessToken = token.accessToken as string | undefined;
-  //     if (token.id) {
-  //       (session.user as any).id = token.id; // Cast to any if id is not on default User type
-  //     }
-  //     return session
-  //   }
-  // }
 }
 
 const handler = NextAuth(authOptions)

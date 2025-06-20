@@ -3,7 +3,7 @@
 
 import { useState, useEffect, type FormEvent } from "react";
 import { useSession, signIn } from "next-auth/react";
-import { useRouter } from "next/navigation"; // Import useRouter
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
 import { TaskForm } from "@/components/TaskForm";
@@ -23,7 +23,7 @@ const generateId = () => Date.now().toString(36) + Math.random().toString(36).su
 
 export default function Home() {
   const { data: session, status } = useSession();
-  const router = useRouter(); // Initialize useRouter
+  const router = useRouter();
   const [tasks, setTasks] = useLocalStorage<Task[]>("tasktango-tasks", []);
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | undefined>(undefined);
@@ -137,52 +137,49 @@ export default function Home() {
     event.preventDefault();
     setIsCredentialsLoading(true);
     try {
+      // When redirect is not false (default behavior), NextAuth handles redirects.
+      // A successful signIn will navigate. If it fails due to an auth error,
+      // NextAuth usually redirects to an error page or the current page with error query params.
+      // The `signIn` promise might not resolve with `result.error` in this scenario.
+      // The `catch` block below is more likely to catch network errors or severe unhandled NextAuth issues.
       const result = await signIn('credentials', {
-        // redirect: false, // Removed to allow NextAuth default redirect
         email,
         password,
-        // callbackUrl: "/", // Optionally specify where to go after login
+        // callbackUrl: "/", // Using default redirect behavior, NextAuth handles this.
       });
 
-      // If redirect: false was kept, the logic below would be more relevant.
-      // With default redirect, if login fails, NextAuth handles showing an error page or query param.
-      // If login succeeds, it redirects.
-      // We might still want to show a toast for errors if they are passed via URL query params.
-      // For now, let NextAuth handle errors through its default mechanisms.
-
-      if (result?.error) { // This will be true if signIn itself throws or returns an error (e.g. network issue before redirect attempt)
-                          // or if `redirect: false` was used and an error occurred.
-        let description = "An unknown error occurred. Please try again.";
+      // This block might only be reached if `signIn` itself had an issue but didn't throw,
+      // or if a redirect is happening but the promise resolved first.
+      // NextAuth's default behavior is to redirect on error (e.g. /api/auth/error?error=CredentialsSignin)
+      // or on success.
+      if (result?.error) {
+        let description = "Login failed. Please check your credentials.";
+        // Check for common NextAuth error codes that might be passed if a redirect occurs
+        // or if `redirect: false` was used (which it isn't here).
         if (result.error === "CredentialsSignin") {
           description = "Invalid email or password. (Hint: user@example.com / password123)";
-        } else if (result.error !== "Callback") { // "Callback" error often means redirect was interrupted or is part of normal flow for some providers
-          description = result.error; 
+        } else if (result.error !== "Callback" && result.error !== "SessionRequired" && result.error !== "OAuthAccountNotLinked" && result.error !== "Default") {
+          // "Default" can sometimes be a generic error from NextAuth
+          description = `Error: ${result.error}`;
         }
-         // Only show toast if there's a client-side detectable error *before* a redirect or if redirect is false.
-        if (result.error !== "Callback") {
-            toast({
-                title: "Login Failed",
-                description: description,
-                variant: "destructive",
-            });
-        }
-      } else if (result?.ok) {
-        // This block is more relevant if redirect: false. With redirect: true (default),
-        // successful login navigates away.
-        toast({
-          title: "Login Successful",
-          description: "Welcome back!",
+         toast({
+            title: "Login Issue",
+            description: description,
+            variant: "destructive",
         });
-        // router.push('/'); // Or wherever you want to redirect if not handled by NextAuth
       }
-    } catch (error: unknown) { // Catch errors from the signIn call itself (e.g., network issues)
-      let errorMessage = "A network error or an unexpected issue occurred during login. Please try again.";
+      // If `result` is null/undefined or has no error, a redirect is likely in progress for success or handled error.
+      // No explicit success toast here as the page will reload/navigate.
+
+    } catch (error: unknown) {
+      // This catch block is hit for "Failed to fetch" or other unhandled promise rejections from signIn.
+      let errorMessage = "An unexpected error occurred during login. Please try again.";
       if (error instanceof Error && error.message) {
-        errorMessage = error.message;
+        errorMessage = error.message; // This is where "Failed to fetch" is likely set.
       }
       toast({
         title: "Login System Error",
-        description: errorMessage,
+        description: `Details: ${errorMessage}. Please check server logs and network requests. Ensure NEXTAUTH_URL is correct.`,
         variant: "destructive",
       });
     } finally {
@@ -216,7 +213,7 @@ export default function Home() {
               Log in to manage your tasks and experience smart sorting.
             </p>
             
-            <Button onClick={() => signIn("google")} size="lg" className="w-full mb-4 shadow-md hover:shadow-lg transition-shadow bg-primary hover:bg-primary/90">
+            <Button onClick={() => signIn("google", { callbackUrl: "/" })} size="lg" className="w-full mb-4 shadow-md hover:shadow-lg transition-shadow bg-primary hover:bg-primary/90">
               <LogIn className="mr-2 h-5 w-5" />
               Login with Google
             </Button>
@@ -343,5 +340,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
