@@ -1,13 +1,15 @@
 
 "use client";
 
-import { Pencil, Trash2, GripVertical, Tag, Zap, Clock } from "lucide-react";
+import { Pencil, Trash2, GripVertical, Tag, Zap, Clock, Users } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import type { Task } from "@/types";
+import type { Task, Team } from "@/types";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from 'date-fns';
+import useLocalStorage from "@/hooks/useLocalStorage";
+import React from "react";
 
 
 interface TaskItemProps {
@@ -21,6 +23,13 @@ interface TaskItemProps {
 }
 
 export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDrop, isDragging }: TaskItemProps) {
+  const [teams] = useLocalStorage<Team[]>("tasktango-teams", []);
+  
+  const assignedTeam = React.useMemo(() => {
+    if (!task.teamId) return null;
+    return teams.find(team => team.id === task.teamId);
+  }, [task.teamId, teams]);
+
   const priorityColors = {
     high: "bg-red-500/20 text-red-700 border-red-500/50 dark:text-red-400 dark:border-red-500/70",
     medium: "bg-yellow-500/20 text-yellow-700 border-yellow-500/50 dark:text-yellow-400 dark:border-yellow-500/70",
@@ -67,7 +76,7 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
             {task.notes}
           </CardDescription>
         )}
-        {(task.category || task.priority) && (
+        {(task.category || task.priority || assignedTeam) && (
           <div className="mt-4 flex flex-wrap gap-2 items-center">
             {task.category && (
               <Badge variant="secondary" className="text-xs py-1 px-2.5 rounded-full bg-accent/10 text-accent-foreground border-accent/30">
@@ -79,6 +88,12 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
               <Badge variant="outline" className={cn("text-xs py-1 px-2.5 rounded-full", getPriorityColor(task.priority))}>
                 <Zap size={14} className="mr-1.5" />
                 Priority: {task.priority}
+              </Badge>
+            )}
+            {assignedTeam && (
+              <Badge variant="outline" className="text-xs py-1 px-2.5 rounded-full border-primary/50 bg-primary/10 text-primary-foreground">
+                <Users size={14} className="mr-1.5 text-primary" />
+                Team: {assignedTeam.name}
               </Badge>
             )}
           </div>

@@ -1,3 +1,4 @@
+
 export interface Task {
   id: string;
   title: string;
@@ -5,6 +6,7 @@ export interface Task {
   category?: string;
   priority?: 'high' | 'medium' | 'low' | string; // AI might return other strings
   createdAt: number; // timestamp
+  teamId?: string; 
 }
 
 export interface SmartSortTaskInput {

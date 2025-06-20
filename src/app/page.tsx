@@ -92,12 +92,13 @@ export default function Home() {
   };
 
   const handleSaveTask = (
-    data: { title: string; notes?: string; priority?: string },
+    data: { title: string; notes?: string; priority?: string; teamId?: string },
     existingTask?: Task
   ) => {
     const taskPriorityToSave = data.priority === "none" || data.priority === ""
       ? undefined
       : (data.priority as Task['priority'] || undefined);
+    const taskTeamIdToSave = data.teamId === "" ? undefined : data.teamId;
 
     if (existingTask) {
       setTasks(
@@ -108,6 +109,7 @@ export default function Home() {
                 title: data.title,
                 notes: data.notes || "",
                 priority: taskPriorityToSave,
+                teamId: taskTeamIdToSave,
                 createdAt: task.createdAt || Date.now()
               }
             : task
@@ -124,6 +126,7 @@ export default function Home() {
         title: data.title,
         notes: data.notes || "",
         priority: taskPriorityToSave,
+        teamId: taskTeamIdToSave,
         createdAt: Date.now(),
       };
       setTasks([...tasks, newTask]);
@@ -247,7 +250,7 @@ export default function Home() {
   };
 
 
-  if (status === "loading") {
+  if (status === "loading" || !mounted) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
@@ -356,19 +359,6 @@ export default function Home() {
     );
   }
   
-  if (!mounted) {
-     return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Header />
-        <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex items-center justify-center">
-          <Loader2 className="h-16 w-16 animate-spin text-primary" />
-        </main>
-        <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-          © {currentYear} TaskTango. Crafted with 🧠 & ❤️.
-        </footer>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -457,4 +447,3 @@ export default function Home() {
     </div>
   );
 }
-

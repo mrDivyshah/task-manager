@@ -25,13 +25,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Task } from "@/types";
+import type { Task, Team } from "@/types";
+import useLocalStorage from "@/hooks/useLocalStorage";
 import { useEffect } from "react";
+import { Users } from "lucide-react";
 
 const taskFormSchema = z.object({
   title: z.string().min(1, "Title is required").max(100, "Title must be 100 characters or less"),
   notes: z.string().max(500, "Notes must be 500 characters or less").optional(),
-  priority: z.string().optional(), // "none", "low", "medium", "high", or "" (for placeholder)
+  priority: z.string().optional(), 
+  teamId: z.string().optional(),
 });
 
 type TaskFormValues = z.infer<typeof taskFormSchema>;
@@ -44,28 +47,33 @@ interface TaskFormProps {
 }
 
 export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProps) {
+  const [teams] = useLocalStorage<Team[]>("tasktango-teams", []);
+
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
       title: "",
       notes: "",
-      priority: "", // Empty string means placeholder "Select priority" will be shown
+      priority: "", 
+      teamId: "",
     },
   });
 
   useEffect(() => {
-    if (isOpen) { // Only reset form when dialog opens
+    if (isOpen) { 
       if (taskToEdit) {
         form.reset({
           title: taskToEdit.title,
           notes: taskToEdit.notes,
-          priority: taskToEdit.priority || "", // if priority is undefined, use "" for placeholder
+          priority: taskToEdit.priority || "", 
+          teamId: taskToEdit.teamId || "",
         });
       } else {
         form.reset({
           title: "",
           notes: "",
           priority: "",
+          teamId: "",
         });
       }
     }
@@ -74,7 +82,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
 
   const handleSubmit = (data: TaskFormValues) => {
     onSubmit(data, taskToEdit);
-    form.reset(); // Reset after successful submission
+    form.reset(); 
   };
 
   return (
@@ -121,29 +129,61 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="priority"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-foreground/80">Priority</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || ""}> {/* Ensure value is never undefined for Select */}
-                    <FormControl>
-                      <SelectTrigger className="bg-background border-input focus:ring-primary">
-                        <SelectValue placeholder="Select priority" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem> {/* Changed value from "" to "none" */}
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="priority"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-foreground/80">Priority</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ""}> 
+                      <FormControl>
+                        <SelectTrigger className="bg-background border-input focus:ring-primary">
+                          <SelectValue placeholder="Select priority" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem> 
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {teams.length > 0 && (
+                 <FormField
+                  control={form.control}
+                  name="teamId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-foreground/80">Assign to Team</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                        <FormControl>
+                          <SelectTrigger className="bg-background border-input focus:ring-primary">
+                            <SelectValue placeholder="Select team (optional)" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">No Team / Personal</SelectItem>
+                          {teams.map((team) => (
+                            <SelectItem key={team.id} value={team.id}>
+                              <div className="flex items-center">
+                                <Users className="mr-2 h-4 w-4 text-muted-foreground" />
+                                {team.name}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               )}
-            />
+            </div>
             <DialogFooter className="mt-8">
               <DialogClose asChild>
                 <Button type="button" variant="outline">
