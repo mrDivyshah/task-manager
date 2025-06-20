@@ -139,37 +139,45 @@ export default function Home() {
         redirect: false,
         email,
         password,
-        // callbackUrl: window.location.origin, // Or simply '/'
       });
 
-      if (result?.error) {
-        let description = result.error;
+      if (!result) {
+        toast({
+          title: "Login Error",
+          description: "The login process did not complete as expected. Please try again.",
+          variant: "destructive",
+        });
+      } else if (result.error) {
+        let description = "An unknown error occurred. Please try again.";
         if (result.error === "CredentialsSignin") {
           description = "Invalid email or password. (Hint: user@example.com / password123)";
+        } else {
+          description = result.error; // Use the error message from next-auth
         }
         toast({
           title: "Login Failed",
           description: description,
           variant: "destructive",
         });
-      } else if (result?.ok && !result.error) {
+      } else if (result.ok) {
         toast({
           title: "Login Successful",
           description: "Welcome back!",
         });
       } else {
-         toast({
+        // Fallback for unexpected result states
+        toast({
           title: "Login Attempt Issue",
-          description: "An unexpected issue occurred. Please try again.",
+          description: "An unexpected issue occurred with the login attempt. Please try again.",
           variant: "destructive",
         });
       }
     } catch (error: unknown) {
-      let errorMessage = "A network error or unexpected issue occurred. Please try again.";
-      if (error instanceof Error) {
-        errorMessage = error.message; // This might be "Failed to fetch"
+      let errorMessage = "A network error or an unexpected issue occurred during login. Please try again.";
+      if (error instanceof Error && error.message) {
+        errorMessage = error.message;
       }
-       toast({
+      toast({
         title: "Login System Error",
         description: errorMessage,
         variant: "destructive",

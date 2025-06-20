@@ -18,6 +18,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
+          // This error will be caught by NextAuth and returned in result.error
           throw new Error("Please enter both email and password.");
         }
 
@@ -39,9 +40,9 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
   pages: {
-    // You can specify custom pages here if needed, e.g., signIn: '/auth/signin'
-    // For now, we are handling login UI directly on the main page.
+    // signIn: '/auth/signin', // Default is fine since form is on main page
   },
+  debug: process.env.NODE_ENV === 'development',
   // You can add callbacks here if you need to customize the session or JWT
   // callbacks: {
   //   async jwt({ token, account, user }) { // user is only passed on first sign-in with CredentialsProvider
