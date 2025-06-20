@@ -5,20 +5,25 @@ import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Moon, Sun, Cog, PanelRightClose, AppWindow, Settings2, ToggleRight, ToggleLeft, Users } from "lucide-react";
+import { ArrowLeft, Moon, Sun, Cog, PanelRightClose, AppWindow, Settings2, ToggleRight, ToggleLeft, Users, KeyRound, ShieldAlert } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ChangeEvent, type KeyboardEvent, type FormEvent } from "react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import useLocalStorage from "@/hooks/useLocalStorage";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+
 
 export type NotificationStyle = "dock" | "float";
 
 export default function SettingsPage() {
   const router = useRouter();
   const { theme, setTheme, systemTheme } = useTheme();
+  const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
 
   const [notificationSoundEnabled, setNotificationSoundEnabled] = useLocalStorage<boolean>(
@@ -34,9 +39,52 @@ export default function SettingsPage() {
     false
   );
 
+  const [isCreateTeamDialogOpen, setIsCreateTeamDialogOpen] = useState(false);
+  const [newTeamName, setNewTeamName] = useState("");
+  const [teamCode, setTeamCode] = useState<string[]>(Array(6).fill(""));
+  const teamCodeInputsRef = Array(6).fill(null).map(() => React.createRef<HTMLInputElement>());
+
+
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const handleTeamCodeChange = (index: number, value: string) => {
+    if (/^[0-9]?$/.test(value)) { // Allow empty or single digit
+      const newTeamCode = [...teamCode];
+      newTeamCode[index] = value;
+      setTeamCode(newTeamCode);
+
+      if (value && index < 5 && teamCodeInputsRef[index + 1]?.current) {
+        teamCodeInputsRef[index + 1].current?.focus();
+      }
+    }
+  };
+
+  const handleTeamCodeKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !teamCode[index] && index > 0 && teamCodeInputsRef[index - 1]?.current) {
+      teamCodeInputsRef[index - 1].current?.focus();
+    }
+  };
+  
+  const handleCreateTeamSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const finalTeamCode = teamCode.join("");
+    if (newTeamName.trim() === "") {
+      toast({ title: "Team Name Required", description: "Please enter a name for your team.", variant: "destructive", icon: <ShieldAlert className="h-5 w-5" /> });
+      return;
+    }
+    if (finalTeamCode.length !== 6 || !/^\d{6}$/.test(finalTeamCode)) {
+      toast({ title: "Invalid Team Code", description: "Team code must be 6 digits.", variant: "destructive", icon: <ShieldAlert className="h-5 w-5" /> });
+      return;
+    }
+    console.log("Creating team:", { teamName: newTeamName, teamCode: finalTeamCode });
+    toast({ title: "Team Creation Initiated", description: `Team "${newTeamName}" with code ${finalTeamCode} (logged to console).` });
+    setNewTeamName("");
+    setTeamCode(Array(6).fill(""));
+    setIsCreateTeamDialogOpen(false);
+  };
+
 
   if (!mounted) {
     return (
@@ -203,16 +251,72 @@ export default function SettingsPage() {
                 </p>
 
                 {advancedFeaturesEnabled && (
-                  <div className="p-4 border border-dashed border-primary/50 rounded-lg bg-primary/5 space-y-4">
-                    <p className="text-sm text-primary flex items-center">
-                      <ToggleRight className="mr-2 h-5 w-5" />
-                      Advanced features are active! More settings and options may appear.
-                    </p>
-                    <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow border-primary/70 text-primary hover:bg-primary/10">
-                      <Users className="mr-2 h-4 w-4" />
-                      Create Team (Placeholder)
-                    </Button>
-                  </div>
+                  <Dialog open={isCreateTeamDialogOpen} onOpenChange={setIsCreateTeamDialogOpen}>
+                    <DialogTrigger asChild>
+                      <div className="p-4 border border-dashed border-primary/50 rounded-lg bg-primary/5 space-y-4">
+                        <p className="text-sm text-primary flex items-center">
+                          <ToggleRight className="mr-2 h-5 w-5" />
+                          Advanced features are active! More settings and options may appear.
+                        </p>
+                        <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow border-primary/70 text-primary hover:bg-primary/10">
+                          <Users className="mr-2 h-4 w-4" />
+                          Create Team
+                        </Button>
+                      </div>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md bg-card rounded-lg shadow-xl">
+                      <DialogHeader>
+                        <DialogTitle className="font-headline text-2xl">Create New Team</DialogTitle>
+                        <DialogDescription>
+                          Enter a name and a 6-digit code for your new team.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <form onSubmit={handleCreateTeamSubmit} className="space-y-6 py-4">
+                        <div>
+                          <Label htmlFor="new-team-name" className="text-foreground/80">Team Name</Label>
+                          <Input
+                            id="new-team-name"
+                            value={newTeamName}
+                            onChange={(e) => setNewTeamName(e.target.value)}
+                            placeholder="e.g., Project Alpha Squad"
+                            className="mt-1 bg-background border-input focus:ring-primary"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="team-code-0" className="text-foreground/80">Team Code (6 digits)</Label>
+                          <div className="flex justify-between gap-2 mt-1">
+                            {teamCode.map((digit, index) => (
+                              <Input
+                                key={index}
+                                id={`team-code-${index}`}
+                                ref={teamCodeInputsRef[index]}
+                                type="text" // Use text to allow better control, pattern for numbers
+                                maxLength={1}
+                                value={digit}
+                                onChange={(e) => handleTeamCodeChange(index, e.target.value)}
+                                onKeyDown={(e) => handleTeamCodeKeyDown(index, e)}
+                                className="w-10 h-12 text-center text-lg font-mono bg-background border-input focus:ring-primary"
+                                pattern="[0-9]*"
+                                inputMode="numeric"
+                                required
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <DialogFooter className="mt-8">
+                          <DialogClose asChild>
+                            <Button type="button" variant="outline">
+                              Cancel
+                            </Button>
+                          </DialogClose>
+                          <Button type="submit" variant="default">
+                            <Users className="mr-2 h-4 w-4" /> Create Team
+                          </Button>
+                        </DialogFooter>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
                 )}
                  {!advancedFeaturesEnabled && (
                   <div className="p-4 border border-dashed border-border rounded-lg bg-muted/30">
@@ -234,3 +338,6 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+
+    
