@@ -301,7 +301,7 @@ export default function ProfilePage() {
         </Card>
       </main>
       <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-        © {currentYear} TaskTango. Crafted with 🧠 & ❤️.
+        © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
       </footer>
     </div>
   );
@@ -309,3 +309,4 @@ export default function ProfilePage() {
     
 
     
+

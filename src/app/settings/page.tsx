@@ -30,19 +30,19 @@ export default function SettingsPage() {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   const [notificationSoundEnabled, setNotificationSoundEnabled] = useLocalStorage<boolean>(
-    "tasktango-notification-sound",
+    "taskflow-notification-sound",
     false
   );
   const [notificationStyle, setNotificationStyle] = useLocalStorage<NotificationStyle>(
-    "tasktango-notification-style",
+    "taskflow-notification-style",
     "dock"
   );
   const [advancedFeaturesEnabled, setAdvancedFeaturesEnabled] = useLocalStorage<boolean>(
-    "tasktango-advanced-features",
+    "taskflow-advanced-features",
     false
   );
 
-  const [teams, setTeams] = useLocalStorage<Team[]>("tasktango-teams", []);
+  const [teams, setTeams] = useLocalStorage<Team[]>("taskflow-teams", []);
   const [isCreateTeamDialogOpen, setIsCreateTeamDialogOpen] = useState(false);
   const [newTeamName, setNewTeamName] = useState("");
   const [teamCode, setTeamCode] = useState<string[]>(Array(6).fill(""));
@@ -115,7 +115,7 @@ export default function SettingsPage() {
            <Loader2 className="h-16 w-16 animate-spin text-primary" />
         </main>
         <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-          © {currentYear} TaskTango. Crafted with 🧠 & ❤️.
+          © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
         </footer>
       </div>
     );
@@ -360,10 +360,11 @@ export default function SettingsPage() {
         </Card>
       </main>
       <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-        © {currentYear} TaskTango. Crafted with 🧠 & ❤️.
+        © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
       </footer>
     </div>
   );
 }
     
+
 

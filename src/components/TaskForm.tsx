@@ -47,7 +47,7 @@ interface TaskFormProps {
 }
 
 export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProps) {
-  const [teams] = useLocalStorage<Team[]>("tasktango-teams", []);
+  const [teams] = useLocalStorage<Team[]>("taskflow-teams", []);
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
@@ -204,3 +204,4 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
     </Dialog>
   );
 }
+

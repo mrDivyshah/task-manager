@@ -63,8 +63,8 @@ export function Header() {
   const isLoading = status === "loading";
 
   const [mounted, setMounted] = useState(false);
-  const [persistedNotificationStyle] = useLocalStorage<NotificationStyle>("tasktango-notification-style", "dock");
-  const [persistedNotificationSoundEnabled] = useLocalStorage<boolean>("tasktango-notification-sound", false);
+  const [persistedNotificationStyle] = useLocalStorage<NotificationStyle>("taskflow-notification-style", "dock");
+  const [persistedNotificationSoundEnabled] = useLocalStorage<boolean>("taskflow-notification-sound", false);
 
   useEffect(() => {
     setMounted(true);
@@ -95,7 +95,7 @@ export function Header() {
         <Link href="/" className="flex items-center gap-3">
           <LogoIcon className="h-8 w-8 text-primary" />
           <h1 className="text-3xl font-headline font-semibold text-foreground">
-            TaskTango
+            TaskFlow
           </h1>
         </Link>
         <div className="flex items-center gap-3">
@@ -251,3 +251,4 @@ export function Header() {
     </header>
   );
 }
+

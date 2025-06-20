@@ -23,7 +23,7 @@ export default function TeamsPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const { toast } = useToast();
-  const [teams, setTeams] = useLocalStorage<Team[]>("tasktango-teams", []);
+  const [teams, setTeams] = useLocalStorage<Team[]>("taskflow-teams", []);
   
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [teamToEdit, setTeamToEdit] = useState<Team | null>(null);
@@ -181,7 +181,7 @@ export default function TeamsPage() {
            <Loader2 className="h-16 w-16 animate-spin text-primary" />
         </main>
         <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-          © {currentYear} TaskTango. Crafted with 🧠 & ❤️.
+          © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
         </footer>
       </div>
     );
@@ -368,9 +368,10 @@ export default function TeamsPage() {
       </Dialog>
 
        <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-        © {currentYear} TaskTango. Crafted with 🧠 & ❤️.
+        © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
       </footer>
     </div>
   );
 }
+
 

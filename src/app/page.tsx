@@ -25,7 +25,7 @@ const generateId = () => Date.now().toString(36) + Math.random().toString(36).su
 export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [tasks, setTasks] = useLocalStorage<Task[]>("tasktango-tasks", []);
+  const [tasks, setTasks] = useLocalStorage<Task[]>("taskflow-tasks", []);
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | undefined>(undefined);
   const [isSorting, setIsSorting] = useState(false);
@@ -258,7 +258,7 @@ export default function Home() {
           <Loader2 className="h-16 w-16 animate-spin text-primary" />
         </main>
         <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-          © {currentYear} TaskTango. Crafted with 🧠 & ❤️.
+          © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
         </footer>
       </div>
     );
@@ -270,7 +270,7 @@ export default function Home() {
         <Header />
         <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col items-center justify-center text-center">
           <div className="bg-card p-8 rounded-xl shadow-2xl w-full max-w-md">
-            <h2 className="text-3xl font-headline font-semibold text-foreground mb-6">Welcome to TaskTango!</h2>
+            <h2 className="text-3xl font-headline font-semibold text-foreground mb-6">Welcome to TaskFlow!</h2>
             <p className="text-muted-foreground mb-8">
               Log in to manage your tasks and experience smart sorting.
             </p>
@@ -353,7 +353,7 @@ export default function Home() {
           </div>
         </main>
         <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-          © {currentYear} TaskTango. Crafted with 🧠 & ❤️.
+          © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
         </footer>
       </div>
     );
@@ -442,8 +442,9 @@ export default function Home() {
       />
 
       <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-        © {currentYear} TaskTango. Crafted with 🧠 & ❤️.
+        © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
       </footer>
     </div>
   );
 }
+

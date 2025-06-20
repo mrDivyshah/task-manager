@@ -6,7 +6,7 @@ import { ClientSessionProvider } from "@/components/ClientSessionProvider";
 
 
 export const metadata: Metadata = {
-  title: 'TaskTango',
+  title: 'TaskFlow',
   description: 'Streamline your workflow with smart task management',
 };
 
@@ -30,3 +30,4 @@ export default function RootLayout({
     </html>
   );
 }
+

@@ -23,7 +23,7 @@ interface TaskItemProps {
 }
 
 export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDrop, isDragging }: TaskItemProps) {
-  const [teams] = useLocalStorage<Team[]>("tasktango-teams", []);
+  const [teams] = useLocalStorage<Team[]>("taskflow-teams", []);
   
   const assignedTeam = React.useMemo(() => {
     if (!task.teamId) return null;
@@ -111,3 +111,4 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
     </Card>
   );
 }
+

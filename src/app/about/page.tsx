@@ -30,14 +30,14 @@ export default function AboutPage() {
             <div className="relative h-48 w-full rounded-lg overflow-hidden mb-6 shadow-inner">
               <Image
                 src="https://placehold.co/800x400.png"
-                alt="TaskTango Abstract Banner"
+                alt="TaskFlow Abstract Banner"
                 layout="fill"
                 objectFit="cover"
                 data-ai-hint="productivity abstract"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-primary/70 via-primary/30 to-transparent flex items-end p-6">
                 <CardTitle className="font-headline text-4xl sm:text-5xl text-primary-foreground drop-shadow-md">
-                  About TaskTango
+                  About TaskFlow
                 </CardTitle>
               </div>
             </div>
@@ -52,9 +52,9 @@ export default function AboutPage() {
                 Our Mission
               </h2>
               <p className="text-base text-foreground/80 leading-relaxed">
-                TaskTango is designed to bring clarity and efficiency to your daily tasks. We believe that a well-organized workflow,
+                TaskFlow is designed to bring clarity and efficiency to your daily tasks. We believe that a well-organized workflow,
                 powered by smart features, can transform productivity and reduce stress. Whether you're managing personal projects or
-                collaborating with a team, TaskTango provides the tools you need to stay on track.
+                collaborating with a team, TaskFlow provides the tools you need to stay on track.
               </p>
             </section>
 
@@ -77,7 +77,7 @@ export default function AboutPage() {
                   <strong className="text-foreground">Team Collaboration (Advanced):</strong> Create and join teams to manage shared projects and tasks (available via Advanced Features).
                 </li>
                 <li>
-                  <strong className="text-foreground">Customizable Experience:</strong> Choose your theme, notification preferences, and more to make TaskTango yours.
+                  <strong className="text-foreground">Customizable Experience:</strong> Choose your theme, notification preferences, and more to make TaskFlow yours.
                 </li>
               </ul>
             </section>
@@ -88,7 +88,7 @@ export default function AboutPage() {
                 Built With
               </h2>
               <p className="text-base text-foreground/80 leading-relaxed">
-                TaskTango is proudly built using modern web technologies including Next.js, React, Tailwind CSS, ShadCN UI components for a polished look and feel, and Genkit for its intelligent features. We prioritize performance, accessibility, and a delightful user experience.
+                TaskFlow is proudly built using modern web technologies including Next.js, React, Tailwind CSS, ShadCN UI components for a polished look and feel, and Genkit for its intelligent features. We prioritize performance, accessibility, and a delightful user experience.
               </p>
             </section>
 
@@ -104,15 +104,16 @@ export default function AboutPage() {
 
             <div className="text-center pt-4">
               <p className="text-muted-foreground">
-                Thank you for choosing TaskTango!
+                Thank you for choosing TaskFlow!
               </p>
             </div>
           </CardContent>
         </Card>
       </main>
       <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-        © {currentYear} TaskTango. Crafted with 🧠 & ❤️.
+        © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
       </footer>
     </div>
   );
 }
+
