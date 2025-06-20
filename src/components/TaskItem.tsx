@@ -9,7 +9,7 @@ import type { Task, Team } from "@/types";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from 'date-fns';
 import useLocalStorage from "@/hooks/useLocalStorage";
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 
 interface TaskItemProps {
@@ -24,6 +24,11 @@ interface TaskItemProps {
 
 export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDrop, isDragging }: TaskItemProps) {
   const [teams] = useLocalStorage<Team[]>("taskflow-teams", []);
+  const [animationDelay, setAnimationDelay] = useState('0s');
+
+  useEffect(() => {
+    setAnimationDelay(`${Math.random() * 0.2}s`);
+  }, []);
   
   const assignedTeam = React.useMemo(() => {
     if (!task.teamId) return null;
@@ -56,7 +61,7 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
         "w-full shadow-lg rounded-xl transition-all duration-300 ease-in-out hover:shadow-xl bg-card animate-subtle-appear",
         isDragging ? "opacity-50 ring-2 ring-primary" : "opacity-100",
       )}
-      style={{ animationDelay: `${Math.random() * 0.2}s`}} // Stagger animation
+      style={{ animationDelay: animationDelay }}
     >
       <CardHeader className="flex flex-row items-start justify-between pb-3">
         <div className="flex-1">
@@ -111,4 +116,3 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
     </Card>
   );
 }
-
