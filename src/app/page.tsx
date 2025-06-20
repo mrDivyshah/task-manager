@@ -153,19 +153,21 @@ export default function Home() {
           title: "Login Successful",
           description: "Welcome back!",
         });
-        // Successful login, session will update and component will re-render
       } else {
-        // Handle cases where result is undefined or not ok and no error
          toast({
-          title: "Login Attempt Unclear",
-          description: "Something went wrong. Please try again.",
+          title: "Login Attempt Failed",
+          description: "Something went wrong during login. Please try again.",
           variant: "destructive",
         });
       }
-    } catch (error) {
-      toast({
+    } catch (error: unknown) {
+      let errorMessage = "An unexpected error occurred. Please try again.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+       toast({
         title: "Login Error",
-        description: "An unexpected error occurred. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -261,11 +263,6 @@ export default function Home() {
                     Remember me
                   </Label>
                 </div>
-                {/* Placeholder for Forgot Password link if needed later
-                <a href="#" className="text-sm text-primary hover:underline">
-                  Forgot password?
-                </a> 
-                */}
               </div>
               <Button type="submit" size="lg" className="w-full shadow-md hover:shadow-lg transition-shadow" disabled={isCredentialsLoading}>
                 {isCredentialsLoading ? (
@@ -331,5 +328,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
