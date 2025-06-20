@@ -139,34 +139,38 @@ export default function Home() {
         redirect: false,
         email,
         password,
-        callbackUrl: '/', 
+        // callbackUrl: window.location.origin, // Or simply '/'
       });
 
       if (result?.error) {
+        let description = result.error;
+        if (result.error === "CredentialsSignin") {
+          description = "Invalid email or password. (Hint: user@example.com / password123)";
+        }
         toast({
           title: "Login Failed",
-          description: result.error,
+          description: description,
           variant: "destructive",
         });
-      } else if (result?.ok) {
+      } else if (result?.ok && !result.error) {
         toast({
           title: "Login Successful",
           description: "Welcome back!",
         });
       } else {
          toast({
-          title: "Login Attempt Failed",
-          description: "Something went wrong during login. Please try again.",
+          title: "Login Attempt Issue",
+          description: "An unexpected issue occurred. Please try again.",
           variant: "destructive",
         });
       }
     } catch (error: unknown) {
-      let errorMessage = "An unexpected error occurred. Please try again.";
+      let errorMessage = "A network error or unexpected issue occurred. Please try again.";
       if (error instanceof Error) {
-        errorMessage = error.message;
+        errorMessage = error.message; // This might be "Failed to fetch"
       }
        toast({
-        title: "Login Error",
+        title: "Login System Error",
         description: errorMessage,
         variant: "destructive",
       });

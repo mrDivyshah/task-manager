@@ -28,8 +28,9 @@ export const authOptions: NextAuthOptions = {
           return { id: "creds-user-1", name: "Test User", email: "user@example.com", image: null };
         }
         
-        // If credentials are not valid
-        throw new Error("Invalid email or password. Try user@example.com and password123.");
+        // If credentials are not valid, return null.
+        // next-auth will then set result.error on the client to "CredentialsSignin" or similar.
+        return null;
       }
     })
   ],
