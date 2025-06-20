@@ -3,6 +3,7 @@
 
 import { useState, useEffect, type FormEvent } from "react";
 import { useSession, signIn } from "next-auth/react";
+import { useRouter } from "next/navigation"; // Import useRouter
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
 import { TaskForm } from "@/components/TaskForm";
@@ -22,6 +23,7 @@ const generateId = () => Date.now().toString(36) + Math.random().toString(36).su
 
 export default function Home() {
   const { data: session, status } = useSession();
+  const router = useRouter(); // Initialize useRouter
   const [tasks, setTasks] = useLocalStorage<Task[]>("tasktango-tasks", []);
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | undefined>(undefined);
@@ -136,43 +138,44 @@ export default function Home() {
     setIsCredentialsLoading(true);
     try {
       const result = await signIn('credentials', {
-        redirect: false,
+        // redirect: false, // Removed to allow NextAuth default redirect
         email,
         password,
+        // callbackUrl: "/", // Optionally specify where to go after login
       });
 
-      if (!result) {
-        toast({
-          title: "Login Error",
-          description: "The login process did not complete as expected. Please try again.",
-          variant: "destructive",
-        });
-      } else if (result.error) {
+      // If redirect: false was kept, the logic below would be more relevant.
+      // With default redirect, if login fails, NextAuth handles showing an error page or query param.
+      // If login succeeds, it redirects.
+      // We might still want to show a toast for errors if they are passed via URL query params.
+      // For now, let NextAuth handle errors through its default mechanisms.
+
+      if (result?.error) { // This will be true if signIn itself throws or returns an error (e.g. network issue before redirect attempt)
+                          // or if `redirect: false` was used and an error occurred.
         let description = "An unknown error occurred. Please try again.";
         if (result.error === "CredentialsSignin") {
           description = "Invalid email or password. (Hint: user@example.com / password123)";
-        } else {
-          description = result.error; // Use the error message from next-auth
+        } else if (result.error !== "Callback") { // "Callback" error often means redirect was interrupted or is part of normal flow for some providers
+          description = result.error; 
         }
-        toast({
-          title: "Login Failed",
-          description: description,
-          variant: "destructive",
-        });
-      } else if (result.ok) {
+         // Only show toast if there's a client-side detectable error *before* a redirect or if redirect is false.
+        if (result.error !== "Callback") {
+            toast({
+                title: "Login Failed",
+                description: description,
+                variant: "destructive",
+            });
+        }
+      } else if (result?.ok) {
+        // This block is more relevant if redirect: false. With redirect: true (default),
+        // successful login navigates away.
         toast({
           title: "Login Successful",
           description: "Welcome back!",
         });
-      } else {
-        // Fallback for unexpected result states
-        toast({
-          title: "Login Attempt Issue",
-          description: "An unexpected issue occurred with the login attempt. Please try again.",
-          variant: "destructive",
-        });
+        // router.push('/'); // Or wherever you want to redirect if not handled by NextAuth
       }
-    } catch (error: unknown) {
+    } catch (error: unknown) { // Catch errors from the signIn call itself (e.g., network issues)
       let errorMessage = "A network error or an unexpected issue occurred during login. Please try again.";
       if (error instanceof Error && error.message) {
         errorMessage = error.message;
@@ -340,3 +343,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

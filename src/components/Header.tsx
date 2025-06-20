@@ -91,7 +91,7 @@ export function Header() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => signOut()} className="flex items-center cursor-pointer">
+                  <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/' })} className="flex items-center cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />
                     Logout
                   </DropdownMenuItem>
@@ -105,9 +105,6 @@ export function Header() {
                     Login with Google
                   </DropdownMenuItem>
                    <DropdownMenuItem onClick={() => {
-                      // For "Login with Email", we usually direct to a page or show a modal.
-                      // Since the form is on the main page, this option might be redundant if already on `/`.
-                      // If you want to explicitly scroll to the form or ensure it's visible:
                       const emailForm = document.getElementById('email-login');
                       if (emailForm) emailForm.focus();
                     }} className="flex items-center cursor-pointer">
@@ -123,3 +120,5 @@ export function Header() {
     </header>
   );
 }
+
+    
