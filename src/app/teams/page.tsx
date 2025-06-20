@@ -4,6 +4,7 @@
 import type { FormEvent } from "react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -13,18 +14,24 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import type { Team } from "@/types";
-import { ArrowLeft, Edit3, Users, Trash2, PlusCircle, Save, XCircle, CheckCircle2, AlertTriangle, Info, SearchX } from "lucide-react";
+import { ArrowLeft, Edit3, Users, Trash2, PlusCircle, Save, XCircle, CheckCircle2, AlertTriangle, Info, SearchX, UserPlus } from "lucide-react";
 import { formatDistanceToNow } from 'date-fns';
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
 export default function TeamsPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const { toast } = useToast();
   const [teams, setTeams] = useLocalStorage<Team[]>("tasktango-teams", []);
+  
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [teamToEdit, setTeamToEdit] = useState<Team | null>(null);
   const [editedTeamName, setEditedTeamName] = useState("");
+
+  const [isJoinTeamDialogOpen, setIsJoinTeamDialogOpen] = useState(false);
+  const [joinTeamCode, setJoinTeamCode] = useState("");
+
 
   const handleOpenEditDialog = (team: Team) => {
     setTeamToEdit(team);
@@ -75,24 +82,93 @@ export default function TeamsPage() {
     }
   };
 
+  const handleJoinTeamSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!session?.user?.email) {
+      toast({
+        title: "Login Required",
+        description: "You must be logged in to join a team.",
+        variant: "destructive",
+        icon: <AlertTriangle className="h-5 w-5" />,
+      });
+      return;
+    }
+
+    if (!/^\d{6}$/.test(joinTeamCode)) {
+      toast({
+        title: "Invalid Code Format",
+        description: "Team code must be exactly 6 digits.",
+        variant: "destructive",
+        icon: <AlertTriangle className="h-5 w-5" />,
+      });
+      return;
+    }
+
+    const targetTeam = teams.find(team => team.code === joinTeamCode);
+
+    if (!targetTeam) {
+      toast({
+        title: "Team Not Found",
+        description: "No team found with this code. Please check the code and try again.",
+        variant: "destructive",
+        icon: <AlertTriangle className="h-5 w-5" />,
+      });
+      return;
+    }
+
+    if (targetTeam.members.includes(session.user.email)) {
+      toast({
+        title: "Already a Member",
+        description: `You are already a member of "${targetTeam.name}".`,
+        icon: <Info className="h-5 w-5 text-primary" />,
+      });
+      setIsJoinTeamDialogOpen(false);
+      setJoinTeamCode("");
+      return;
+    }
+
+    setTeams(prevTeams =>
+      prevTeams.map(team =>
+        team.id === targetTeam.id
+          ? { ...team, members: [...team.members, session.user!.email!] }
+          : team
+      )
+    );
+
+    toast({
+      title: "Successfully Joined Team!",
+      description: `You have joined "${targetTeam.name}".`,
+      icon: <CheckCircle2 className="h-5 w-5 text-primary" />,
+    });
+    setIsJoinTeamDialogOpen(false);
+    setJoinTeamCode("");
+  };
+
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-xl">
           <CardHeader className="space-y-4">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <Button variant="outline" onClick={() => router.back()} className="self-start">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
                 </Button>
-                <Button onClick={() => router.push('/settings')} className="shadow-sm hover:shadow-md transition-shadow bg-primary hover:bg-primary/90">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Create New Team
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <Button onClick={() => setIsJoinTeamDialogOpen(true)} variant="outline" className="shadow-sm hover:shadow-md transition-shadow w-full sm:w-auto">
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Join a Team
+                    </Button>
+                    <Button onClick={() => router.push('/settings')} className="shadow-sm hover:shadow-md transition-shadow bg-primary hover:bg-primary/90 w-full sm:w-auto">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Create New Team
+                    </Button>
+                </div>
             </div>
             <CardTitle className="font-headline text-2xl">Manage Teams</CardTitle>
-            <CardDescription>View, edit, or delete your teams.</CardDescription>
+            <CardDescription>View, edit, or delete your teams. You can also join an existing team using a team code.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {teams.length === 0 ? (
@@ -100,11 +176,8 @@ export default function TeamsPage() {
                 <SearchX size={64} className="mb-4 opacity-50" />
                 <h3 className="text-xl font-semibold mb-2 text-foreground">No Teams Yet</h3>
                 <p className="max-w-sm">
-                  You haven't created or joined any teams. Go to Settings {'>'} Advanced User Options to create a new team.
+                  You haven't created or joined any teams. Use the buttons above to create a new team or join an existing one.
                 </p>
-                 <Button onClick={() => router.push('/settings')} className="mt-6">
-                    Go to Settings
-                </Button>
               </div>
             ) : (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -120,16 +193,18 @@ export default function TeamsPage() {
                       </div>
                     </CardHeader>
                     <CardContent className="flex-grow">
-                      <h4 className="text-sm font-medium text-foreground mb-1">Members:</h4>
+                      <h4 className="text-sm font-medium text-foreground mb-1">Members ({team.members.length}):</h4>
                       {team.members.length > 0 ? (
-                        <ul className="list-disc list-inside text-sm text-muted-foreground">
+                        <ul className="list-disc list-inside text-sm text-muted-foreground space-y-0.5">
                           {team.members.slice(0, 3).map(member => (
-                            <li key={member} className="truncate">{member}</li>
+                            <li key={member} className="truncate" title={member}>
+                              {member === session?.user?.email ? `${member} (You)` : member}
+                            </li>
                           ))}
                           {team.members.length > 3 && <li>...and {team.members.length - 3} more</li>}
                         </ul>
                       ) : (
-                        <p className="text-sm text-muted-foreground italic">No members added yet.</p>
+                        <p className="text-sm text-muted-foreground italic">No members yet.</p>
                       )}
                     </CardContent>
                     <CardFooter className="border-t pt-4 flex justify-end gap-2">
@@ -150,6 +225,7 @@ export default function TeamsPage() {
         </Card>
       </main>
 
+      {/* Edit Team Dialog */}
       {teamToEdit && (
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="sm:max-w-[425px] bg-card rounded-lg shadow-xl">
@@ -194,9 +270,49 @@ export default function TeamsPage() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Join Team Dialog */}
+      <Dialog open={isJoinTeamDialogOpen} onOpenChange={setIsJoinTeamDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-card rounded-lg shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="font-headline text-2xl">Join a Team</DialogTitle>
+            <DialogDescription>
+              Enter the 6-digit code of the team you want to join.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleJoinTeamSubmit} className="space-y-6 py-4">
+            <div>
+              <Label htmlFor="join-team-code" className="text-foreground/80">Team Code</Label>
+              <Input
+                id="join-team-code"
+                value={joinTeamCode}
+                onChange={(e) => setJoinTeamCode(e.target.value.replace(/\D/g, '').slice(0,6))} // Allow only digits, max 6
+                placeholder="e.g., 123456"
+                className="mt-1 bg-background border-input focus:ring-primary text-lg font-mono tracking-widest"
+                maxLength={6}
+                required
+                pattern="\d{6}"
+                title="Team code must be 6 digits."
+              />
+            </div>
+            <DialogFooter className="mt-8">
+              <DialogClose asChild>
+                <Button type="button" variant="outline" onClick={() => { setIsJoinTeamDialogOpen(false); setJoinTeamCode(""); }}>
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button type="submit" variant="default">
+                <UserPlus className="mr-2 h-4 w-4" /> Join Team
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
        <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
         © {new Date().getFullYear()} TaskTango. Crafted with 🧠 & ❤️.
       </footer>
     </div>
   );
 }
+
