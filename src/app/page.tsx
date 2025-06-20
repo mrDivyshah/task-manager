@@ -10,7 +10,7 @@ import { TaskList } from "@/components/TaskList";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { useToast } from "@/hooks/use-toast";
 import type { Task } from "@/types";
-import { PlusCircle, Wand2, Loader2, LogIn, Mail } from "lucide-react";
+import { PlusCircle, Wand2, Loader2, LogIn, Mail, Eye, EyeOff } from "lucide-react";
 import { smartSortTasksAction } from "./actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +29,7 @@ export default function Home() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isCredentialsLoading, setIsCredentialsLoading] = useState(false);
 
 
@@ -146,8 +147,6 @@ export default function Home() {
           variant: "destructive",
         });
       } else if (result?.ok) {
-        // Successful login, NextAuth will handle session update & redirect if needed
-        // or page will re-render due to session change
         toast({
           title: "Login Successful",
           description: "Welcome back!",
@@ -216,15 +215,27 @@ export default function Home() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input 
-                  id="password" 
-                  type="password" 
-                  placeholder="••••••••" 
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)} 
-                  required 
-                  className="bg-background border-input focus:ring-primary"
-                />
+                <div className="relative">
+                  <Input 
+                    id="password" 
+                    type={showPassword ? "text" : "password"} 
+                    placeholder="••••••••" 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)} 
+                    required 
+                    className="bg-background border-input focus:ring-primary pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </Button>
+                </div>
               </div>
               <Button type="submit" size="lg" className="w-full shadow-md hover:shadow-lg transition-shadow" disabled={isCredentialsLoading}>
                 {isCredentialsLoading ? (
