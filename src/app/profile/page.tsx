@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, type FormEvent } from "react";
@@ -11,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Edit3, Save, XCircle, ShieldCheck, Loader2 } from "lucide-react";
+import { ArrowLeft, Edit3, Save, XCircle, ShieldCheck, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ProfileFormData {
@@ -81,6 +82,7 @@ export default function ProfilePage() {
     toast({
       title: "Profile Updated",
       description: "Your profile information has been saved.",
+      icon: <CheckCircle2 className="h-5 w-5 text-primary" />,
     });
     setIsEditing(false);
     setIsSavingProfile(false);
@@ -93,6 +95,7 @@ export default function ProfilePage() {
         title: "Password Mismatch",
         description: "New password and confirm password do not match.",
         variant: "destructive",
+        icon: <AlertTriangle className="h-5 w-5" />,
       });
       return;
     }
@@ -101,6 +104,7 @@ export default function ProfilePage() {
             title: "Missing Fields",
             description: "Please fill in all password fields.",
             variant: "destructive",
+            icon: <AlertTriangle className="h-5 w-5" />,
         });
         return;
     }
@@ -110,6 +114,7 @@ export default function ProfilePage() {
     toast({
       title: "Password Updated",
       description: "Your password has been successfully changed.",
+      icon: <CheckCircle2 className="h-5 w-5 text-primary" />,
     });
     setCurrentPassword("");
     setNewPassword("");
@@ -148,7 +153,7 @@ export default function ProfilePage() {
       <Header />
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Card className="w-full max-w-2xl mx-auto shadow-lg rounded-xl">
-          <CardHeader>
+          <CardHeader className="space-y-4">
             <Button variant="outline" onClick={() => router.back()} className="self-start">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back

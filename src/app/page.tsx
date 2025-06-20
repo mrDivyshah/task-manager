@@ -11,7 +11,7 @@ import { TaskList } from "@/components/TaskList";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { useToast } from "@/hooks/use-toast";
 import type { Task } from "@/types";
-import { PlusCircle, Wand2, Loader2, LogIn, Mail, Eye, EyeOff, Search, Filter, SearchX } from "lucide-react";
+import { PlusCircle, Wand2, Loader2, LogIn, Mail, Eye, EyeOff, Search, Filter, SearchX, CheckCircle2, AlertTriangle, Info } from "lucide-react";
 import { smartSortTasksAction } from "./actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -103,7 +103,11 @@ export default function Home() {
             : task
         )
       );
-      toast({ title: "Task Updated", description: `"${data.title}" has been updated.` });
+      toast({
+        title: "Task Updated",
+        description: `"${data.title}" has been updated.`,
+        icon: <CheckCircle2 className="h-5 w-5 text-primary" />,
+      });
     } else {
       const newTask: Task = {
         id: generateId(),
@@ -113,7 +117,11 @@ export default function Home() {
         createdAt: Date.now(),
       };
       setTasks([...tasks, newTask]);
-      toast({ title: "Task Created", description: `"${data.title}" has been added.` });
+      toast({
+        title: "Task Created",
+        description: `"${data.title}" has been added.`,
+        icon: <CheckCircle2 className="h-5 w-5 text-primary" />,
+      });
     }
     handleCloseTaskForm();
   };
@@ -126,17 +134,12 @@ export default function Home() {
         title: "Task Deleted",
         description: `"${taskToDelete.title}" has been removed.`,
         variant: "destructive",
+        icon: <AlertTriangle className="h-5 w-5" />,
       });
     }
   };
 
   const handleReorderTasks = (reorderedTasks: Task[]) => {
-    // This reordering is primarily for drag-and-drop visual feedback.
-    // The main sort logic in displayedTasks will ultimately determine order.
-    // However, if we want drag-and-drop to persist a manual sort order,
-    // we'd need to remove or adjust the .sort() in displayedTasks or add another sort key.
-    // For now, allowing drag-and-drop to update the base `tasks` order, and then
-    // `displayedTasks` re-sorts by priority and creation time.
     setTasks(reorderedTasks);
   };
 
@@ -145,6 +148,7 @@ export default function Home() {
       toast({
         title: "No tasks to sort",
         description: "Add some tasks before using Smart Sort.",
+        icon: <Info className="h-5 w-5 text-primary" />,
       });
       return;
     }
@@ -159,8 +163,6 @@ export default function Home() {
           }
           return task;
         });
-        // Smart sort already applies a sort logic which includes priority.
-        // The sort in displayedTasks will ensure this is maintained or applied consistently.
         const priorityOrder: Record<string, number> = { high: 1, medium: 2, low: 3, default: 4 };
         newTasks.sort((a,b) => {
           const getPrioValue = (priority?: string) => {
@@ -177,6 +179,7 @@ export default function Home() {
       toast({
         title: "Tasks Smart Sorted!",
         description: "Categories and priorities have been updated.",
+        icon: <CheckCircle2 className="h-5 w-5 text-primary" />,
       });
     } catch (error) {
       console.error("Smart Sort Error:", error);
@@ -184,6 +187,7 @@ export default function Home() {
         title: "Smart Sort Failed",
         description: (error as Error).message || "Could not sort tasks. Please try again.",
         variant: "destructive",
+        icon: <AlertTriangle className="h-5 w-5" />,
       });
     } finally {
       setIsSorting(false);
@@ -197,6 +201,7 @@ export default function Home() {
       const result = await signIn('credentials', {
         email,
         password,
+        redirect: false, // Important: handle redirect manually or based on result
       });
 
       if (result?.error) {
@@ -210,7 +215,11 @@ export default function Home() {
             title: "Login Issue",
             description: description,
             variant: "destructive",
+            icon: <AlertTriangle className="h-5 w-5" />,
         });
+      } else if (result?.ok) {
+        // Login successful, NextAuth.js will handle session and redirect if callbackUrl is set or default behavior.
+        // router.push('/') or wherever you want to redirect successful logins if not handled by NextAuth.js
       }
     } catch (error: unknown) {
       let errorMessage = "An unexpected error occurred during login.";
@@ -221,6 +230,7 @@ export default function Home() {
         title: "Login System Error",
         description: `Error: "${errorMessage}". CRITICAL: Check your Next.js server terminal logs for errors from NextAuth. Also verify NEXTAUTH_URL in .env is correct (e.g., http://localhost:9002).`,
         variant: "destructive",
+        icon: <AlertTriangle className="h-5 w-5" />,
       });
     } finally {
       setIsCredentialsLoading(false);
@@ -345,7 +355,7 @@ export default function Home() {
           <div className="flex items-baseline gap-2">
             <h2 className="text-2xl font-headline font-semibold text-foreground">Your Tasks</h2>
             <span className="text-sm text-muted-foreground">
-              (Showing {displayedTasks.length} of {tasks.length} task{tasks.length === 1 ? "" : "s"})
+              ({displayedTasks.length} of {tasks.length} task{tasks.length === 1 ? "" : "s"})
             </span>
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto flex-wrap">
@@ -422,4 +432,3 @@ export default function Home() {
     </div>
   );
 }
-
