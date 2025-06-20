@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useSession, signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
@@ -10,8 +10,12 @@ import { TaskList } from "@/components/TaskList";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { useToast } from "@/hooks/use-toast";
 import type { Task } from "@/types";
-import { PlusCircle, Wand2, Loader2, LogIn } from "lucide-react";
+import { PlusCircle, Wand2, Loader2, LogIn, Mail } from "lucide-react";
 import { smartSortTasksAction } from "./actions";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
@@ -22,6 +26,11 @@ export default function Home() {
   const [taskToEdit, setTaskToEdit] = useState<Task | undefined>(undefined);
   const [isSorting, setIsSorting] = useState(false);
   const { toast } = useToast();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isCredentialsLoading, setIsCredentialsLoading] = useState(false);
+
 
   const sortedTasks = [...tasks].sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
 
@@ -119,6 +128,43 @@ export default function Home() {
     }
   };
 
+  const handleCredentialsLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsCredentialsLoading(true);
+    try {
+      const result = await signIn('credentials', {
+        redirect: false,
+        email,
+        password,
+        callbackUrl: '/',
+      });
+
+      if (result?.error) {
+        toast({
+          title: "Login Failed",
+          description: result.error,
+          variant: "destructive",
+        });
+      } else if (result?.ok) {
+        // Successful login, NextAuth will handle session update & redirect if needed
+        // or page will re-render due to session change
+        toast({
+          title: "Login Successful",
+          description: "Welcome back!",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Login Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCredentialsLoading(false);
+    }
+  };
+
+
   if (status === "loading") {
     return (
       <div className="min-h-screen flex flex-col bg-background">
@@ -138,14 +184,61 @@ export default function Home() {
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
         <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col items-center justify-center text-center">
-          <h2 className="text-3xl font-headline font-semibold text-foreground mb-4">Welcome to TaskTango!</h2>
-          <p className="text-lg text-muted-foreground mb-8 max-w-md">
-            Please log in to manage your tasks efficiently and experience smart sorting powered by AI.
-          </p>
-          <Button onClick={() => signIn("google")} size="lg" className="shadow-md hover:shadow-lg transition-shadow bg-primary hover:bg-primary/90">
-            <LogIn className="mr-2 h-5 w-5" />
-            Login with Google
-          </Button>
+          <div className="bg-card p-8 rounded-xl shadow-2xl w-full max-w-md">
+            <h2 className="text-3xl font-headline font-semibold text-foreground mb-6">Welcome to TaskTango!</h2>
+            <p className="text-muted-foreground mb-8">
+              Log in to manage your tasks and experience smart sorting.
+            </p>
+            
+            <Button onClick={() => signIn("google")} size="lg" className="w-full mb-4 shadow-md hover:shadow-lg transition-shadow bg-primary hover:bg-primary/90">
+              <LogIn className="mr-2 h-5 w-5" />
+              Login with Google
+            </Button>
+
+            <div className="my-6 flex items-center">
+              <Separator className="flex-grow" />
+              <span className="mx-4 text-xs text-muted-foreground uppercase">Or</span>
+              <Separator className="flex-grow" />
+            </div>
+
+            <form onSubmit={handleCredentialsLogin} className="space-y-6 text-left">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input 
+                  id="email" 
+                  type="email" 
+                  placeholder="user@example.com" 
+                  value={email} 
+                  onChange={(e) => setEmail(e.target.value)} 
+                  required 
+                  className="bg-background border-input focus:ring-primary"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input 
+                  id="password" 
+                  type="password" 
+                  placeholder="••••••••" 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)} 
+                  required 
+                  className="bg-background border-input focus:ring-primary"
+                />
+              </div>
+              <Button type="submit" size="lg" className="w-full shadow-md hover:shadow-lg transition-shadow" disabled={isCredentialsLoading}>
+                {isCredentialsLoading ? (
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                ) : (
+                  <Mail className="mr-2 h-5 w-5" />
+                )}
+                Login with Email
+              </Button>
+            </form>
+            <p className="mt-4 text-xs text-muted-foreground">
+              (Hint: try user@example.com and password123)
+            </p>
+          </div>
         </main>
         <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
           © {new Date().getFullYear()} TaskTango. Crafted with 🧠 & ❤️.
