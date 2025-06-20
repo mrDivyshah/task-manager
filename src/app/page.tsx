@@ -11,12 +11,13 @@ import { TaskList } from "@/components/TaskList";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { useToast } from "@/hooks/use-toast";
 import type { Task } from "@/types";
-import { PlusCircle, Wand2, Loader2, LogIn, Mail, Eye, EyeOff, Search } from "lucide-react";
+import { PlusCircle, Wand2, Loader2, LogIn, Mail, Eye, EyeOff, Search, Filter, SearchX } from "lucide-react";
 import { smartSortTasksAction } from "./actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
@@ -36,17 +37,39 @@ export default function Home() {
   const [isCredentialsLoading, setIsCredentialsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState<string>("all");
 
 
   const displayedTasks = tasks
     .filter(task => {
       const term = searchTerm.toLowerCase();
+      if (!term) return true;
       return (
         task.title.toLowerCase().includes(term) ||
         (task.notes && task.notes.toLowerCase().includes(term))
       );
     })
-    .sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
+    .filter(task => {
+      if (priorityFilter === "all") {
+        return true;
+      }
+      if (priorityFilter === "none") {
+        return !task.priority || task.priority.trim() === "";
+      }
+      return task.priority?.toLowerCase() === priorityFilter;
+    })
+    .sort((a, b) => {
+      const priorityOrder: Record<string, number> = { high: 1, medium: 2, low: 3, default: 4 };
+      const getPrioValue = (priority?: string) => {
+        if (!priority || priority.trim() === "" || priority === "none") return priorityOrder.default;
+        return priorityOrder[priority.toLowerCase()] || priorityOrder.default;
+      };
+      const pA = getPrioValue(a.priority);
+      const pB = getPrioValue(b.priority);
+
+      if (pA !== pB) return pA - pB;
+      return (a.createdAt ?? 0) - (b.createdAt ?? 0);
+    });
 
   const handleOpenTaskForm = (task?: Task) => {
     setTaskToEdit(task);
@@ -62,21 +85,21 @@ export default function Home() {
     data: { title: string; notes?: string; priority?: string },
     existingTask?: Task
   ) => {
-    const taskPriorityToSave = data.priority === "none" 
-      ? undefined 
+    const taskPriorityToSave = data.priority === "none" || data.priority === ""
+      ? undefined
       : (data.priority as Task['priority'] || undefined);
 
     if (existingTask) {
       setTasks(
         tasks.map((task) =>
-          task.id === existingTask.id 
-            ? { 
-                ...task, 
-                title: data.title, 
-                notes: data.notes || "", 
-                priority: taskPriorityToSave, 
-                createdAt: task.createdAt || Date.now() 
-              } 
+          task.id === existingTask.id
+            ? {
+                ...task,
+                title: data.title,
+                notes: data.notes || "",
+                priority: taskPriorityToSave,
+                createdAt: task.createdAt || Date.now()
+              }
             : task
         )
       );
@@ -108,6 +131,12 @@ export default function Home() {
   };
 
   const handleReorderTasks = (reorderedTasks: Task[]) => {
+    // This reordering is primarily for drag-and-drop visual feedback.
+    // The main sort logic in displayedTasks will ultimately determine order.
+    // However, if we want drag-and-drop to persist a manual sort order,
+    // we'd need to remove or adjust the .sort() in displayedTasks or add another sort key.
+    // For now, allowing drag-and-drop to update the base `tasks` order, and then
+    // `displayedTasks` re-sorts by priority and creation time.
     setTasks(reorderedTasks);
   };
 
@@ -126,14 +155,20 @@ export default function Home() {
         const newTasks = prevTasks.map(task => {
           const sortInfo = sortedInfos.find(info => info.id === task.id);
           if (sortInfo) {
-            return { ...task, category: sortInfo.category, priority: sortInfo.priority };
+            return { ...task, category: sortInfo.category, priority: sortInfo.priority as Task['priority'] };
           }
           return task;
         });
-        const priorityOrder: Record<string, number> = { high: 1, medium: 2, low: 3 };
+        // Smart sort already applies a sort logic which includes priority.
+        // The sort in displayedTasks will ensure this is maintained or applied consistently.
+        const priorityOrder: Record<string, number> = { high: 1, medium: 2, low: 3, default: 4 };
         newTasks.sort((a,b) => {
-          const pA = priorityOrder[a.priority?.toLowerCase() || ''] || 4;
-          const pB = priorityOrder[b.priority?.toLowerCase() || ''] || 4;
+          const getPrioValue = (priority?: string) => {
+            if (!priority || priority.trim() === "" || priority === "none") return priorityOrder.default;
+            return priorityOrder[priority.toLowerCase()] || priorityOrder.default;
+          };
+          const pA = getPrioValue(a.priority);
+          const pB = getPrioValue(b.priority);
           if (pA !== pB) return pA - pB;
           return (a.createdAt ?? 0) - (b.createdAt ?? 0);
         });
@@ -162,7 +197,6 @@ export default function Home() {
       const result = await signIn('credentials', {
         email,
         password,
-        // No redirect: false, allow NextAuth to handle redirects
       });
 
       if (result?.error) {
@@ -181,7 +215,7 @@ export default function Home() {
     } catch (error: unknown) {
       let errorMessage = "An unexpected error occurred during login.";
       if (error instanceof Error && error.message) {
-        errorMessage = error.message; 
+        errorMessage = error.message;
       }
       toast({
         title: "Login System Error",
@@ -218,7 +252,7 @@ export default function Home() {
             <p className="text-muted-foreground mb-8">
               Log in to manage your tasks and experience smart sorting.
             </p>
-            
+
             <Button onClick={() => signIn("google", { callbackUrl: "/" })} size="lg" className="w-full mb-4 shadow-md hover:shadow-lg transition-shadow bg-primary hover:bg-primary/90">
               <LogIn className="mr-2 h-5 w-5" />
               Login with Google
@@ -233,26 +267,26 @@ export default function Home() {
             <form onSubmit={handleCredentialsLogin} className="space-y-6 text-left">
               <div className="space-y-2">
                 <Label htmlFor="email-login">Email</Label>
-                <Input 
-                  id="email-login" 
-                  type="email" 
-                  placeholder="user@example.com" 
-                  value={email} 
-                  onChange={(e) => setEmail(e.target.value)} 
-                  required 
+                <Input
+                  id="email-login"
+                  type="email"
+                  placeholder="user@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
                   className="bg-background border-input focus:ring-primary"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password-login">Password</Label>
                 <div className="relative">
-                  <Input 
-                    id="password-login" 
-                    type={showPassword ? "text" : "password"} 
-                    placeholder="••••••••" 
-                    value={password} 
-                    onChange={(e) => setPassword(e.target.value)} 
-                    required 
+                  <Input
+                    id="password-login"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
                     className="bg-background border-input focus:ring-primary pr-10"
                   />
                   <Button
@@ -269,13 +303,13 @@ export default function Home() {
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="remember-me" 
-                    checked={rememberMe} 
+                  <Checkbox
+                    id="remember-me"
+                    checked={rememberMe}
                     onCheckedChange={(checked) => setRememberMe(Boolean(checked))}
                   />
-                  <Label 
-                    htmlFor="remember-me" 
+                  <Label
+                    htmlFor="remember-me"
                     className="text-sm font-normal text-muted-foreground cursor-pointer"
                   >
                     Remember me
@@ -310,20 +344,35 @@ export default function Home() {
         <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
           <div className="flex items-baseline gap-2">
             <h2 className="text-2xl font-headline font-semibold text-foreground">Your Tasks</h2>
-            <span className="text-sm text-muted-foreground">(Total: {tasks.length})</span>
+            <span className="text-sm text-muted-foreground">
+              (Showing {displayedTasks.length} of {tasks.length} task{tasks.length === 1 ? "" : "s"})
+            </span>
           </div>
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-            <div className="relative w-full sm:min-w-[250px] md:min-w-[300px]">
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto flex-wrap">
+            <div className="relative w-full sm:w-auto sm:min-w-[200px] md:min-w-[230px]">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
               <Input
                 type="search"
-                placeholder="Search by title or notes..."
+                placeholder="Search tasks..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 w-full bg-background border-input focus:ring-primary shadow-sm"
               />
             </div>
-            <Button onClick={handleSmartSort} disabled={isSorting || tasks.length === 0} variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger className="w-full sm:w-auto sm:min-w-[170px] bg-background border-input focus:ring-primary shadow-sm">
+                <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
+                <SelectValue placeholder="Filter by priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Priorities</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="none">No Priority</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={handleSmartSort} disabled={isSorting || tasks.length === 0} variant="outline" className="shadow-sm hover:shadow-md transition-shadow w-full sm:w-auto">
               {isSorting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
@@ -331,19 +380,33 @@ export default function Home() {
               )}
               Smart Sort
             </Button>
-            <Button onClick={() => handleOpenTaskForm()} className="shadow-sm hover:shadow-md transition-shadow bg-primary hover:bg-primary/90">
+            <Button onClick={() => handleOpenTaskForm()} className="shadow-sm hover:shadow-md transition-shadow bg-primary hover:bg-primary/90 w-full sm:w-auto">
               <PlusCircle className="mr-2 h-4 w-4" />
               Add New Task
             </Button>
           </div>
         </div>
 
-        <TaskList
-          tasks={displayedTasks}
-          onEditTask={handleOpenTaskForm}
-          onDeleteTask={handleDeleteTask}
-          onReorderTasks={handleReorderTasks}
-        />
+        {tasks.length > 0 && displayedTasks.length === 0 && (
+          <div className="mt-12 flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-2 border-dashed border-border rounded-xl bg-card/50">
+            <SearchX size={64} className="mb-4 opacity-50" />
+            <h3 className="text-xl font-semibold mb-2 text-foreground">No Matching Tasks</h3>
+            <p className="max-w-sm">
+              Try adjusting your search or filter criteria.
+            </p>
+          </div>
+        )}
+
+        { (tasks.length === 0 || displayedTasks.length > 0) && (
+            <TaskList
+              tasks={displayedTasks}
+              onEditTask={handleOpenTaskForm}
+              onDeleteTask={handleDeleteTask}
+              onReorderTasks={handleReorderTasks}
+            />
+          )
+        }
+
       </main>
 
       <TaskForm
@@ -352,10 +415,11 @@ export default function Home() {
         onSubmit={handleSaveTask}
         taskToEdit={taskToEdit}
       />
-      
+
       <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
         © {new Date().getFullYear()} TaskTango. Crafted with 🧠 & ❤️.
       </footer>
     </div>
   );
 }
+
