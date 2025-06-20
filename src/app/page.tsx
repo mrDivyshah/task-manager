@@ -294,7 +294,10 @@ export default function Home() {
       <Header />
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-          <h2 className="text-2xl font-headline font-semibold text-foreground">Your Tasks</h2>
+          <div className="flex items-baseline gap-2">
+            <h2 className="text-2xl font-headline font-semibold text-foreground">Your Tasks</h2>
+            <span className="text-sm text-muted-foreground">(Total: {tasks.length})</span>
+          </div>
           <div className="flex gap-3">
             <Button onClick={handleSmartSort} disabled={isSorting} variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
               {isSorting ? (
