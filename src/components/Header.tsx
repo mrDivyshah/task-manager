@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Menu, LogIn, LogOut, User, Settings as SettingsIcon, Bell } from "lucide-react";
+import { Menu, LogIn, LogOut, User, Settings as SettingsIcon, Bell, Home as HomeIcon } from "lucide-react";
 import Link from 'next/link';
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -69,9 +69,16 @@ export function Header() {
 
   useEffect(() => {
     setMounted(true);
-    setLocalNotificationStyle(persistedNotificationStyle);
-    setLocalNotificationSoundEnabled(persistedNotificationSoundEnabled);
-  }, [persistedNotificationStyle, persistedNotificationSoundEnabled]);
+    // Only set local state from persisted state if it's different,
+    // to avoid unnecessary re-renders if they are already in sync.
+    if (persistedNotificationStyle !== localNotificationStyle) {
+        setLocalNotificationStyle(persistedNotificationStyle);
+    }
+    if (persistedNotificationSoundEnabled !== localNotificationSoundEnabled) {
+        setLocalNotificationSoundEnabled(persistedNotificationSoundEnabled);
+    }
+  }, [persistedNotificationStyle, persistedNotificationSoundEnabled, localNotificationStyle, localNotificationSoundEnabled]);
+
 
   const handleNotificationOpenChange = (open: boolean) => {
     if (open && mounted && localNotificationSoundEnabled) {
@@ -134,10 +141,6 @@ export function Header() {
                   <p className="text-sm text-muted-foreground">Here are your latest updates.</p>
                 </div>
                 <ActualNotificationList />
-                {/* Popovers typically close via Escape or clicking outside. 
-                    A close button here would require controlling Popover's open state.
-                    Omitting footer for simplicity in Popover.
-                */}
               </PopoverContent>
             </Popover>
           )}
@@ -184,6 +187,12 @@ export function Header() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/" className="flex items-center">
+                      <HomeIcon className="mr-2 h-4 w-4" />
+                      Home
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/profile" className="flex items-center">
                       <User className="mr-2 h-4 w-4" />
