@@ -33,7 +33,7 @@ import { Users } from "lucide-react";
 const taskFormSchema = z.object({
   title: z.string().min(1, "Title is required").max(100, "Title must be 100 characters or less"),
   notes: z.string().max(500, "Notes must be 500 characters or less").optional(),
-  priority: z.string().optional(), 
+  priority: z.string().optional(),
   teamId: z.string().optional(),
 });
 
@@ -54,26 +54,26 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
     defaultValues: {
       title: "",
       notes: "",
-      priority: "", 
-      teamId: "",
+      priority: "",
+      teamId: "__none__", // Default to "No Team / Personal"
     },
   });
 
   useEffect(() => {
-    if (isOpen) { 
+    if (isOpen) {
       if (taskToEdit) {
         form.reset({
           title: taskToEdit.title,
           notes: taskToEdit.notes,
-          priority: taskToEdit.priority || "", 
-          teamId: taskToEdit.teamId || "",
+          priority: taskToEdit.priority || "",
+          teamId: taskToEdit.teamId || "__none__", // If no teamId, select "No Team"
         });
       } else {
-        form.reset({
+        form.reset({ // For new tasks
           title: "",
           notes: "",
           priority: "",
-          teamId: "",
+          teamId: "__none__", // Default to "No Team"
         });
       }
     }
@@ -81,8 +81,12 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
 
 
   const handleSubmit = (data: TaskFormValues) => {
-    onSubmit(data, taskToEdit);
-    form.reset(); 
+    const processedData = {
+      ...data,
+      teamId: data.teamId === "__none__" ? "" : data.teamId, // Convert back to "" for storage/logic
+    };
+    onSubmit(processedData, taskToEdit);
+    form.reset(); // Resets to defaultValues, including teamId: "__none__"
   };
 
   return (
@@ -136,14 +140,14 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-foreground/80">Priority</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""}> 
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
                       <FormControl>
                         <SelectTrigger className="bg-background border-input focus:ring-primary">
                           <SelectValue placeholder="Select priority" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="none">None</SelectItem> 
+                        <SelectItem value="none">None</SelectItem>
                         <SelectItem value="low">Low</SelectItem>
                         <SelectItem value="medium">Medium</SelectItem>
                         <SelectItem value="high">High</SelectItem>
@@ -160,14 +164,14 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-foreground/80">Assign to Team</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger className="bg-background border-input focus:ring-primary">
                             <SelectValue placeholder="Select team (optional)" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">No Team / Personal</SelectItem>
+                          <SelectItem value="__none__">No Team / Personal</SelectItem>
                           {teams.map((team) => (
                             <SelectItem key={team.id} value={team.id}>
                               <div className="flex items-center">
