@@ -16,7 +16,16 @@ import { Button } from "@/components/ui/button";
 import { Menu, LogIn, LogOut, User, Settings as SettingsIcon, Bell } from "lucide-react";
 import Link from 'next/link';
 import { useSession, signIn, signOut } from "next-auth/react";
-import Image from 'next/image';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetFooter,
+  SheetClose,
+} from "@/components/ui/sheet";
 
 export function Header() {
   const { data: session, status } = useSession();
@@ -31,12 +40,6 @@ export function Header() {
     return names[0][0].toUpperCase();
   };
 
-  const handleNotificationClick = () => {
-    // Placeholder for notification functionality
-    console.log("Notification icon clicked");
-    // You could open a dropdown, navigate to a notifications page, etc.
-  };
-
   return (
     <header className="py-4 px-4 sm:px-6 lg:px-8 border-b border-border/50 shadow-sm bg-card">
       <div className="container mx-auto flex items-center justify-between">
@@ -48,10 +51,33 @@ export function Header() {
         </Link>
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleNotificationClick} aria-label="View notifications">
-            <Bell className="h-5 w-5" />
-            <span className="sr-only">Notifications</span>
-          </Button>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="h-9 w-9" aria-label="View notifications">
+                <Bell className="h-5 w-5" />
+                <span className="sr-only">Notifications</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right">
+              <SheetHeader>
+                <SheetTitle>Notifications</SheetTitle>
+                <SheetDescription>
+                  Here are your latest updates.
+                </SheetDescription>
+              </SheetHeader>
+              <div className="p-4 py-8">
+                <p className="text-sm text-muted-foreground text-center">
+                  No new notifications yet.
+                </p>
+                {/* Placeholder for actual notification items */}
+              </div>
+              <SheetFooter className="mt-auto">
+                <SheetClose asChild>
+                  <Button variant="outline" className="w-full">Close</Button>
+                </SheetClose>
+              </SheetFooter>
+            </SheetContent>
+          </Sheet>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon" className="h-9 w-9">
@@ -62,7 +88,7 @@ export function Header() {
                     <AvatarImage src={session.user.image} alt={session.user.name || "User Avatar"} />
                     <AvatarFallback>{getUserInitials(session.user.name)}</AvatarFallback>
                   </Avatar>
-                ) : session?.user ? ( // Fallback for user without image but logged in
+                ) : session?.user ? ( 
                   <Avatar className="h-8 w-8">
                     <AvatarFallback>{getUserInitials(session.user.name)}</AvatarFallback>
                   </Avatar>
@@ -110,7 +136,7 @@ export function Header() {
                 <>
                   <DropdownMenuLabel>Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => signIn("google")} className="flex items-center cursor-pointer">
+                  <DropdownMenuItem onClick={() => signIn("google", { callbackUrl: "/" })} className="flex items-center cursor-pointer">
                     <LogIn className="mr-2 h-4 w-4" />
                     Login with Google
                   </DropdownMenuItem>
