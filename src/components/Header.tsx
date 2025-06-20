@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'; // Added React import
 import { LogoIcon } from './icons/LogoIcon';
 import { ThemeToggle } from './ThemeToggle';
 import {
@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, LogIn, LogOut, User, Settings as SettingsIcon, Bell } from "lucide-react";
 import Link from 'next/link';
 import { useSession, signIn, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation"; // Added useRouter import
 import {
   Sheet,
   SheetContent,
@@ -33,22 +34,36 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import useLocalStorage from "@/hooks/useLocalStorage";
-import type { NotificationStyle } from "@/app/settings/page"; // Import the type
+import type { NotificationStyle } from "@/app/settings/page";
+
+// Define NotificationTriggerButton outside the Header component
+const NotificationTriggerButton = React.forwardRef<
+  HTMLButtonElement,
+  React.ComponentProps<typeof Button> & { 'aria-label': string }
+>((props, ref) => (
+  <Button ref={ref} variant="outline" size="icon" className="h-9 w-9" {...props}>
+    <Bell className="h-5 w-5" />
+    <span className="sr-only">Notifications</span>
+  </Button>
+));
+NotificationTriggerButton.displayName = "NotificationTriggerButton";
+
 
 export function Header() {
   const { data: session, status } = useSession();
+  const router = useRouter(); // Initialize router
   const isLoading = status === "loading";
 
   const [mounted, setMounted] = useState(false);
   const [localNotificationStyle, setLocalNotificationStyle] = useState<NotificationStyle>("dock");
   const [localNotificationSoundEnabled, setLocalNotificationSoundEnabled] = useState<boolean>(false);
 
-  // Values from localStorage will be undefined on first SSR pass, then update on client
   const [persistedNotificationStyle] = useLocalStorage<NotificationStyle>("tasktango-notification-style", "dock");
   const [persistedNotificationSoundEnabled] = useLocalStorage<boolean>("tasktango-notification-sound", false);
 
   useEffect(() => {
     setMounted(true);
+    // Ensure localStorage values are applied after mount
     setLocalNotificationStyle(persistedNotificationStyle);
     setLocalNotificationSoundEnabled(persistedNotificationSoundEnabled);
   }, [persistedNotificationStyle, persistedNotificationSoundEnabled]);
@@ -86,7 +101,6 @@ export function Header() {
         </p>
       </div>
       <SheetFooter className={`mt-auto ${localNotificationStyle === 'float' ? 'p-4 border-t' : ''}`}>
-         {/* Popover doesn't use SheetClose, so Button for float style */}
         {localNotificationStyle === 'dock' ? (
             <SheetClose asChild>
                 <Button variant="outline" className="w-full">Close</Button>
@@ -94,7 +108,7 @@ export function Header() {
         ) : (
              <Button variant="outline" className="w-full" onClick={() => {
                 // For Popover, manually control open state if needed or rely on default trigger behavior
-                // This button could be used to programmatically close Popover if Popover's open state was managed
+                // This button is more for visual consistency; Popovers typically close via Escape or clicking outside.
              }}>Close</Button>
         )}
       </SheetFooter>
@@ -116,10 +130,7 @@ export function Header() {
           {mounted && localNotificationStyle === "dock" && (
             <Sheet onOpenChange={handleNotificationOpenChange}>
               <SheetTrigger asChild>
-                <Button variant="outline" size="icon" className="h-9 w-9" aria-label="View notifications (Dock)">
-                  <Bell className="h-5 w-5" />
-                  <span className="sr-only">Notifications</span>
-                </Button>
+                <NotificationTriggerButton aria-label="View notifications (Dock)" />
               </SheetTrigger>
               <SheetContent side="right">
                 {notificationPanelContent}
@@ -130,10 +141,7 @@ export function Header() {
           {mounted && localNotificationStyle === "float" && (
              <Popover onOpenChange={handleNotificationOpenChange}>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="icon" className="h-9 w-9" aria-label="View notifications (Float)">
-                  <Bell className="h-5 w-5" />
-                  <span className="sr-only">Notifications</span>
-                </Button>
+                <NotificationTriggerButton aria-label="View notifications (Float)" />
               </PopoverTrigger>
               <PopoverContent className="w-80 p-0" align="end">
                 {notificationPanelContent}
@@ -141,7 +149,7 @@ export function Header() {
             </Popover>
           )}
           
-          {!mounted && ( // Fallback / placeholder while waiting for client-side mount
+          {!mounted && ( 
              <Button variant="outline" size="icon" className="h-9 w-9" aria-label="View notifications" disabled>
                 <Bell className="h-5 w-5" />
              </Button>
@@ -210,10 +218,9 @@ export function Header() {
                     Login with Google
                   </DropdownMenuItem>
                    <DropdownMenuItem onClick={() => {
-                      // Attempt to focus the email input on the main page if it exists
                       const mainPageEmailInput = document.getElementById('email-login');
                       if (mainPageEmailInput) mainPageEmailInput.focus();
-                      else router.push('/'); // Fallback if not on main page or input not found
+                      else router.push('/'); 
                     }} className="flex items-center cursor-pointer">
                     <LogIn className="mr-2 h-4 w-4" />
                     Login with Email
@@ -227,3 +234,4 @@ export function Header() {
     </header>
   );
 }
+
