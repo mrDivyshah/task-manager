@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -18,9 +20,25 @@ export default function ProfilePage() {
           <CardHeader>
             <CardTitle className="font-headline text-2xl">Profile</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">This is your profile page. You can view and edit your profile information here.</p>
-            {/* Placeholder for profile content */}
+          <CardContent className="space-y-6">
+            <div>
+              <Label className="text-base font-medium text-foreground">Account Information</Label>
+              <p className="text-sm text-muted-foreground mt-1">This is your profile page. You can view and edit your profile information here.</p>
+              {/* Placeholder for profile content */}
+            </div>
+
+            <Separator />
+
+            <div>
+              <Label className="text-base font-medium text-foreground">Subsidiary Options</Label>
+              <div className="mt-2 p-4 border rounded-lg bg-muted/20">
+                <p className="text-sm text-muted-foreground">
+                  Subsidiary options will be displayed here.
+                  {/* Example: <Input type="text" placeholder="Enter subsidiary ID" /> */}
+                </p>
+              </div>
+            </div>
+            
           </CardContent>
           <CardFooter className="flex justify-start border-t pt-6">
             <Button variant="outline" onClick={() => router.back()}>
