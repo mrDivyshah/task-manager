@@ -1,9 +1,8 @@
-import type {Metadata} from 'next';
-import { Inter } from 'next/font/google';
+
+import type { Metadata } from 'next';
+// Removed Inter font import as it's handled by direct Google Fonts link
 import './globals.css';
-import { Toaster } from "@/components/ui/toaster";
-import { ThemeProvider } from "@/components/ThemeProvider";
-import { SessionProvider } from "next-auth/react";
+import { ClientSessionProvider } from "@/components/ClientSessionProvider";
 
 
 export const metadata: Metadata = {
@@ -24,17 +23,9 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <SessionProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {children}
-            <Toaster />
-          </ThemeProvider>
-        </SessionProvider>
+        <ClientSessionProvider>
+          {children}
+        </ClientSessionProvider>
       </body>
     </html>
   );
