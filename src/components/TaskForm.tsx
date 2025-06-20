@@ -31,7 +31,7 @@ import { useEffect } from "react";
 const taskFormSchema = z.object({
   title: z.string().min(1, "Title is required").max(100, "Title must be 100 characters or less"),
   notes: z.string().max(500, "Notes must be 500 characters or less").optional(),
-  priority: z.string().optional(),
+  priority: z.string().optional(), // "none", "low", "medium", "high", or "" (for placeholder)
 });
 
 type TaskFormValues = z.infer<typeof taskFormSchema>;
@@ -49,30 +49,32 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
     defaultValues: {
       title: "",
       notes: "",
-      priority: "",
+      priority: "", // Empty string means placeholder "Select priority" will be shown
     },
   });
 
   useEffect(() => {
-    if (taskToEdit) {
-      form.reset({
-        title: taskToEdit.title,
-        notes: taskToEdit.notes,
-        priority: taskToEdit.priority || "",
-      });
-    } else {
-      form.reset({
-        title: "",
-        notes: "",
-        priority: "",
-      });
+    if (isOpen) { // Only reset form when dialog opens
+      if (taskToEdit) {
+        form.reset({
+          title: taskToEdit.title,
+          notes: taskToEdit.notes,
+          priority: taskToEdit.priority || "", // if priority is undefined, use "" for placeholder
+        });
+      } else {
+        form.reset({
+          title: "",
+          notes: "",
+          priority: "",
+        });
+      }
     }
   }, [taskToEdit, form, isOpen]);
 
 
   const handleSubmit = (data: TaskFormValues) => {
     onSubmit(data, taskToEdit);
-    form.reset();
+    form.reset(); // Reset after successful submission
   };
 
   return (
@@ -125,14 +127,14 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-foreground/80">Priority</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value || ""}> {/* Ensure value is never undefined for Select */}
                     <FormControl>
                       <SelectTrigger className="bg-background border-input focus:ring-primary">
                         <SelectValue placeholder="Select priority" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem> {/* Changed value from "" to "none" */}
                       <SelectItem value="low">Low</SelectItem>
                       <SelectItem value="medium">Medium</SelectItem>
                       <SelectItem value="high">High</SelectItem>

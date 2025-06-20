@@ -53,10 +53,23 @@ export default function Home() {
     data: { title: string; notes?: string; priority?: string },
     existingTask?: Task
   ) => {
+    // If form sends "none" for priority, treat as undefined. Otherwise, use the value or undefined if empty.
+    const taskPriorityToSave = data.priority === "none" 
+      ? undefined 
+      : (data.priority as Task['priority'] || undefined);
+
     if (existingTask) {
       setTasks(
         tasks.map((task) =>
-          task.id === existingTask.id ? { ...task, ...data, priority: data.priority as Task['priority'] || undefined, createdAt: task.createdAt || Date.now() } : task
+          task.id === existingTask.id 
+            ? { 
+                ...task, 
+                title: data.title, 
+                notes: data.notes || "", 
+                priority: taskPriorityToSave, 
+                createdAt: task.createdAt || Date.now() 
+              } 
+            : task
         )
       );
       toast({ title: "Task Updated", description: `"${data.title}" has been updated.` });
@@ -65,7 +78,7 @@ export default function Home() {
         id: generateId(),
         title: data.title,
         notes: data.notes || "",
-        priority: data.priority as Task['priority'] || undefined,
+        priority: taskPriorityToSave,
         createdAt: Date.now(),
       };
       setTasks([...tasks, newTask]);
@@ -144,10 +157,6 @@ export default function Home() {
         // No redirect: false, allow NextAuth to handle redirects
       });
 
-      // This block might be reached if signIn itself had an issue but didn't throw,
-      // or if a redirect is happening but the promise resolved first.
-      // NextAuth's default behavior is to redirect on error (e.g. /api/auth/error?error=CredentialsSignin)
-      // or on success.
       if (result?.error) {
         let description = "Login failed. Please check your credentials.";
         if (result.error === "CredentialsSignin") {
@@ -161,14 +170,10 @@ export default function Home() {
             variant: "destructive",
         });
       }
-      // If `result` is null/undefined or has no error, a redirect is likely in progress for success or handled error.
-      // No explicit success toast here as the page will reload/navigate.
-
     } catch (error: unknown) {
-      // This catch block is hit for "Failed to fetch" or other unhandled promise rejections from signIn.
       let errorMessage = "An unexpected error occurred during login.";
       if (error instanceof Error && error.message) {
-        errorMessage = error.message; // This is where "Failed to fetch" is likely set.
+        errorMessage = error.message; 
       }
       toast({
         title: "Login System Error",
