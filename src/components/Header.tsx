@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Menu, LogIn, LogOut, User, Settings as SettingsIcon, Bell, Home as HomeIcon, Users } from "lucide-react";
+import { Menu, LogIn, LogOut, User, Settings as SettingsIcon, Bell, Home as HomeIcon, Users, Info } from "lucide-react";
 import Link from 'next/link';
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
@@ -202,6 +202,12 @@ export function Header() {
                       Manage Teams
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild className={cn(pathname === "/about" && "text-primary font-semibold")}>
+                    <Link href="/about" className="flex items-center">
+                      <Info className="mr-2 h-4 w-4" />
+                      About
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/' })} className="flex items-center cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />
@@ -212,6 +218,12 @@ export function Header() {
                 <>
                   <DropdownMenuLabel>Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                   <DropdownMenuItem asChild className={cn(pathname === "/" && "text-primary font-semibold")}>
+                    <Link href="/" className="flex items-center">
+                      <HomeIcon className="mr-2 h-4 w-4" />
+                      Home
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => signIn("google", { callbackUrl: "/" })} className="flex items-center cursor-pointer">
                     <LogIn className="mr-2 h-4 w-4" />
                     Login with Google
@@ -224,6 +236,12 @@ export function Header() {
                     <LogIn className="mr-2 h-4 w-4" />
                     Login with Email
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild className={cn(pathname === "/about" && "text-primary font-semibold")}>
+                    <Link href="/about" className="flex items-center">
+                      <Info className="mr-2 h-4 w-4" />
+                      About
+                    </Link>
+                  </DropdownMenuItem>
                 </>
               )}
             </DropdownMenuContent>
@@ -233,4 +251,3 @@ export function Header() {
     </header>
   );
 }
-
