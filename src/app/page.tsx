@@ -137,29 +137,21 @@ export default function Home() {
     event.preventDefault();
     setIsCredentialsLoading(true);
     try {
-      // When redirect is not false (default behavior), NextAuth handles redirects.
-      // A successful signIn will navigate. If it fails due to an auth error,
-      // NextAuth usually redirects to an error page or the current page with error query params.
-      // The `signIn` promise might not resolve with `result.error` in this scenario.
-      // The `catch` block below is more likely to catch network errors or severe unhandled NextAuth issues.
       const result = await signIn('credentials', {
         email,
         password,
-        // callbackUrl: "/", // Using default redirect behavior, NextAuth handles this.
+        // No redirect: false, allow NextAuth to handle redirects
       });
 
-      // This block might only be reached if `signIn` itself had an issue but didn't throw,
+      // This block might be reached if signIn itself had an issue but didn't throw,
       // or if a redirect is happening but the promise resolved first.
       // NextAuth's default behavior is to redirect on error (e.g. /api/auth/error?error=CredentialsSignin)
       // or on success.
       if (result?.error) {
         let description = "Login failed. Please check your credentials.";
-        // Check for common NextAuth error codes that might be passed if a redirect occurs
-        // or if `redirect: false` was used (which it isn't here).
         if (result.error === "CredentialsSignin") {
           description = "Invalid email or password. (Hint: user@example.com / password123)";
         } else if (result.error !== "Callback" && result.error !== "SessionRequired" && result.error !== "OAuthAccountNotLinked" && result.error !== "Default") {
-          // "Default" can sometimes be a generic error from NextAuth
           description = `Error: ${result.error}`;
         }
          toast({
@@ -173,13 +165,13 @@ export default function Home() {
 
     } catch (error: unknown) {
       // This catch block is hit for "Failed to fetch" or other unhandled promise rejections from signIn.
-      let errorMessage = "An unexpected error occurred during login. Please try again.";
+      let errorMessage = "An unexpected error occurred during login.";
       if (error instanceof Error && error.message) {
         errorMessage = error.message; // This is where "Failed to fetch" is likely set.
       }
       toast({
         title: "Login System Error",
-        description: `Details: ${errorMessage}. Please check server logs and network requests. Ensure NEXTAUTH_URL is correct.`,
+        description: `Error: "${errorMessage}". CRITICAL: Check your Next.js server terminal logs for errors from NextAuth. Also verify NEXTAUTH_URL in .env is correct (e.g., http://localhost:9002).`,
         variant: "destructive",
       });
     } finally {
@@ -340,3 +332,4 @@ export default function Home() {
     </div>
   );
 }
+
