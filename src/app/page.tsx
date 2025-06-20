@@ -11,7 +11,7 @@ import { TaskList } from "@/components/TaskList";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { useToast } from "@/hooks/use-toast";
 import type { Task } from "@/types";
-import { PlusCircle, Wand2, Loader2, LogIn, Mail, Eye, EyeOff } from "lucide-react";
+import { PlusCircle, Wand2, Loader2, LogIn, Mail, Eye, EyeOff, Search } from "lucide-react";
 import { smartSortTasksAction } from "./actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,9 +35,18 @@ export default function Home() {
   const [showPassword, setShowPassword] = useState(false);
   const [isCredentialsLoading, setIsCredentialsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
 
-  const sortedTasks = [...tasks].sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
+  const displayedTasks = tasks
+    .filter(task => {
+      const term = searchTerm.toLowerCase();
+      return (
+        task.title.toLowerCase().includes(term) ||
+        (task.notes && task.notes.toLowerCase().includes(term))
+      );
+    })
+    .sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
 
   const handleOpenTaskForm = (task?: Task) => {
     setTaskToEdit(task);
@@ -53,7 +62,6 @@ export default function Home() {
     data: { title: string; notes?: string; priority?: string },
     existingTask?: Task
   ) => {
-    // If form sends "none" for priority, treat as undefined. Otherwise, use the value or undefined if empty.
     const taskPriorityToSave = data.priority === "none" 
       ? undefined 
       : (data.priority as Task['priority'] || undefined);
@@ -304,8 +312,18 @@ export default function Home() {
             <h2 className="text-2xl font-headline font-semibold text-foreground">Your Tasks</h2>
             <span className="text-sm text-muted-foreground">(Total: {tasks.length})</span>
           </div>
-          <div className="flex gap-3">
-            <Button onClick={handleSmartSort} disabled={isSorting} variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            <div className="relative w-full sm:min-w-[250px] md:min-w-[300px]">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              <Input
+                type="search"
+                placeholder="Search by title or notes..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-full bg-background border-input focus:ring-primary shadow-sm"
+              />
+            </div>
+            <Button onClick={handleSmartSort} disabled={isSorting || tasks.length === 0} variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
               {isSorting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
@@ -321,7 +339,7 @@ export default function Home() {
         </div>
 
         <TaskList
-          tasks={sortedTasks}
+          tasks={displayedTasks}
           onEditTask={handleOpenTaskForm}
           onDeleteTask={handleDeleteTask}
           onReorderTasks={handleReorderTasks}
