@@ -1,12 +1,12 @@
 
 "use client";
 
-import * as React from "react"; // Added this line
+import * as React from "react"; 
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Moon, Sun, Cog, PanelRightClose, AppWindow, Settings2, ToggleRight, ToggleLeft, Users, KeyRound, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Moon, Sun, Cog, PanelRightClose, AppWindow, Settings2, ToggleRight, ToggleLeft, Users, KeyRound, ShieldAlert, CheckCircle2 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState, useEffect, type ChangeEvent, type KeyboardEvent, type FormEvent } from "react";
 import { Label } from "@/components/ui/label";
@@ -51,7 +51,7 @@ export default function SettingsPage() {
   }, []);
 
   const handleTeamCodeChange = (index: number, value: string) => {
-    if (/^[0-9]?$/.test(value)) { // Allow empty or single digit
+    if (/^[0-9]?$/.test(value)) { 
       const newTeamCode = [...teamCode];
       newTeamCode[index] = value;
       setTeamCode(newTeamCode);
@@ -80,7 +80,11 @@ export default function SettingsPage() {
       return;
     }
     console.log("Creating team:", { teamName: newTeamName, teamCode: finalTeamCode });
-    toast({ title: "Team Creation Initiated", description: `Team "${newTeamName}" with code ${finalTeamCode} (logged to console).` });
+    toast({ 
+        title: "Team Created Successfully!", 
+        description: `Team "${newTeamName}" with code ${finalTeamCode} has been initiated. (Details logged to console)`,
+        icon: <CheckCircle2 className="h-5 w-5 text-primary" /> 
+    });
     setNewTeamName("");
     setTeamCode(Array(6).fill(""));
     setIsCreateTeamDialogOpen(false);
@@ -292,7 +296,7 @@ export default function SettingsPage() {
                                 key={index}
                                 id={`team-code-${index}`}
                                 ref={teamCodeInputsRef[index]}
-                                type="text" // Use text to allow better control, pattern for numbers
+                                type="text" 
                                 maxLength={1}
                                 value={digit}
                                 onChange={(e) => handleTeamCodeChange(index, e.target.value)}
