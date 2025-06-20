@@ -2,10 +2,10 @@
 "use client";
 
 import { Header } from "@/components/Header";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Moon, Sun, Cog, Bell } from "lucide-react";
+import { ArrowLeft, Moon, Sun, Cog } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
@@ -46,6 +46,12 @@ export default function SettingsPage() {
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Card className="w-full max-w-2xl mx-auto shadow-lg rounded-xl">
           <CardHeader>
+            <div className="flex justify-start mb-4">
+              <Button variant="outline" onClick={() => router.back()}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+              </Button>
+            </div>
             <CardTitle className="font-headline text-2xl">Settings</CardTitle>
           </CardHeader>
           <CardContent className="space-y-8">
@@ -122,12 +128,6 @@ export default function SettingsPage() {
             </div>
 
           </CardContent>
-          <CardFooter className="flex justify-start border-t pt-6">
-            <Button variant="outline" onClick={() => router.back()}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
-            </Button>
-          </CardFooter>
         </Card>
       </main>
       <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
@@ -136,3 +136,6 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+
+    
