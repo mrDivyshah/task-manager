@@ -1,28 +1,29 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession, signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
 import { TaskForm } from "@/components/TaskForm";
 import { TaskList } from "@/components/TaskList";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { useToast } from "@/hooks/use-toast";
-import type { Task, SmartSortTaskInput } from "@/types";
-import { PlusCircle, Wand2, Loader2 } from "lucide-react";
+import type { Task } from "@/types";
+import { PlusCircle, Wand2, Loader2, LogIn } from "lucide-react";
 import { smartSortTasksAction } from "./actions";
 
-// Helper to generate a simple unique ID
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
 export default function Home() {
+  const { data: session, status } = useSession();
   const [tasks, setTasks] = useLocalStorage<Task[]>("tasktango-tasks", []);
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | undefined>(undefined);
   const [isSorting, setIsSorting] = useState(false);
   const { toast } = useToast();
 
-  // Ensure tasks are sorted by creation time initially or by user order
-  const sortedTasks = [...tasks].sort((a, b) => a.createdAt - b.createdAt);
+  const sortedTasks = [...tasks].sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
 
   const handleOpenTaskForm = (task?: Task) => {
     setTaskToEdit(task);
@@ -41,7 +42,7 @@ export default function Home() {
     if (existingTask) {
       setTasks(
         tasks.map((task) =>
-          task.id === existingTask.id ? { ...task, ...data } : task
+          task.id === existingTask.id ? { ...task, ...data, createdAt: task.createdAt || Date.now() } : task
         )
       );
       toast({ title: "Task Updated", description: `"${data.title}" has been updated.` });
@@ -72,7 +73,6 @@ export default function Home() {
 
   const handleReorderTasks = (reorderedTasks: Task[]) => {
     setTasks(reorderedTasks);
-    // No toast for reordering to avoid being too noisy
   };
 
   const handleSmartSort = async () => {
@@ -80,7 +80,6 @@ export default function Home() {
       toast({
         title: "No tasks to sort",
         description: "Add some tasks before using Smart Sort.",
-        variant: "default",
       });
       return;
     }
@@ -95,15 +94,12 @@ export default function Home() {
           }
           return task;
         });
-        // Optionally, re-sort by AI priority here, or leave it to user drag-and-drop
-        // For now, just update metadata. User can reorder based on this.
-        // Example: Sort by priority (high > medium > low), then by original order.
-        const priorityOrder = { high: 1, medium: 2, low: 3 };
+        const priorityOrder: Record<string, number> = { high: 1, medium: 2, low: 3 };
         newTasks.sort((a,b) => {
-          const pA = a.priority ? priorityOrder[a.priority.toLowerCase() as keyof typeof priorityOrder] || 4 : 4;
-          const pB = b.priority ? priorityOrder[b.priority.toLowerCase() as keyof typeof priorityOrder] || 4 : 4;
+          const pA = priorityOrder[a.priority?.toLowerCase() || ''] || 4;
+          const pB = priorityOrder[b.priority?.toLowerCase() || ''] || 4;
           if (pA !== pB) return pA - pB;
-          return a.createdAt - b.createdAt; // fallback to creation time
+          return (a.createdAt ?? 0) - (b.createdAt ?? 0);
         });
         return newTasks;
       });
@@ -123,6 +119,40 @@ export default function Home() {
     }
   };
 
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex items-center justify-center">
+          <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        </main>
+        <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
+          © {new Date().getFullYear()} TaskTango. Crafted with 🧠 & ❤️.
+        </footer>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col items-center justify-center text-center">
+          <h2 className="text-3xl font-headline font-semibold text-foreground mb-4">Welcome to TaskTango!</h2>
+          <p className="text-lg text-muted-foreground mb-8 max-w-md">
+            Please log in to manage your tasks efficiently and experience smart sorting powered by AI.
+          </p>
+          <Button onClick={() => signIn("google")} size="lg" className="shadow-md hover:shadow-lg transition-shadow bg-primary hover:bg-primary/90">
+            <LogIn className="mr-2 h-5 w-5" />
+            Login with Google
+          </Button>
+        </main>
+        <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
+          © {new Date().getFullYear()} TaskTango. Crafted with 🧠 & ❤️.
+        </footer>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
