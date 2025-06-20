@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Pencil, Trash2, GripVertical, Tag, Zap, Clock } from "lucide-react";
@@ -88,9 +89,8 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
           <Pencil size={16} className="mr-2" />
           Edit
         </Button>
-        <Button variant="destructive" size="sm" onClick={() => onDelete(task.id)} aria-label={`Delete task ${task.title}`}>
-          <Trash2 size={16} className="mr-2" />
-          Delete
+        <Button variant="destructive" size="icon" className="h-9 w-9" onClick={() => onDelete(task.id)} aria-label={`Delete task ${task.title}`}>
+          <Trash2 size={16} />
         </Button>
       </CardFooter>
     </Card>

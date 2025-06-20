@@ -70,6 +70,9 @@ export default function Home() {
       if (pA !== pB) return pA - pB;
       return (a.createdAt ?? 0) - (b.createdAt ?? 0);
     });
+  
+  const allTasksAreDisplayed = displayedTasks.length === tasks.length && searchTerm.trim() === "" && priorityFilter === "all";
+
 
   const handleOpenTaskForm = (task?: Task) => {
     setTaskToEdit(task);
@@ -355,7 +358,9 @@ export default function Home() {
           <div className="flex items-baseline gap-2">
             <h2 className="text-2xl font-headline font-semibold text-foreground">Your Tasks</h2>
             <span className="text-sm text-muted-foreground">
-              ({displayedTasks.length} of {tasks.length} task{tasks.length === 1 ? "" : "s"})
+              {allTasksAreDisplayed
+                ? `(${tasks.length} task${tasks.length === 1 ? "" : "s"})`
+                : `(${displayedTasks.length} of ${tasks.length} task${tasks.length === 1 ? "" : "s"} shown)`}
             </span>
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto flex-wrap">
