@@ -38,7 +38,14 @@ export default function Home() {
   const [rememberMe, setRememberMe] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  
+  const [mounted, setMounted] = useState(false);
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
+  useEffect(() => {
+    setMounted(true);
+    setCurrentYear(new Date().getFullYear());
+  }, []);
 
   const displayedTasks = tasks
     .filter(task => {
@@ -204,7 +211,7 @@ export default function Home() {
       const result = await signIn('credentials', {
         email,
         password,
-        redirect: false, // Important: handle redirect manually or based on result
+        redirect: false, 
       });
 
       if (result?.error) {
@@ -221,8 +228,7 @@ export default function Home() {
             icon: <AlertTriangle className="h-5 w-5" />,
         });
       } else if (result?.ok) {
-        // Login successful, NextAuth.js will handle session and redirect if callbackUrl is set or default behavior.
-        // router.push('/') or wherever you want to redirect successful logins if not handled by NextAuth.js
+        // Login successful
       }
     } catch (error: unknown) {
       let errorMessage = "An unexpected error occurred during login.";
@@ -249,7 +255,7 @@ export default function Home() {
           <Loader2 className="h-16 w-16 animate-spin text-primary" />
         </main>
         <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-          © {new Date().getFullYear()} TaskTango. Crafted with 🧠 & ❤️.
+          © {currentYear} TaskTango. Crafted with 🧠 & ❤️.
         </footer>
       </div>
     );
@@ -344,7 +350,21 @@ export default function Home() {
           </div>
         </main>
         <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-          © {new Date().getFullYear()} TaskTango. Crafted with 🧠 & ❤️.
+          © {currentYear} TaskTango. Crafted with 🧠 & ❤️.
+        </footer>
+      </div>
+    );
+  }
+  
+  if (!mounted) {
+     return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex items-center justify-center">
+          <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        </main>
+        <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
+          © {currentYear} TaskTango. Crafted with 🧠 & ❤️.
         </footer>
       </div>
     );
@@ -432,8 +452,9 @@ export default function Home() {
       />
 
       <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-        © {new Date().getFullYear()} TaskTango. Crafted with 🧠 & ❤️.
+        © {currentYear} TaskTango. Crafted with 🧠 & ❤️.
       </footer>
     </div>
   );
 }
+

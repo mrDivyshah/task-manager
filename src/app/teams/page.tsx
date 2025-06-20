@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import type { Team } from "@/types";
-import { ArrowLeft, Edit3, Users, Trash2, PlusCircle, Save, XCircle, CheckCircle2, AlertTriangle, Info, SearchX, UserPlus } from "lucide-react";
+import { ArrowLeft, Edit3, Users, Trash2, PlusCircle, Save, XCircle, CheckCircle2, AlertTriangle, Info, SearchX, UserPlus, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from 'date-fns';
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
@@ -32,6 +32,14 @@ export default function TeamsPage() {
   const [isJoinTeamDialogOpen, setIsJoinTeamDialogOpen] = useState(false);
   const [joinTeamCodeDigits, setJoinTeamCodeDigits] = useState<string[]>(Array(6).fill(""));
   const joinTeamCodeInputsRef = Array(6).fill(null).map(() => React.createRef<HTMLInputElement>());
+
+  const [mounted, setMounted] = useState(false);
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+
+  useEffect(() => {
+    setMounted(true);
+    setCurrentYear(new Date().getFullYear());
+  }, []);
 
 
   const handleOpenEditDialog = (team: Team) => {
@@ -165,6 +173,20 @@ export default function TeamsPage() {
     setJoinTeamCodeDigits(Array(6).fill(""));
   };
 
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex items-center justify-center">
+           <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        </main>
+        <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
+          © {currentYear} TaskTango. Crafted with 🧠 & ❤️.
+        </footer>
+      </div>
+    );
+  }
+
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -181,7 +203,7 @@ export default function TeamsPage() {
                     <Button 
                         onClick={() => {
                             setIsJoinTeamDialogOpen(true);
-                            setJoinTeamCodeDigits(Array(6).fill("")); // Reset on open
+                            setJoinTeamCodeDigits(Array(6).fill("")); 
                         }} 
                         variant="outline" 
                         className="shadow-sm hover:shadow-md transition-shadow w-full sm:w-auto"
@@ -253,7 +275,6 @@ export default function TeamsPage() {
         </Card>
       </main>
 
-      {/* Edit Team Dialog */}
       {teamToEdit && (
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="sm:max-w-[425px] bg-card rounded-lg shadow-xl">
@@ -299,10 +320,9 @@ export default function TeamsPage() {
         </Dialog>
       )}
 
-      {/* Join Team Dialog */}
       <Dialog open={isJoinTeamDialogOpen} onOpenChange={(isOpen) => {
           setIsJoinTeamDialogOpen(isOpen);
-          if (!isOpen) setJoinTeamCodeDigits(Array(6).fill("")); // Reset on close
+          if (!isOpen) setJoinTeamCodeDigits(Array(6).fill("")); 
       }}>
         <DialogContent className="sm:max-w-md bg-card rounded-lg shadow-xl">
           <DialogHeader>
@@ -348,7 +368,7 @@ export default function TeamsPage() {
       </Dialog>
 
        <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-        © {new Date().getFullYear()} TaskTango. Crafted with 🧠 & ❤️.
+        © {currentYear} TaskTango. Crafted with 🧠 & ❤️.
       </footer>
     </div>
   );

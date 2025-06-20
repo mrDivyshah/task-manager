@@ -6,7 +6,7 @@ import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Moon, Sun, Cog, PanelRightClose, AppWindow, Settings2, ToggleRight, ToggleLeft, Users, KeyRound, ShieldAlert, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Moon, Sun, Cog, PanelRightClose, AppWindow, Settings2, ToggleRight, ToggleLeft, Users, KeyRound, ShieldAlert, CheckCircle2, Loader2 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState, useEffect, type ChangeEvent, type KeyboardEvent, type FormEvent } from "react";
 import { Label } from "@/components/ui/label";
@@ -27,6 +27,7 @@ export default function SettingsPage() {
   const { theme, setTheme, systemTheme } = useTheme();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   const [notificationSoundEnabled, setNotificationSoundEnabled] = useLocalStorage<boolean>(
     "tasktango-notification-sound",
@@ -50,6 +51,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setMounted(true);
+    setCurrentYear(new Date().getFullYear());
   }, []);
 
   const handleTeamCodeChange = (index: number, value: string) => {
@@ -86,7 +88,7 @@ export default function SettingsPage() {
       id: generateId(),
       name: newTeamName.trim(),
       code: finalTeamCode,
-      members: [], // Initially no members, or add current user if applicable
+      members: [], 
       createdAt: Date.now(),
     };
 
@@ -104,14 +106,16 @@ export default function SettingsPage() {
 
 
   if (!mounted) {
+    // Render a minimal skeleton or null to avoid hydration mismatch
+    // Or a loader if the entire page content depends on client-side state
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
         <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex items-center justify-center">
-          {/* You can add a loader here if you prefer */}
+           <Loader2 className="h-16 w-16 animate-spin text-primary" />
         </main>
         <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-          © {new Date().getFullYear()} TaskTango. Crafted with 🧠 & ❤️.
+          © {currentYear} TaskTango. Crafted with 🧠 & ❤️.
         </footer>
       </div>
     );
@@ -270,7 +274,7 @@ export default function SettingsPage() {
                 {advancedFeaturesEnabled && (
                   <Dialog open={isCreateTeamDialogOpen} onOpenChange={(isOpen) => {
                         setIsCreateTeamDialogOpen(isOpen);
-                        if (!isOpen) { // Reset form on close
+                        if (!isOpen) { 
                             setNewTeamName("");
                             setTeamCode(Array(6).fill(""));
                         }
@@ -356,7 +360,7 @@ export default function SettingsPage() {
         </Card>
       </main>
       <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-        © {new Date().getFullYear()} TaskTango. Crafted with 🧠 & ❤️.
+        © {currentYear} TaskTango. Crafted with 🧠 & ❤️.
       </footer>
     </div>
   );

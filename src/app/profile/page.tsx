@@ -38,15 +38,17 @@ export default function ProfilePage() {
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
     if (session?.user) {
       setFormData({
         name: session.user.name || "",
         email: session.user.email || "",
-        gender: (session.user as any).gender || "other", // Assuming gender might be on session
+        gender: (session.user as any).gender || "other", 
       });
     }
+    setCurrentYear(new Date().getFullYear());
   }, [session]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -60,7 +62,6 @@ export default function ProfilePage() {
 
   const handleEditToggle = () => {
     if (isEditing && session?.user) {
-      // If canceling, revert to session data
       setFormData({
         name: session.user.name || "",
         email: session.user.email || "",
@@ -73,12 +74,8 @@ export default function ProfilePage() {
   const handleSaveProfile = async (e: FormEvent) => {
     e.preventDefault();
     setIsSavingProfile(true);
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Example of how you might update the session if your backend confirms the update
-    // await updateSession({ ...session, user: { ...session?.user, name: formData.name, email: formData.email } });
-
     toast({
       title: "Profile Updated",
       description: "Your profile information has been saved.",
@@ -109,7 +106,6 @@ export default function ProfilePage() {
         return;
     }
     setIsUpdatingPassword(true);
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     toast({
       title: "Password Updated",
@@ -143,7 +139,7 @@ export default function ProfilePage() {
   }
 
   if (!session) {
-    router.push("/"); // Redirect if not authenticated
+    router.push("/"); 
     return null;
   }
 
@@ -305,7 +301,7 @@ export default function ProfilePage() {
         </Card>
       </main>
       <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-        © {new Date().getFullYear()} TaskTango. Crafted with 🧠 & ❤️.
+        © {currentYear} TaskTango. Crafted with 🧠 & ❤️.
       </footer>
     </div>
   );

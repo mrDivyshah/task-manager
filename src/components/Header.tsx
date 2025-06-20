@@ -63,25 +63,16 @@ export function Header() {
   const isLoading = status === "loading";
 
   const [mounted, setMounted] = useState(false);
-  const [localNotificationStyle, setLocalNotificationStyle] = useState<NotificationStyle>("dock");
-  const [localNotificationSoundEnabled, setLocalNotificationSoundEnabled] = useState<boolean>(false);
-
   const [persistedNotificationStyle] = useLocalStorage<NotificationStyle>("tasktango-notification-style", "dock");
   const [persistedNotificationSoundEnabled] = useLocalStorage<boolean>("tasktango-notification-sound", false);
 
   useEffect(() => {
     setMounted(true);
-    if (persistedNotificationStyle !== localNotificationStyle) {
-        setLocalNotificationStyle(persistedNotificationStyle);
-    }
-    if (persistedNotificationSoundEnabled !== localNotificationSoundEnabled) {
-        setLocalNotificationSoundEnabled(persistedNotificationSoundEnabled);
-    }
-  }, [persistedNotificationStyle, persistedNotificationSoundEnabled, localNotificationStyle, localNotificationSoundEnabled]);
+  }, []);
 
 
   const handleNotificationOpenChange = (open: boolean) => {
-    if (open && mounted && localNotificationSoundEnabled) {
+    if (open && mounted && persistedNotificationSoundEnabled) {
       console.log("Playing notification sound... (beep boop!)");
       // To play an actual sound, you would do something like:
       // const audio = new Audio('/sounds/notification.mp3'); // Ensure sound file is in /public/sounds
@@ -110,7 +101,7 @@ export function Header() {
         <div className="flex items-center gap-3">
           <ThemeToggle />
 
-          {mounted && localNotificationStyle === "dock" && (
+          {mounted && persistedNotificationStyle === "dock" && (
             <Sheet onOpenChange={handleNotificationOpenChange}>
               <SheetTrigger asChild>
                 <NotificationTriggerButton aria-label="View notifications (Dock)" />
@@ -130,7 +121,7 @@ export function Header() {
             </Sheet>
           )}
 
-          {mounted && localNotificationStyle === "float" && (
+          {mounted && persistedNotificationStyle === "float" && (
              <Popover onOpenChange={handleNotificationOpenChange}>
               <PopoverTrigger asChild>
                 <NotificationTriggerButton aria-label="View notifications (Float)" />
