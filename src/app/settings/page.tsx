@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Header } from "@/components/Header";
@@ -46,12 +45,10 @@ export default function SettingsPage() {
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Card className="w-full max-w-2xl mx-auto shadow-lg rounded-xl">
           <CardHeader>
-            <div className="flex justify-start mb-4">
-              <Button variant="outline" onClick={() => router.back()}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-              </Button>
-            </div>
+            <Button variant="outline" onClick={() => router.back()} className="self-start">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
             <CardTitle className="font-headline text-2xl">Settings</CardTitle>
           </CardHeader>
           <CardContent className="space-y-8">
