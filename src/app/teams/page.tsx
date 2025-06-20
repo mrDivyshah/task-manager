@@ -1,8 +1,8 @@
 
 "use client";
 
-import type { FormEvent } from "react";
-import { useState, useEffect } from "react";
+import type { FormEvent, KeyboardEvent } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Header } from "@/components/Header";
@@ -30,7 +30,8 @@ export default function TeamsPage() {
   const [editedTeamName, setEditedTeamName] = useState("");
 
   const [isJoinTeamDialogOpen, setIsJoinTeamDialogOpen] = useState(false);
-  const [joinTeamCode, setJoinTeamCode] = useState("");
+  const [joinTeamCodeDigits, setJoinTeamCodeDigits] = useState<string[]>(Array(6).fill(""));
+  const joinTeamCodeInputsRef = Array(6).fill(null).map(() => React.createRef<HTMLInputElement>());
 
 
   const handleOpenEditDialog = (team: Team) => {
@@ -82,6 +83,24 @@ export default function TeamsPage() {
     }
   };
 
+  const handleJoinTeamCodeChange = (index: number, value: string) => {
+    if (/^[0-9]?$/.test(value)) {
+      const newCode = [...joinTeamCodeDigits];
+      newCode[index] = value;
+      setJoinTeamCodeDigits(newCode);
+
+      if (value && index < 5 && joinTeamCodeInputsRef[index + 1]?.current) {
+        joinTeamCodeInputsRef[index + 1].current?.focus();
+      }
+    }
+  };
+
+  const handleJoinTeamCodeKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !joinTeamCodeDigits[index] && index > 0 && joinTeamCodeInputsRef[index - 1]?.current) {
+      joinTeamCodeInputsRef[index - 1].current?.focus();
+    }
+  };
+
   const handleJoinTeamSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!session?.user?.email) {
@@ -94,7 +113,9 @@ export default function TeamsPage() {
       return;
     }
 
-    if (!/^\d{6}$/.test(joinTeamCode)) {
+    const finalJoinTeamCode = joinTeamCodeDigits.join("");
+
+    if (finalJoinTeamCode.length !== 6 || !/^\d{6}$/.test(finalJoinTeamCode)) {
       toast({
         title: "Invalid Code Format",
         description: "Team code must be exactly 6 digits.",
@@ -104,7 +125,7 @@ export default function TeamsPage() {
       return;
     }
 
-    const targetTeam = teams.find(team => team.code === joinTeamCode);
+    const targetTeam = teams.find(team => team.code === finalJoinTeamCode);
 
     if (!targetTeam) {
       toast({
@@ -123,7 +144,7 @@ export default function TeamsPage() {
         icon: <Info className="h-5 w-5 text-primary" />,
       });
       setIsJoinTeamDialogOpen(false);
-      setJoinTeamCode("");
+      setJoinTeamCodeDigits(Array(6).fill(""));
       return;
     }
 
@@ -141,7 +162,7 @@ export default function TeamsPage() {
       icon: <CheckCircle2 className="h-5 w-5 text-primary" />,
     });
     setIsJoinTeamDialogOpen(false);
-    setJoinTeamCode("");
+    setJoinTeamCodeDigits(Array(6).fill(""));
   };
 
 
@@ -157,7 +178,14 @@ export default function TeamsPage() {
                 Back
                 </Button>
                 <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                    <Button onClick={() => setIsJoinTeamDialogOpen(true)} variant="outline" className="shadow-sm hover:shadow-md transition-shadow w-full sm:w-auto">
+                    <Button 
+                        onClick={() => {
+                            setIsJoinTeamDialogOpen(true);
+                            setJoinTeamCodeDigits(Array(6).fill("")); // Reset on open
+                        }} 
+                        variant="outline" 
+                        className="shadow-sm hover:shadow-md transition-shadow w-full sm:w-auto"
+                    >
                         <UserPlus className="mr-2 h-4 w-4" />
                         Join a Team
                     </Button>
@@ -272,7 +300,10 @@ export default function TeamsPage() {
       )}
 
       {/* Join Team Dialog */}
-      <Dialog open={isJoinTeamDialogOpen} onOpenChange={setIsJoinTeamDialogOpen}>
+      <Dialog open={isJoinTeamDialogOpen} onOpenChange={(isOpen) => {
+          setIsJoinTeamDialogOpen(isOpen);
+          if (!isOpen) setJoinTeamCodeDigits(Array(6).fill("")); // Reset on close
+      }}>
         <DialogContent className="sm:max-w-md bg-card rounded-lg shadow-xl">
           <DialogHeader>
             <DialogTitle className="font-headline text-2xl">Join a Team</DialogTitle>
@@ -282,22 +313,29 @@ export default function TeamsPage() {
           </DialogHeader>
           <form onSubmit={handleJoinTeamSubmit} className="space-y-6 py-4">
             <div>
-              <Label htmlFor="join-team-code" className="text-foreground/80">Team Code</Label>
-              <Input
-                id="join-team-code"
-                value={joinTeamCode}
-                onChange={(e) => setJoinTeamCode(e.target.value.replace(/\D/g, '').slice(0,6))} // Allow only digits, max 6
-                placeholder="e.g., 123456"
-                className="mt-1 bg-background border-input focus:ring-primary text-lg font-mono tracking-widest"
-                maxLength={6}
-                required
-                pattern="\d{6}"
-                title="Team code must be 6 digits."
-              />
+              <Label htmlFor="join-team-code-0" className="text-foreground/80">Team Code (6 digits)</Label>
+              <div className="flex justify-between gap-2 mt-1">
+                {joinTeamCodeDigits.map((digit, index) => (
+                  <Input
+                    key={index}
+                    id={`join-team-code-${index}`}
+                    ref={joinTeamCodeInputsRef[index]}
+                    type="text"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleJoinTeamCodeChange(index, e.target.value)}
+                    onKeyDown={(e) => handleJoinTeamCodeKeyDown(index, e)}
+                    className="w-10 h-12 text-center text-lg font-mono bg-background border-input focus:ring-primary"
+                    pattern="[0-9]*"
+                    inputMode="numeric"
+                    required
+                  />
+                ))}
+              </div>
             </div>
             <DialogFooter className="mt-8">
               <DialogClose asChild>
-                <Button type="button" variant="outline" onClick={() => { setIsJoinTeamDialogOpen(false); setJoinTeamCode(""); }}>
+                <Button type="button" variant="outline" onClick={() => { setIsJoinTeamDialogOpen(false); setJoinTeamCodeDigits(Array(6).fill("")); }}>
                   Cancel
                 </Button>
               </DialogClose>
