@@ -407,8 +407,11 @@ export default function Home() {
                   )}
                   Smart Sort
                 </Button>
-                <Button onClick={() => handleOpenTaskForm()} className="shadow-sm hover:shadow-md transition-shadow bg-primary hover:bg-primary/90 w-full sm:w-auto">
-                  <PlusCircle className="mr-2 h-4 w-4" />
+                <Button 
+                  onClick={() => handleOpenTaskForm()} 
+                  className="shadow-sm hover:shadow-lg focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-150 bg-primary hover:bg-primary/90 text-primary-foreground w-full sm:w-auto"
+                >
+                  <PlusCircle className="mr-2 h-5 w-5" />
                   Add New Task
                 </Button>
               </div>
@@ -440,7 +443,7 @@ export default function Home() {
       {session && mounted && (
         <Button
           onClick={() => handleOpenTaskForm()}
-          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-xl bg-primary hover:bg-primary/90 p-0 z-50"
+          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-xl hover:shadow-2xl focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-150 bg-primary hover:bg-primary/90 text-primary-foreground p-0 z-50 flex items-center justify-center"
           aria-label="Quick Add Task"
         >
           <Plus className="h-7 w-7" />
