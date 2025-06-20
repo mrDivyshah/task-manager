@@ -5,7 +5,7 @@ import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Moon, Sun, Cog, PanelRightClose, AppWindow, Settings2, ToggleRight, ToggleLeft } from "lucide-react";
+import { ArrowLeft, Moon, Sun, Cog, PanelRightClose, AppWindow, Settings2, ToggleRight, ToggleLeft, Users } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
@@ -203,11 +203,15 @@ export default function SettingsPage() {
                 </p>
 
                 {advancedFeaturesEnabled && (
-                  <div className="p-4 border border-dashed border-primary/50 rounded-lg bg-primary/5">
+                  <div className="p-4 border border-dashed border-primary/50 rounded-lg bg-primary/5 space-y-4">
                     <p className="text-sm text-primary flex items-center">
                       <ToggleRight className="mr-2 h-5 w-5" />
-                      Advanced features are active! More settings will appear here in the future.
+                      Advanced features are active! More settings and options may appear.
                     </p>
+                    <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow border-primary/70 text-primary hover:bg-primary/10">
+                      <Users className="mr-2 h-4 w-4" />
+                      Create Team (Placeholder)
+                    </Button>
                   </div>
                 )}
                  {!advancedFeaturesEnabled && (
