@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useState, useEffect } from 'react';
 import { LogoIcon } from './icons/LogoIcon';
 import { ThemeToggle } from './ThemeToggle';
 import {
@@ -26,10 +27,41 @@ import {
   SheetFooter,
   SheetClose,
 } from "@/components/ui/sheet";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import useLocalStorage from "@/hooks/useLocalStorage";
+import type { NotificationStyle } from "@/app/settings/page"; // Import the type
 
 export function Header() {
   const { data: session, status } = useSession();
   const isLoading = status === "loading";
+
+  const [mounted, setMounted] = useState(false);
+  const [localNotificationStyle, setLocalNotificationStyle] = useState<NotificationStyle>("dock");
+  const [localNotificationSoundEnabled, setLocalNotificationSoundEnabled] = useState<boolean>(false);
+
+  // Values from localStorage will be undefined on first SSR pass, then update on client
+  const [persistedNotificationStyle] = useLocalStorage<NotificationStyle>("tasktango-notification-style", "dock");
+  const [persistedNotificationSoundEnabled] = useLocalStorage<boolean>("tasktango-notification-sound", false);
+
+  useEffect(() => {
+    setMounted(true);
+    setLocalNotificationStyle(persistedNotificationStyle);
+    setLocalNotificationSoundEnabled(persistedNotificationSoundEnabled);
+  }, [persistedNotificationStyle, persistedNotificationSoundEnabled]);
+
+
+  const handleNotificationOpenChange = (open: boolean) => {
+    if (open && mounted && localNotificationSoundEnabled) {
+      console.log("Playing notification sound... (beep boop!)");
+      // To play an actual sound, you would do something like:
+      // const audio = new Audio('/sounds/notification.mp3'); // Ensure sound file is in /public/sounds
+      // audio.play().catch(error => console.error("Error playing sound:", error));
+    }
+  };
 
   const getUserInitials = (name?: string | null) => {
     if (!name) return 'U';
@@ -39,6 +71,35 @@ export function Header() {
     }
     return names[0][0].toUpperCase();
   };
+
+  const notificationPanelContent = (
+    <>
+      <SheetHeader className={localNotificationStyle === 'float' ? 'p-4 border-b' : ''}>
+        <SheetTitle>Notifications</SheetTitle>
+        <SheetDescription>
+          Here are your latest updates.
+        </SheetDescription>
+      </SheetHeader>
+      <div className="p-4 py-8">
+        <p className="text-sm text-muted-foreground text-center">
+          No new notifications yet.
+        </p>
+      </div>
+      <SheetFooter className={`mt-auto ${localNotificationStyle === 'float' ? 'p-4 border-t' : ''}`}>
+         {/* Popover doesn't use SheetClose, so Button for float style */}
+        {localNotificationStyle === 'dock' ? (
+            <SheetClose asChild>
+                <Button variant="outline" className="w-full">Close</Button>
+            </SheetClose>
+        ) : (
+             <Button variant="outline" className="w-full" onClick={() => {
+                // For Popover, manually control open state if needed or rely on default trigger behavior
+                // This button could be used to programmatically close Popover if Popover's open state was managed
+             }}>Close</Button>
+        )}
+      </SheetFooter>
+    </>
+  );
 
   return (
     <header className="py-4 px-4 sm:px-6 lg:px-8 border-b border-border/50 shadow-sm bg-card">
@@ -51,33 +112,41 @@ export function Header() {
         </Link>
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="h-9 w-9" aria-label="View notifications">
+
+          {mounted && localNotificationStyle === "dock" && (
+            <Sheet onOpenChange={handleNotificationOpenChange}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="h-9 w-9" aria-label="View notifications (Dock)">
+                  <Bell className="h-5 w-5" />
+                  <span className="sr-only">Notifications</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right">
+                {notificationPanelContent}
+              </SheetContent>
+            </Sheet>
+          )}
+
+          {mounted && localNotificationStyle === "float" && (
+             <Popover onOpenChange={handleNotificationOpenChange}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="icon" className="h-9 w-9" aria-label="View notifications (Float)">
+                  <Bell className="h-5 w-5" />
+                  <span className="sr-only">Notifications</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0" align="end">
+                {notificationPanelContent}
+              </PopoverContent>
+            </Popover>
+          )}
+          
+          {!mounted && ( // Fallback / placeholder while waiting for client-side mount
+             <Button variant="outline" size="icon" className="h-9 w-9" aria-label="View notifications" disabled>
                 <Bell className="h-5 w-5" />
-                <span className="sr-only">Notifications</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right">
-              <SheetHeader>
-                <SheetTitle>Notifications</SheetTitle>
-                <SheetDescription>
-                  Here are your latest updates.
-                </SheetDescription>
-              </SheetHeader>
-              <div className="p-4 py-8">
-                <p className="text-sm text-muted-foreground text-center">
-                  No new notifications yet.
-                </p>
-                {/* Placeholder for actual notification items */}
-              </div>
-              <SheetFooter className="mt-auto">
-                <SheetClose asChild>
-                  <Button variant="outline" className="w-full">Close</Button>
-                </SheetClose>
-              </SheetFooter>
-            </SheetContent>
-          </Sheet>
+             </Button>
+          )}
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon" className="h-9 w-9">
@@ -141,8 +210,10 @@ export function Header() {
                     Login with Google
                   </DropdownMenuItem>
                    <DropdownMenuItem onClick={() => {
-                      const emailForm = document.getElementById('email-login');
-                      if (emailForm) emailForm.focus();
+                      // Attempt to focus the email input on the main page if it exists
+                      const mainPageEmailInput = document.getElementById('email-login');
+                      if (mainPageEmailInput) mainPageEmailInput.focus();
+                      else router.push('/'); // Fallback if not on main page or input not found
                     }} className="flex items-center cursor-pointer">
                     <LogIn className="mr-2 h-4 w-4" />
                     Login with Email
@@ -156,4 +227,3 @@ export function Header() {
     </header>
   );
 }
-    

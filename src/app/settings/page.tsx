@@ -12,17 +12,24 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
+import useLocalStorage from "@/hooks/useLocalStorage";
 
-type NotificationStyle = "dock" | "float";
+export type NotificationStyle = "dock" | "float";
 
 export default function SettingsPage() {
   const router = useRouter();
   const { theme, setTheme, systemTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [notificationSoundEnabled, setNotificationSoundEnabled] = useState(false);
-  const [notificationStyle, setNotificationStyle] = useState<NotificationStyle>("dock");
 
-  // useEffect only runs on the client, so now we can safely show the UI
+  const [notificationSoundEnabled, setNotificationSoundEnabled] = useLocalStorage<boolean>(
+    "tasktango-notification-sound",
+    false
+  );
+  const [notificationStyle, setNotificationStyle] = useLocalStorage<NotificationStyle>(
+    "tasktango-notification-style",
+    "dock"
+  );
+
   useEffect(() => {
     setMounted(true);
   }, []);
