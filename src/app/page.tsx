@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
@@ -441,13 +442,22 @@ export default function Home() {
       </main>
 
       {session && mounted && (
-        <Button
-          onClick={() => handleOpenTaskForm()}
-          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-xl hover:shadow-2xl focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-150 bg-primary hover:bg-primary/90 text-primary-foreground p-0 z-50 flex items-center justify-center"
-          aria-label="Quick Add Task"
-        >
-          <Plus className="h-7 w-7" />
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={() => handleOpenTaskForm()}
+                className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-xl hover:shadow-2xl focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-150 bg-primary hover:bg-primary/90 text-primary-foreground p-0 z-50 flex items-center justify-center"
+                aria-label="Quick Add Task"
+              >
+                <Plus className="h-7 w-7" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Quick Add Task</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       )}
 
       <TaskForm
