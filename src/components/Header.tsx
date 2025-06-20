@@ -52,6 +52,10 @@ export function Header() {
                     <AvatarImage src={session.user.image} alt={session.user.name || "User Avatar"} />
                     <AvatarFallback>{getUserInitials(session.user.name)}</AvatarFallback>
                   </Avatar>
+                ) : session?.user ? ( // Fallback for user without image but logged in
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback>{getUserInitials(session.user.name)}</AvatarFallback>
+                  </Avatar>
                 ) : (
                   <Menu className="h-5 w-5" />
                 )}
@@ -99,6 +103,16 @@ export function Header() {
                   <DropdownMenuItem onClick={() => signIn("google")} className="flex items-center cursor-pointer">
                     <LogIn className="mr-2 h-4 w-4" />
                     Login with Google
+                  </DropdownMenuItem>
+                   <DropdownMenuItem onClick={() => {
+                      // For "Login with Email", we usually direct to a page or show a modal.
+                      // Since the form is on the main page, this option might be redundant if already on `/`.
+                      // If you want to explicitly scroll to the form or ensure it's visible:
+                      const emailForm = document.getElementById('email-login');
+                      if (emailForm) emailForm.focus();
+                    }} className="flex items-center cursor-pointer">
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Login with Email
                   </DropdownMenuItem>
                 </>
               )}
