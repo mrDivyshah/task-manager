@@ -17,16 +17,16 @@ import { Button } from "@/components/ui/button";
 import { Menu, LogIn, LogOut, User, Settings as SettingsIcon, Bell } from "lucide-react";
 import Link from 'next/link';
 import { useSession, signIn, signOut } from "next-auth/react";
-import { useRouter } from "next/navigation"; // Added useRouter import
+import { useRouter } from "next/navigation";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
   SheetFooter,
   SheetClose,
+  SheetTrigger,
 } from "@/components/ui/sheet";
 import {
   Popover,
@@ -36,7 +36,6 @@ import {
 import useLocalStorage from "@/hooks/useLocalStorage";
 import type { NotificationStyle } from "@/app/settings/page";
 
-// Define NotificationTriggerButton outside the Header component
 const NotificationTriggerButton = React.forwardRef<
   HTMLButtonElement,
   React.ComponentProps<typeof Button> & { 'aria-label': string }
@@ -48,10 +47,17 @@ const NotificationTriggerButton = React.forwardRef<
 ));
 NotificationTriggerButton.displayName = "NotificationTriggerButton";
 
+const ActualNotificationList = () => (
+  <div className="p-4 py-8">
+    <p className="text-sm text-muted-foreground text-center">
+      No new notifications yet.
+    </p>
+  </div>
+);
 
 export function Header() {
   const { data: session, status } = useSession();
-  const router = useRouter(); // Initialize router
+  const router = useRouter();
   const isLoading = status === "loading";
 
   const [mounted, setMounted] = useState(false);
@@ -63,11 +69,9 @@ export function Header() {
 
   useEffect(() => {
     setMounted(true);
-    // Ensure localStorage values are applied after mount
     setLocalNotificationStyle(persistedNotificationStyle);
     setLocalNotificationSoundEnabled(persistedNotificationSoundEnabled);
   }, [persistedNotificationStyle, persistedNotificationSoundEnabled]);
-
 
   const handleNotificationOpenChange = (open: boolean) => {
     if (open && mounted && localNotificationSoundEnabled) {
@@ -87,34 +91,6 @@ export function Header() {
     return names[0][0].toUpperCase();
   };
 
-  const notificationPanelContent = (
-    <>
-      <SheetHeader className={localNotificationStyle === 'float' ? 'p-4 border-b' : ''}>
-        <SheetTitle>Notifications</SheetTitle>
-        <SheetDescription>
-          Here are your latest updates.
-        </SheetDescription>
-      </SheetHeader>
-      <div className="p-4 py-8">
-        <p className="text-sm text-muted-foreground text-center">
-          No new notifications yet.
-        </p>
-      </div>
-      <SheetFooter className={`mt-auto ${localNotificationStyle === 'float' ? 'p-4 border-t' : ''}`}>
-        {localNotificationStyle === 'dock' ? (
-            <SheetClose asChild>
-                <Button variant="outline" className="w-full">Close</Button>
-            </SheetClose>
-        ) : (
-             <Button variant="outline" className="w-full" onClick={() => {
-                // For Popover, manually control open state if needed or rely on default trigger behavior
-                // This button is more for visual consistency; Popovers typically close via Escape or clicking outside.
-             }}>Close</Button>
-        )}
-      </SheetFooter>
-    </>
-  );
-
   return (
     <header className="py-4 px-4 sm:px-6 lg:px-8 border-b border-border/50 shadow-sm bg-card">
       <div className="container mx-auto flex items-center justify-between">
@@ -133,7 +109,16 @@ export function Header() {
                 <NotificationTriggerButton aria-label="View notifications (Dock)" />
               </SheetTrigger>
               <SheetContent side="right">
-                {notificationPanelContent}
+                <SheetHeader>
+                  <SheetTitle>Notifications</SheetTitle>
+                  <SheetDescription>Here are your latest updates.</SheetDescription>
+                </SheetHeader>
+                <ActualNotificationList />
+                <SheetFooter>
+                  <SheetClose asChild>
+                    <Button variant="outline" className="w-full">Close</Button>
+                  </SheetClose>
+                </SheetFooter>
               </SheetContent>
             </Sheet>
           )}
@@ -144,7 +129,15 @@ export function Header() {
                 <NotificationTriggerButton aria-label="View notifications (Float)" />
               </PopoverTrigger>
               <PopoverContent className="w-80 p-0" align="end">
-                {notificationPanelContent}
+                <div className="p-4 border-b">
+                  <h3 className="text-lg font-semibold leading-none tracking-tight">Notifications</h3>
+                  <p className="text-sm text-muted-foreground">Here are your latest updates.</p>
+                </div>
+                <ActualNotificationList />
+                {/* Popovers typically close via Escape or clicking outside. 
+                    A close button here would require controlling Popover's open state.
+                    Omitting footer for simplicity in Popover.
+                */}
               </PopoverContent>
             </Popover>
           )}
@@ -234,4 +227,3 @@ export function Header() {
     </header>
   );
 }
-
