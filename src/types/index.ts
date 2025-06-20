@@ -12,3 +12,11 @@ export interface SmartSortTaskInput {
   title:string;
   notes: string;
 }
+
+export interface Team {
+  id: string;
+  name: string;
+  code: string; // Team code (e.g., 6-digit OTP)
+  members: string[]; // Array of user identifiers (e.g., email or ID)
+  createdAt: number; // timestamp
+}

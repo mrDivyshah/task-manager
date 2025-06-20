@@ -17,8 +17,9 @@ import useLocalStorage from "@/hooks/useLocalStorage";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import type { Team } from "@/types";
 
-
+const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 export type NotificationStyle = "dock" | "float";
 
 export default function SettingsPage() {
@@ -40,6 +41,7 @@ export default function SettingsPage() {
     false
   );
 
+  const [teams, setTeams] = useLocalStorage<Team[]>("tasktango-teams", []);
   const [isCreateTeamDialogOpen, setIsCreateTeamDialogOpen] = useState(false);
   const [newTeamName, setNewTeamName] = useState("");
   const [teamCode, setTeamCode] = useState<string[]>(Array(6).fill(""));
@@ -79,10 +81,20 @@ export default function SettingsPage() {
       toast({ title: "Invalid Team Code", description: "Team code must be 6 digits.", variant: "destructive", icon: <ShieldAlert className="h-5 w-5" /> });
       return;
     }
-    console.log("Creating team:", { teamName: newTeamName, teamCode: finalTeamCode });
+    
+    const newTeam: Team = {
+      id: generateId(),
+      name: newTeamName.trim(),
+      code: finalTeamCode,
+      members: [], // Initially no members, or add current user if applicable
+      createdAt: Date.now(),
+    };
+
+    setTeams(prevTeams => [...prevTeams, newTeam]);
+    
     toast({ 
         title: "Team Created Successfully!", 
-        description: `Team "${newTeamName}" with code ${finalTeamCode} has been initiated. (Details logged to console)`,
+        description: `Team "${newTeam.name}" with code ${newTeam.code} has been initiated.`,
         icon: <CheckCircle2 className="h-5 w-5 text-primary" /> 
     });
     setNewTeamName("");
@@ -256,7 +268,13 @@ export default function SettingsPage() {
                 </p>
 
                 {advancedFeaturesEnabled && (
-                  <Dialog open={isCreateTeamDialogOpen} onOpenChange={setIsCreateTeamDialogOpen}>
+                  <Dialog open={isCreateTeamDialogOpen} onOpenChange={(isOpen) => {
+                        setIsCreateTeamDialogOpen(isOpen);
+                        if (!isOpen) { // Reset form on close
+                            setNewTeamName("");
+                            setTeamCode(Array(6).fill(""));
+                        }
+                    }}>
                     <DialogTrigger asChild>
                       <div className="p-4 border border-dashed border-primary/50 rounded-lg bg-primary/5 space-y-4">
                         <p className="text-sm text-primary flex items-center">
@@ -344,3 +362,4 @@ export default function SettingsPage() {
   );
 }
     
+
