@@ -194,10 +194,10 @@ export default function Home() {
               Login with Google
             </Button>
 
-            <div className="my-6 flex items-center">
-              <Separator className="flex-grow" />
+            <div className="my-6 flex items-center w-full">
+              <Separator className="flex-grow shrink" />
               <span className="mx-4 text-xs text-muted-foreground uppercase">Or</span>
-              <Separator className="flex-grow" />
+              <Separator className="flex-grow shrink" />
             </div>
 
             <form onSubmit={handleCredentialsLogin} className="space-y-6 text-left">
