@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react'; // Added React import
+import React, { useState, useEffect } from 'react';
 import { LogoIcon } from './icons/LogoIcon';
 import { ThemeToggle } from './ThemeToggle';
 import {
@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, LogIn, LogOut, User, Settings as SettingsIcon, Bell, Home as HomeIcon } from "lucide-react";
 import Link from 'next/link';
 import { useSession, signIn, signOut } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Sheet,
   SheetContent,
@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/popover";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import type { NotificationStyle } from "@/app/settings/page";
+import { cn } from "@/lib/utils";
 
 const NotificationTriggerButton = React.forwardRef<
   HTMLButtonElement,
@@ -58,6 +59,7 @@ const ActualNotificationList = () => (
 export function Header() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
   const isLoading = status === "loading";
 
   const [mounted, setMounted] = useState(false);
@@ -69,8 +71,6 @@ export function Header() {
 
   useEffect(() => {
     setMounted(true);
-    // Only set local state from persisted state if it's different,
-    // to avoid unnecessary re-renders if they are already in sync.
     if (persistedNotificationStyle !== localNotificationStyle) {
         setLocalNotificationStyle(persistedNotificationStyle);
     }
@@ -187,19 +187,19 @@ export function Header() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
+                  <DropdownMenuItem asChild className={cn(pathname === "/" && "text-primary font-semibold")}>
                     <Link href="/" className="flex items-center">
                       <HomeIcon className="mr-2 h-4 w-4" />
                       Home
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
+                  <DropdownMenuItem asChild className={cn(pathname === "/profile" && "text-primary font-semibold")}>
                     <Link href="/profile" className="flex items-center">
                       <User className="mr-2 h-4 w-4" />
                       Profile
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
+                  <DropdownMenuItem asChild className={cn(pathname === "/settings" && "text-primary font-semibold")}>
                     <Link href="/settings" className="flex items-center">
                       <SettingsIcon className="mr-2 h-4 w-4" />
                       Settings
