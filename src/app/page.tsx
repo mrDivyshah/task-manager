@@ -15,6 +15,7 @@ import { smartSortTasksAction } from "./actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 
 
 const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
@@ -31,6 +32,7 @@ export default function Home() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isCredentialsLoading, setIsCredentialsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
 
   const sortedTasks = [...tasks].sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
@@ -137,7 +139,7 @@ export default function Home() {
         redirect: false,
         email,
         password,
-        callbackUrl: '/',
+        callbackUrl: '/', 
       });
 
       if (result?.error) {
@@ -150,6 +152,14 @@ export default function Home() {
         toast({
           title: "Login Successful",
           description: "Welcome back!",
+        });
+        // Successful login, session will update and component will re-render
+      } else {
+        // Handle cases where result is undefined or not ok and no error
+         toast({
+          title: "Login Attempt Unclear",
+          description: "Something went wrong. Please try again.",
+          variant: "destructive",
         });
       }
     } catch (error) {
@@ -202,9 +212,9 @@ export default function Home() {
 
             <form onSubmit={handleCredentialsLogin} className="space-y-6 text-left">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email-login">Email</Label>
                 <Input 
-                  id="email" 
+                  id="email-login" 
                   type="email" 
                   placeholder="user@example.com" 
                   value={email} 
@@ -214,10 +224,10 @@ export default function Home() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password-login">Password</Label>
                 <div className="relative">
                   <Input 
-                    id="password" 
+                    id="password-login" 
                     type={showPassword ? "text" : "password"} 
                     placeholder="••••••••" 
                     value={password} 
@@ -236,6 +246,26 @@ export default function Home() {
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </Button>
                 </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="remember-me" 
+                    checked={rememberMe} 
+                    onCheckedChange={(checked) => setRememberMe(Boolean(checked))}
+                  />
+                  <Label 
+                    htmlFor="remember-me" 
+                    className="text-sm font-normal text-muted-foreground cursor-pointer"
+                  >
+                    Remember me
+                  </Label>
+                </div>
+                {/* Placeholder for Forgot Password link if needed later
+                <a href="#" className="text-sm text-primary hover:underline">
+                  Forgot password?
+                </a> 
+                */}
               </div>
               <Button type="submit" size="lg" className="w-full shadow-md hover:shadow-lg transition-shadow" disabled={isCredentialsLoading}>
                 {isCredentialsLoading ? (
@@ -301,3 +331,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
