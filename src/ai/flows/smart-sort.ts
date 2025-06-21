@@ -25,7 +25,7 @@ export type SmartSortInput = z.infer<typeof SmartSortInputSchema>;
 const SmartSortOutputSchema = z.array(z.object({
   id: z.string(),
   category: z.string().describe('The category of the task.'),
-  priority: z.string().describe('The priority of the task (must be one of "high", "medium", or "low").'),
+  priority: z.enum(["high", "medium", "low"]).describe('The priority of the task (must be one of "high", "medium", or "low").'),
 })).describe('An array of tasks with their categories and priorities.');
 export type SmartSortOutput = z.infer<typeof SmartSortOutputSchema>;
 
@@ -46,7 +46,7 @@ Prioritization Guidelines:
 - 'high': For critical, urgent, time-sensitive, or high-impact tasks.
 - 'medium': For important but not immediately urgent tasks.
 - 'low': For tasks that can be done at a lower urgency.
-Your entire output must be ONLY the JSON array. Do not include any introductory text, closing remarks, or markdown.`,
+Your entire output must be ONLY the JSON array. Do not include any introductory text, closing remarks, or markdown. Your response must be a valid JSON array and nothing else.`,
   prompt: `Analyze the following tasks and return the JSON array as instructed:
 {{#each this}}
 - Task ID: {{id}}, Title: "{{title}}", Notes: "{{notes}}"
@@ -63,10 +63,9 @@ const smartSortFlow = ai.defineFlow(
   async input => {
     const { output } = await smartSortPrompt(input);
     if (!output) {
-      throw new Error('AI model did not return an output for smart sort.');
+      throw new Error('AI model did not return a parsable output for smart sort.');
     }
     // Genkit handles the parsing and validation when output.schema is provided.
-    // No manual parsing is needed.
     return output;
   }
 );
