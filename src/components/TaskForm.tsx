@@ -27,8 +27,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Task, Team } from "@/types";
 import useLocalStorage from "@/hooks/useLocalStorage";
-import { useEffect } from "react";
-import { Users } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import { Users, ChevronsUpDown, Check } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+
 
 const taskFormSchema = z.object({
   title: z.string().min(1, "Title is required").max(100, "Title must be 100 characters or less"),
@@ -48,6 +51,7 @@ interface TaskFormProps {
 
 export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProps) {
   const [teams] = useLocalStorage<Team[]>("taskflow-teams", []);
+  const [isTeamPopoverOpen, setIsTeamPopoverOpen] = useState(false);
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
@@ -88,6 +92,12 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
     onSubmit(processedData, taskToEdit);
     form.reset(); // Resets to defaultValues, including teamId: "__none__"
   };
+
+  const selectedTeamName = useMemo(() => {
+    const selectedId = form.watch('teamId');
+    if (selectedId === '__none__' || !selectedId) return 'No Team / Personal';
+    return teams.find(team => team.id === selectedId)?.name || "No Team / Personal";
+  }, [form, teams]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if(!open) onClose(); }}>
@@ -162,26 +172,60 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
                   control={form.control}
                   name="teamId"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="flex flex-col justify-end">
                       <FormLabel className="text-foreground/80">Assign to Team</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="bg-background border-input focus:ring-primary">
-                            <SelectValue placeholder="Select team (optional)" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="__none__">No Team / Personal</SelectItem>
-                          {teams.map((team) => (
-                            <SelectItem key={team.id} value={team.id}>
-                              <div className="flex items-center">
-                                <Users className="mr-2 h-4 w-4 text-muted-foreground" />
-                                {team.name}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Popover open={isTeamPopoverOpen} onOpenChange={setIsTeamPopoverOpen}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className={cn(
+                                "w-full justify-between font-normal",
+                                (field.value === '__none__' || !field.value) && "text-muted-foreground"
+                              )}
+                            >
+                              <span className="flex items-center truncate">
+                                {field.value && field.value !== '__none__' && <Users className="mr-2 h-4 w-4 shrink-0" />}
+                                {selectedTeamName}
+                              </span>
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-1">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                className="w-full justify-start font-normal"
+                                onClick={() => {
+                                    field.onChange("__none__");
+                                    setIsTeamPopoverOpen(false);
+                                }}
+                            >
+                                <Check className={cn("mr-2 h-4 w-4", (field.value === "__none__" || !field.value) ? "opacity-100" : "opacity-0")} />
+                                No Team / Personal
+                            </Button>
+                            {teams.map((team) => (
+                                <Button
+                                    key={team.id}
+                                    type="button"
+                                    variant="ghost"
+                                    className="w-full justify-start font-normal"
+                                    onClick={() => {
+                                        field.onChange(team.id);
+                                        setIsTeamPopoverOpen(false);
+                                    }}
+                                >
+                                    <Check className={cn("mr-2 h-4 w-4", field.value === team.id ? "opacity-100" : "opacity-0")} />
+                                    <div className="flex items-center truncate">
+                                        <Users className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+                                        {team.name}
+                                    </div>
+                                </Button>
+                            ))}
+                        </PopoverContent>
+                      </Popover>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -204,4 +248,3 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
     </Dialog>
   );
 }
-
