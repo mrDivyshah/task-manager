@@ -12,7 +12,7 @@ const UserSchema = new Schema({
   },
   password: {
     type: String,
-    required: true,
+    // Not required, as users can sign up via OAuth providers
   },
   image: {
     type: String,

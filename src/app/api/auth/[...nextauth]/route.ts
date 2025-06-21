@@ -29,7 +29,7 @@ export const authOptions: NextAuthOptions = {
         const user = await User.findOne({ email: credentials.email });
 
         if (!user || !user.password) {
-          // User might exist from Google sign-in but has no password
+          // User might exist from Google sign-in but has no password set
           return null;
         }
 
@@ -57,17 +57,45 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
   callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider === 'google') {
+        if (!user.email) return false;
+        await dbConnect();
+        try {
+          const existingUser = await User.findOne({ email: user.email });
+          if (!existingUser) {
+            // This is a new user from Google, create them in the database
+            await User.create({
+              email: user.email,
+              name: user.name,
+              image: user.image,
+            });
+          }
+          return true; // Continue sign in
+        } catch (error) {
+          console.error("Error during Google sign-in user creation:", error);
+          return false; // Prevent sign in on DB error
+        }
+      }
+      return true; // For credentials provider, the authorize function handles it
+    },
+    async jwt({ token, user }) {
+      // The `user` object is only passed on the first sign-in.
+      // We need to find the user in the database to get their MongoDB _id.
+      if (user) {
+        await dbConnect();
+        const dbUser = await User.findOne({ email: user.email });
+        if (dbUser) {
+          token.id = dbUser._id.toString();
+        }
+      }
+      return token;
+    },
     async session({ session, token }) {
       if (token?.id && session.user) {
         (session.user as any).id = token.id;
       }
       return session;
-    },
-    async jwt({ token, user }) {
-      if (user?.id) {
-        token.id = user.id;
-      }
-      return token;
     },
   },
   pages: {
