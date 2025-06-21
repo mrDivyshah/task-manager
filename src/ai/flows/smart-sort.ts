@@ -37,13 +37,13 @@ const smartSortPrompt = ai.definePrompt({
   name: 'smartSortPrompt',
   input: {schema: SmartSortInputSchema},
   output: {schema: SmartSortOutputSchema},
-  prompt: `You are a task management expert.
-For each task provided below, you must determine a relevant 'category' (e.g., "Work", "Personal", "Finance") and assign a 'priority'. The priority MUST be one of "high", "medium", or "low".
+  system: `You are an intelligent task management assistant. Your purpose is to analyze a list of tasks and return structured JSON data containing a category and a priority for each task. The priority you assign MUST be one of three values: "high", "medium", or "low". Do not use any other values for priority.`,
+  prompt: `Analyze the following tasks. For each task, determine a relevant category and assign a priority.
 
 Prioritization Guidelines:
-- 'high': Tasks that are urgent, have impending deadlines, significant financial implications, critical problems, or are blocking other tasks.
-- 'medium': Important tasks that are not immediately urgent but should be addressed soon.
-- 'low': All other tasks that can be done at a lower urgency.
+- 'high': Critical, urgent, time-sensitive, or high-impact tasks.
+- 'medium': Important but not immediately urgent tasks.
+- 'low': Tasks that can be done at a lower urgency.
 
 Tasks to process:
 {{#each this}}
@@ -52,19 +52,9 @@ Tasks to process:
   Notes: "{{notes}}"
 {{/each}}
 
-Your response MUST be a valid JSON array. Each object in the array must correspond to one of the input tasks. Each object MUST contain exactly three fields:
-1.  "id": (string) The original ID of the task.
-2.  "category": (string) The category you've assigned.
-3.  "priority": (string) The priority you've assigned. This MUST be "high", "medium", or "low".
+Your response MUST be a valid JSON array of objects, where each object corresponds to an input task. Each object MUST contain the 'id', 'category', and 'priority' fields.
 
-Example of the EXACT expected JSON output format:
-[
-  { "id": "task_id_1", "category": "Work", "priority": "high" },
-  { "id": "task_id_2", "category": "Home Errands", "priority": "medium" },
-  { "id": "task_id_3", "category": "Finance", "priority": "low" }
-]
-
-Ensure your output is ONLY this JSON array. Do NOT include any other text, explanations, or markdown formatting (like \`\`\`json ... \`\`\`) around the JSON. The entire response should be the JSON array itself.
+IMPORTANT: Your entire output must be ONLY the JSON array. Do not include any introductory text, closing remarks, or markdown code fences like \`\`\`json.
 `,
 });
 
