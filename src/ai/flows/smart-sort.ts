@@ -36,26 +36,21 @@ export async function smartSort(input: SmartSortInput): Promise<SmartSortOutput>
 const smartSortPrompt = ai.definePrompt({
   name: 'smartSortPrompt',
   input: {schema: SmartSortInputSchema},
-  // We ask for a string so we can parse it manually for robustness.
-  output: {schema: z.string()},
-  system: `You are an intelligent task management assistant. Your purpose is to analyze a list of tasks and return structured JSON data containing a category and a priority for each task. The priority you assign MUST be one of three values: "high", "medium", or "low". Do not use any other values for priority.`,
-  prompt: `Analyze the following tasks. For each task, determine a relevant category and assign a priority.
-
+  output: {schema: SmartSortOutputSchema}, // Ask for structured JSON directly.
+  system: `You are an intelligent task management assistant. Your purpose is to analyze a list of tasks and return a valid JSON array of objects.
+Each object in the array must correspond to one of the input tasks.
+Each object MUST contain three string fields: 'id', 'category', and 'priority'.
+The 'id' field must exactly match the ID of the original task.
+The 'priority' field MUST be one of these three values: "high", "medium", or "low". Do not use any other values for priority.
 Prioritization Guidelines:
-- 'high': Critical, urgent, time-sensitive, or high-impact tasks.
-- 'medium': Important but not immediately urgent tasks.
-- 'low': Tasks that can be done at a lower urgency.
-
-Tasks to process:
+- 'high': For critical, urgent, time-sensitive, or high-impact tasks.
+- 'medium': For important but not immediately urgent tasks.
+- 'low': For tasks that can be done at a lower urgency.
+Your entire output must be ONLY the JSON array. Do not include any introductory text, closing remarks, or markdown.`,
+  prompt: `Analyze the following tasks and return the JSON array as instructed:
 {{#each this}}
-- Task ID: {{id}}
-  Title: "{{title}}"
-  Notes: "{{notes}}"
+- Task ID: {{id}}, Title: "{{title}}", Notes: "{{notes}}"
 {{/each}}
-
-Your response MUST be a valid JSON array of objects, where each object corresponds to an input task. Each object MUST contain the 'id', 'category', and 'priority' fields.
-
-IMPORTANT: Your entire output must be ONLY the JSON array. Do not include any introductory text, closing remarks, or markdown code fences like \`\`\`json.
 `,
 });
 
@@ -66,43 +61,12 @@ const smartSortFlow = ai.defineFlow(
     outputSchema: SmartSortOutputSchema,
   },
   async input => {
-    const {output} = await smartSortPrompt(input);
+    const { output } = await smartSortPrompt(input);
     if (!output) {
       throw new Error('AI model did not return an output for smart sort.');
     }
-
-    try {
-      // The model might still wrap the JSON in markdown, so we extract it.
-      const jsonRegex = /```(json)?\s*([\s\S]*?)\s*```/;
-      const match = jsonRegex.exec(output);
-      
-      let jsonString = output;
-      if (match && match[2]) {
-        jsonString = match[2];
-      }
-
-      // Sometimes the model might just return the array without markdown.
-      // Let's find the start of the array and the end.
-      const startIndex = jsonString.indexOf('[');
-      const endIndex = jsonString.lastIndexOf(']');
-      if (startIndex === -1 || endIndex === -1) {
-          throw new Error('Valid JSON array not found in the AI response.');
-      }
-      
-      const potentialJson = jsonString.substring(startIndex, endIndex + 1);
-
-      const parsedJson = JSON.parse(potentialJson);
-
-      // Now, validate the parsed JSON against our Zod schema.
-      // This will throw an error if the structure doesn't match.
-      const validatedOutput = SmartSortOutputSchema.parse(parsedJson);
-
-      return validatedOutput;
-    } catch (e: any) {
-      console.error("Failed to parse or validate AI output for smart sort:", e);
-      console.error("Raw AI Output:", output);
-      // Re-throw a more user-friendly error that will be caught by the action.
-      throw new Error(`AI returned data in an unexpected format. Details: ${e.message}`);
-    }
+    // Genkit handles the parsing and validation when output.schema is provided.
+    // No manual parsing is needed.
+    return output;
   }
 );
