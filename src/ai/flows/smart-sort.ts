@@ -36,7 +36,8 @@ export async function smartSort(input: SmartSortInput): Promise<SmartSortOutput>
 const smartSortPrompt = ai.definePrompt({
   name: 'smartSortPrompt',
   input: {schema: SmartSortInputSchema},
-  output: {schema: SmartSortOutputSchema},
+  // We ask for a string so we can parse it manually for robustness.
+  output: {schema: z.string()},
   system: `You are an intelligent task management assistant. Your purpose is to analyze a list of tasks and return structured JSON data containing a category and a priority for each task. The priority you assign MUST be one of three values: "high", "medium", or "low". Do not use any other values for priority.`,
   prompt: `Analyze the following tasks. For each task, determine a relevant category and assign a priority.
 
@@ -69,11 +70,39 @@ const smartSortFlow = ai.defineFlow(
     if (!output) {
       throw new Error('AI model did not return an output for smart sort.');
     }
-    // Ensure the output matches the array structure, even if it's empty (e.g. if the model returns an empty array for some reason)
-    if (!Array.isArray(output)) {
-        throw new Error('AI model output was not an array as expected for smart sort.');
+
+    try {
+      // The model might still wrap the JSON in markdown, so we extract it.
+      const jsonRegex = /```(json)?\s*([\s\S]*?)\s*```/;
+      const match = jsonRegex.exec(output);
+      
+      let jsonString = output;
+      if (match && match[2]) {
+        jsonString = match[2];
+      }
+
+      // Sometimes the model might just return the array without markdown.
+      // Let's find the start of the array and the end.
+      const startIndex = jsonString.indexOf('[');
+      const endIndex = jsonString.lastIndexOf(']');
+      if (startIndex === -1 || endIndex === -1) {
+          throw new Error('Valid JSON array not found in the AI response.');
+      }
+      
+      const potentialJson = jsonString.substring(startIndex, endIndex + 1);
+
+      const parsedJson = JSON.parse(potentialJson);
+
+      // Now, validate the parsed JSON against our Zod schema.
+      // This will throw an error if the structure doesn't match.
+      const validatedOutput = SmartSortOutputSchema.parse(parsedJson);
+
+      return validatedOutput;
+    } catch (e: any) {
+      console.error("Failed to parse or validate AI output for smart sort:", e);
+      console.error("Raw AI Output:", output);
+      // Re-throw a more user-friendly error that will be caught by the action.
+      throw new Error(`AI returned data in an unexpected format. Details: ${e.message}`);
     }
-    return output;
   }
 );
-
