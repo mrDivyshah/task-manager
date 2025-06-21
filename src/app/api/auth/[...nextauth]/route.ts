@@ -3,6 +3,9 @@ import NextAuth from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import CredentialsProvider from "next-auth/providers/credentials"
 import type { NextAuthOptions } from "next-auth"
+import dbConnect from "@/lib/mongodb"
+import User from "@/models/user"
+import bcrypt from "bcryptjs"
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -16,36 +19,56 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email", placeholder: "jsmith@example.com" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials, req) {
-        if (!credentials) {
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials.password) {
           return null;
         }
 
-        const { email, password } = credentials;
+        await dbConnect();
 
-        if (!email || !password) {
+        const user = await User.findOne({ email: credentials.email });
+
+        if (!user || !user.password) {
+          // User might exist from Google sign-in but has no password
           return null;
         }
 
-        // IMPORTANT: This is mocked authentication.
-        // In a real application, you would validate credentials against a database.
-        if (
-          (email === "user@example.com" && password === "password123") ||
-          (email === "newuser@example.com" && password === "newpassword123")
-        ) {
-          const name = email === "user@example.com" ? "Test User" : "New User";
-          const id = email === "user@example.com" ? "creds-user-1" : "creds-user-2";
-          return { id, name, email: email, image: null };
+        const isPasswordCorrect = await bcrypt.compare(
+          credentials.password,
+          user.password
+        );
+
+        if (!isPasswordCorrect) {
+          return null;
         }
-        
-        // If credentials are not valid, return null.
-        return null;
+
+        // Return user object for NextAuth session
+        return {
+          id: user._id.toString(),
+          name: user.name,
+          email: user.email,
+          image: user.image,
+        };
       }
     })
   ],
   secret: process.env.NEXTAUTH_SECRET,
   session: {
     strategy: "jwt",
+  },
+  callbacks: {
+    async session({ session, token }) {
+      if (token?.id && session.user) {
+        (session.user as any).id = token.id;
+      }
+      return session;
+    },
+    async jwt({ token, user }) {
+      if (user?.id) {
+        token.id = user.id;
+      }
+      return token;
+    },
   },
   pages: {
     // signIn: '/auth/signin', // Default is fine

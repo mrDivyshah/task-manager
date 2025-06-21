@@ -260,17 +260,53 @@ export default function Home() {
   const handleSignUp = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSignupLoading(true);
-    // In a real app, you'd send signupName, signupEmail, signupPassword to your backend.
-    // Here, we just simulate the process.
-    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    toast({
-        title: "Sign Up Simulated!",
-        description: "You can now log in using the 'new user' demo credentials.",
-        icon: <CheckCircle2 className="h-5 w-5 text-primary" />,
-    });
-    setIsSignupLoading(false);
-    setAuthMode('login'); // Switch back to the login form
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: signupName,
+          email: signupEmail,
+          password: signupPassword,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        toast({
+            title: "Sign Up Successful!",
+            description: "You can now log in with your credentials.",
+            icon: <CheckCircle2 className="h-5 w-5 text-primary" />,
+        });
+        setAuthMode('login'); // Switch to login form
+        setEmail(signupEmail); // Pre-fill email for convenience
+        setPassword('');
+        // Clear signup form
+        setSignupName('');
+        setSignupEmail('');
+        setSignupPassword('');
+      } else {
+        toast({
+            title: "Sign Up Failed",
+            description: data.message || "An error occurred during sign up.",
+            variant: "destructive",
+            icon: <AlertTriangle className="h-5 w-5" />,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Sign Up Error",
+        description: "Could not connect to the server. Please try again later.",
+        variant: "destructive",
+        icon: <AlertTriangle className="h-5 w-5" />,
+      });
+    } finally {
+      setIsSignupLoading(false);
+    }
   };
 
 
@@ -442,7 +478,7 @@ export default function Home() {
             </p>
 
             <p className="mt-4 text-xs text-muted-foreground">
-              (Hint: try user@example.com / password123 or newuser@example.com / newpassword123)
+              Sign up for a new account or use Google to log in.
             </p>
           </div>
         </main>
