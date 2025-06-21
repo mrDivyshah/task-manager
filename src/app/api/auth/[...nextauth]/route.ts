@@ -18,23 +18,24 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials, req) {
         if (!credentials) {
-          // Should not happen if NextAuth receives a well-formed request, but as a safeguard.
           return null;
         }
 
         const { email, password } = credentials;
 
         if (!email || !password) {
-          // If specific fields are missing.
-          // Returning null allows NextAuth to handle it as a failed authorization.
           return null;
         }
 
         // IMPORTANT: This is mocked authentication.
         // In a real application, you would validate credentials against a database.
-        // Ensure you hash passwords and compare hashed values.
-        if (email === "user@example.com" && password === "password123") {
-          return { id: "creds-user-1", name: "Test User", email: email, image: null };
+        if (
+          (email === "user@example.com" && password === "password123") ||
+          (email === "newuser@example.com" && password === "newpassword123")
+        ) {
+          const name = email === "user@example.com" ? "Test User" : "New User";
+          const id = email === "user@example.com" ? "creds-user-1" : "creds-user-2";
+          return { id, name, email: email, image: null };
         }
         
         // If credentials are not valid, return null.

@@ -11,7 +11,7 @@ import { TaskList } from "@/components/TaskList";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { useToast } from "@/hooks/use-toast";
 import type { Task } from "@/types";
-import { PlusCircle, Wand2, Loader2, LogIn, Mail, Eye, EyeOff, Search, Filter, SearchX, CheckCircle2, AlertTriangle, Info, Plus } from "lucide-react";
+import { PlusCircle, Wand2, Loader2, LogIn, Mail, Eye, EyeOff, Search, Filter, SearchX, CheckCircle2, AlertTriangle, Info, Plus, UserPlus } from "lucide-react";
 import { smartSortTasksAction } from "./actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +36,13 @@ export default function Home() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isCredentialsLoading, setIsCredentialsLoading] = useState(false);
+  
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [signupName, setSignupName] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
+  const [isSignupLoading, setIsSignupLoading] = useState(false);
+  
   const [rememberMe, setRememberMe] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
@@ -221,7 +228,7 @@ export default function Home() {
       if (result?.error) {
         let description = "Login failed. Please check your credentials.";
         if (result.error === "CredentialsSignin") {
-          description = "Invalid email or password. (Hint: user@example.com / password123)";
+          description = "Invalid email or password.";
         } else if (result.error !== "Callback" && result.error !== "SessionRequired" && result.error !== "OAuthAccountNotLinked" && result.error !== "Default") {
           description = `Error: ${result.error}`;
         }
@@ -250,6 +257,22 @@ export default function Home() {
     }
   };
 
+  const handleSignUp = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSignupLoading(true);
+    // In a real app, you'd send signupName, signupEmail, signupPassword to your backend.
+    // Here, we just simulate the process.
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    toast({
+        title: "Sign Up Simulated!",
+        description: "You can now log in using the 'new user' demo credentials.",
+        icon: <CheckCircle2 className="h-5 w-5 text-primary" />,
+    });
+    setIsSignupLoading(false);
+    setAuthMode('login'); // Switch back to the login form
+  };
+
 
   if (status === "loading" || !mounted) {
     return (
@@ -271,14 +294,16 @@ export default function Home() {
         <Header />
         <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col items-center justify-center text-center">
           <div className="bg-card p-8 rounded-xl shadow-2xl w-full max-w-md">
-            <h2 className="text-3xl font-headline font-semibold text-foreground mb-6">Welcome to TaskFlow!</h2>
-            <p className="text-muted-foreground mb-8">
-              Log in to manage your tasks and experience smart sorting.
+            <h2 className="text-3xl font-headline font-semibold text-foreground mb-2">
+              {authMode === 'login' ? 'Welcome Back!' : 'Create an Account'}
+            </h2>
+            <p className="text-muted-foreground mb-6">
+              {authMode === 'login' ? 'Log in to manage your tasks.' : 'Get started with TaskFlow for free.'}
             </p>
 
             <Button onClick={() => signIn("google", { callbackUrl: "/" })} size="lg" className="w-full mb-4 shadow-md hover:shadow-lg transition-shadow bg-primary hover:bg-primary/90">
               <LogIn className="mr-2 h-5 w-5" />
-              Login with Google
+              Continue with Google
             </Button>
 
             <div className="my-6 flex items-center w-full">
@@ -287,69 +312,137 @@ export default function Home() {
               <Separator className="flex-grow shrink" />
             </div>
 
-            <form onSubmit={handleCredentialsLogin} className="space-y-6 text-left">
-              <div className="space-y-2">
-                <Label htmlFor="email-login">Email</Label>
-                <Input
-                  id="email-login"
-                  type="email"
-                  placeholder="user@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="bg-background border-input focus:ring-primary"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password-login">Password</Label>
-                <div className="relative">
+            {authMode === 'login' ? (
+              <form onSubmit={handleCredentialsLogin} className="space-y-6 text-left">
+                <div className="space-y-2">
+                  <Label htmlFor="email-login">Email</Label>
                   <Input
-                    id="password-login"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    id="email-login"
+                    type="email"
+                    placeholder="user@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="bg-background border-input focus:ring-primary pr-10"
+                    className="bg-background border-input focus:ring-primary"
                   />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                  >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password-login">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password-login"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="bg-background border-input focus:ring-primary pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="remember-me"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(Boolean(checked))}
+                    />
+                    <Label
+                      htmlFor="remember-me"
+                      className="text-sm font-normal text-muted-foreground cursor-pointer"
+                    >
+                      Remember me
+                    </Label>
+                  </div>
+                </div>
+                <Button type="submit" size="lg" className="w-full shadow-md hover:shadow-lg transition-shadow" disabled={isCredentialsLoading}>
+                  {isCredentialsLoading ? (
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  ) : (
+                    <Mail className="mr-2 h-5 w-5" />
+                  )}
+                  Login with Email
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleSignUp} className="space-y-4 text-left">
+                <div className="space-y-2">
+                  <Label htmlFor="name-signup">Full Name</Label>
+                  <Input
+                    id="name-signup"
+                    type="text"
+                    placeholder="John Doe"
+                    value={signupName}
+                    onChange={(e) => setSignupName(e.target.value)}
+                    required
+                    className="bg-background border-input focus:ring-primary"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email-signup">Email</Label>
+                  <Input
+                    id="email-signup"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={signupEmail}
+                    onChange={(e) => setSignupEmail(e.target.value)}
+                    required
+                    className="bg-background border-input focus:ring-primary"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password-signup">Password</Label>
+                  <Input
+                    id="password-signup"
+                    type="password"
+                    placeholder="••••••••"
+                    value={signupPassword}
+                    onChange={(e) => setSignupPassword(e.target.value)}
+                    required
+                    className="bg-background border-input focus:ring-primary"
+                  />
+                </div>
+                <Button type="submit" size="lg" className="w-full shadow-md hover:shadow-lg transition-shadow" disabled={isSignupLoading}>
+                  {isSignupLoading ? (
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  ) : (
+                    <UserPlus className="mr-2 h-5 w-5" />
+                  )}
+                  Create Account
+                </Button>
+              </form>
+            )}
+
+            <p className="mt-6 text-center text-sm text-muted-foreground">
+              {authMode === 'login' ? (
+                <>
+                  Don&apos;t have an account?{" "}
+                  <Button variant="link" className="p-0 h-auto font-semibold" onClick={() => setAuthMode('signup')}>
+                    Sign Up
                   </Button>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="remember-me"
-                    checked={rememberMe}
-                    onCheckedChange={(checked) => setRememberMe(Boolean(checked))}
-                  />
-                  <Label
-                    htmlFor="remember-me"
-                    className="text-sm font-normal text-muted-foreground cursor-pointer"
-                  >
-                    Remember me
-                  </Label>
-                </div>
-              </div>
-              <Button type="submit" size="lg" className="w-full shadow-md hover:shadow-lg transition-shadow" disabled={isCredentialsLoading}>
-                {isCredentialsLoading ? (
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                ) : (
-                  <Mail className="mr-2 h-5 w-5" />
-                )}
-                Login with Email
-              </Button>
-            </form>
+                </>
+              ) : (
+                <>
+                  Already have an account?{" "}
+                  <Button variant="link" className="p-0 h-auto font-semibold" onClick={() => setAuthMode('login')}>
+                    Log In
+                  </Button>
+                </>
+              )}
+            </p>
+
             <p className="mt-4 text-xs text-muted-foreground">
-              (Hint: try user@example.com and password123)
+              (Hint: try user@example.com / password123 or newuser@example.com / newpassword123)
             </p>
           </div>
         </main>
@@ -473,4 +566,3 @@ export default function Home() {
     </div>
   );
 }
-
