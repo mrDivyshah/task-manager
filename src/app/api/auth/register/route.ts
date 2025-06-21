@@ -5,8 +5,16 @@ import User from '@/models/user';
 
 export async function POST(req: Request) {
   try {
-    await dbConnect();
     const { name, email, password } = await req.json();
+
+    if (!name || !email || !password || typeof password !== 'string' || password.length < 6) {
+      return NextResponse.json(
+        { message: 'Invalid input. Name, email, and a password of at least 6 characters are required.' },
+        { status: 400 }
+      );
+    }
+    
+    await dbConnect();
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {

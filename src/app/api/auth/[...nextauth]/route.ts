@@ -67,7 +67,7 @@ export const authOptions: NextAuthOptions = {
             // This is a new user from Google, create them in the database
             await User.create({
               email: user.email,
-              name: user.name,
+              name: user.name || user.email.split('@')[0], // Fallback for name
               image: user.image,
             });
           }
