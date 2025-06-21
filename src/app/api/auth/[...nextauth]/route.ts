@@ -26,7 +26,7 @@ export const authOptions: NextAuthOptions = {
 
         await dbConnect();
 
-        const user = await User.findOne({ email: credentials.email });
+        const user = await User.findOne({ email: credentials.email }).select('+password');
 
         if (!user || !user.password) {
           // User might exist from Google sign-in but has no password set
@@ -42,12 +42,12 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        // Return user object for NextAuth session
         return {
           id: user._id.toString(),
           name: user.name,
           email: user.email,
           image: user.image,
+          gender: user.gender,
         };
       }
     })
@@ -64,42 +64,44 @@ export const authOptions: NextAuthOptions = {
         try {
           const existingUser = await User.findOne({ email: user.email });
           if (!existingUser) {
-            // This is a new user from Google, create them in the database
             await User.create({
               email: user.email,
-              name: user.name || user.email.split('@')[0], // Fallback for name
+              name: user.name || user.email.split('@')[0], 
               image: user.image,
             });
           }
-          return true; // Continue sign in
+          return true; 
         } catch (error) {
-          console.error("Error during Google sign-in user creation:", error);
-          return false; // Prevent sign in on DB error
+          console.error("Error during Google sign-in user check/creation:", error);
+          return false;
         }
       }
-      return true; // For credentials provider, the authorize function handles it
+      return true; 
     },
-    async jwt({ token, user }) {
-      // The `user` object is only passed on the first sign-in.
-      // We need to find the user in the database to get their MongoDB _id.
-      if (user) {
-        await dbConnect();
-        const dbUser = await User.findOne({ email: user.email });
-        if (dbUser) {
-          token.id = dbUser._id.toString();
-        }
+    async jwt({ token, user, trigger, session }) {
+      if (user) { 
+        token.id = user.id;
+        (token as any).gender = user.gender;
       }
+      
+      if (trigger === "update" && session) {
+        token.name = session.user.name;
+        token.picture = session.user.image;
+        (token as any).gender = session.user.gender;
+      }
+      
       return token;
     },
     async session({ session, token }) {
-      if (token?.id && session.user) {
-        (session.user as any).id = token.id;
+      if (token && session.user) {
+        session.user.id = token.id as string;
+        (session.user as any).gender = (token as any).gender;
       }
       return session;
     },
   },
   pages: {
-    // signIn: '/auth/signin', // Default is fine
+    signIn: '/', 
   },
   debug: process.env.NODE_ENV === 'development',
 }

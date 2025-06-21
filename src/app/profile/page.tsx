@@ -74,15 +74,37 @@ export default function ProfilePage() {
   const handleSaveProfile = async (e: FormEvent) => {
     e.preventDefault();
     setIsSavingProfile(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    toast({
-      title: "Profile Updated",
-      description: "Your profile information has been saved.",
-      icon: <CheckCircle2 className="h-5 w-5 text-primary" />,
-    });
-    setIsEditing(false);
-    setIsSavingProfile(false);
+
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: formData.name, gender: formData.gender }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to update profile.");
+      }
+
+      await updateSession({ name: formData.name, gender: formData.gender });
+
+      toast({
+        title: "Profile Updated",
+        description: "Your profile information has been saved.",
+        icon: <CheckCircle2 className="h-5 w-5 text-primary" />,
+      });
+      setIsEditing(false);
+    } catch (error) {
+       toast({
+        title: "Update Failed",
+        description: (error as Error).message,
+        variant: "destructive",
+        icon: <AlertTriangle className="h-5 w-5" />,
+      });
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   const handleChangePassword = async (e: FormEvent) => {
@@ -106,16 +128,37 @@ export default function ProfilePage() {
         return;
     }
     setIsUpdatingPassword(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    toast({
-      title: "Password Updated",
-      description: "Your password has been successfully changed.",
-      icon: <CheckCircle2 className="h-5 w-5 text-primary" />,
-    });
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmNewPassword("");
-    setIsUpdatingPassword(false);
+    
+    try {
+       const res = await fetch('/api/password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to update password.");
+      }
+
+      toast({
+        title: "Password Updated",
+        description: "Your password has been successfully changed.",
+        icon: <CheckCircle2 className="h-5 w-5 text-primary" />,
+      });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+    } catch (error) {
+       toast({
+        title: "Update Failed",
+        description: (error as Error).message,
+        variant: "destructive",
+        icon: <AlertTriangle className="h-5 w-5" />,
+      });
+    } finally {
+      setIsUpdatingPassword(false);
+    }
   };
 
   const getUserInitials = (name?: string | null) => {
@@ -194,18 +237,7 @@ export default function ProfilePage() {
 
                 <div>
                   <Label htmlFor="email" className="text-foreground/80">Email Address</Label>
-                  {isEditing ? (
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="mt-1 bg-background border-input focus:ring-primary"
-                      />
-                  ) : (
-                    <p className="text-lg text-foreground mt-1">{formData.email || "Not set"}</p>
-                  )}
+                  <p className="text-lg text-muted-foreground mt-1">{formData.email || "Not set"}</p>
                 </div>
 
                 <div>
@@ -223,7 +255,7 @@ export default function ProfilePage() {
                       </SelectContent>
                     </Select>
                   ) : (
-                    <p className="text-lg text-foreground mt-1 capitalize">{formData.gender || "Not set"}</p>
+                    <p className="text-lg text-foreground mt-1 capitalize">{formData.gender ? formData.gender.replace("_", " ") : "Not set"}</p>
                   )}
                 </div>
               </div>
@@ -306,7 +338,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-    
-
-    
-

@@ -1,3 +1,4 @@
+
 import mongoose, { Schema, models, model } from 'mongoose';
 
 const UserSchema = new Schema({
@@ -12,7 +13,7 @@ const UserSchema = new Schema({
   },
   password: {
     type: String,
-    // Not required, as users can sign up via OAuth providers
+    select: false, // Prevent password from being returned by default
   },
   image: {
     type: String,

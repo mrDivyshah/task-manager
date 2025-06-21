@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongodb';
@@ -40,8 +41,9 @@ export async function POST(req: Request) {
     );
   } catch (error) {
     console.error('Registration Error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown server error occurred.';
     return NextResponse.json(
-      { message: 'An internal server error occurred.' },
+      { message: 'An internal server error occurred during registration.', error: errorMessage },
       { status: 500 }
     );
   }
