@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 3,
+            "activePatchIndex": 6,
             "patches": [
                 {
                     "date": 1750600403745,
@@ -20,6 +20,18 @@
                 {
                     "date": 1750600438921,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -470,9 +470,9 @@\n             </p>\n           </div>\n         </main>\n         <footer className=\"py-6 text-center text-sm text-muted-foreground border-t border-border/50\">\n-          © {currentYear} TaskFlow. developed By \n+          © {currentYear} TaskFlow. Developed By Dravya shah\n         </footer>\n       </div>\n     );\n   }\n"
+                },
+                {
+                    "date": 1750605342523,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -588,9 +588,9 @@\n             <p className=\"max-w-sm\">Try adjusting your search or filter criteria.</p>\n           </div>\n         )}\n \n-        { (tasks.length === 0 || displayedTasks.length > 0) && (\n+        { (tasks.length === 0 || displayedTasks.length > 0 ) && (\n             <TaskList \n               tasks={displayedTasks} \n               onEditTask={handleOpenTaskForm} \n               onDeleteTask={handleDeleteTask} \n"
+                },
+                {
+                    "date": 1750605350345,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -588,9 +588,9 @@\n             <p className=\"max-w-sm\">Try adjusting your search or filter criteria.</p>\n           </div>\n         )}\n \n-        { (tasks.length === 0 || displayedTasks.length > 0 && displ) && (\n+        { (tasks.length === 0 || displayedTasks.length > 0 && displayedTasks.) && (\n             <TaskList \n               tasks={displayedTasks} \n               onEditTask={handleOpenTaskForm} \n               onDeleteTask={handleDeleteTask} \n"
+                },
+                {
+                    "date": 1750605359611,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -588,9 +588,9 @@\n             <p className=\"max-w-sm\">Try adjusting your search or filter criteria.</p>\n           </div>\n         )}\n \n-        { (tasks.length === 0 || displayedTasks.length > 0 && displayedTasks.) && (\n+        { (tasks.length === 0 || displayedTasks.length > 0 && displayedTasks.map) && (\n             <TaskList \n               tasks={displayedTasks} \n               onEditTask={handleOpenTaskForm} \n               onDeleteTask={handleDeleteTask} \n"
                 }
             ],
             "date": 1750600403745,
