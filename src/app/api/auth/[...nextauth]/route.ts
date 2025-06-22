@@ -29,7 +29,6 @@ export const authOptions: NextAuthOptions = {
         const user = await User.findOne({ email: credentials.email }).select('+password');
 
         if (!user || !user.password) {
-          // User might exist from Google sign-in but has no password set
           return null;
         }
 
@@ -42,6 +41,7 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
+        // Return a plain object, not a Mongoose document
         return {
           id: user._id.toString(),
           name: user.name,
@@ -79,15 +79,29 @@ export const authOptions: NextAuthOptions = {
       return true; 
     },
     async jwt({ token, user, trigger, session }) {
-      if (user) { 
-        token.id = user.id;
-        (token as any).gender = user.gender;
+      if (user) { // This block runs on initial sign-in
+        await dbConnect();
+        const dbUser = await User.findOne({ email: user.email });
+        if (dbUser) {
+          token.id = dbUser._id.toString();
+          token.name = dbUser.name;
+          token.email = dbUser.email;
+          token.picture = dbUser.image;
+          token.gender = dbUser.gender;
+          token.notificationSoundEnabled = dbUser.notificationSoundEnabled;
+          token.notificationStyle = dbUser.notificationStyle;
+          token.advancedFeaturesEnabled = dbUser.advancedFeaturesEnabled;
+        }
       }
       
-      if (trigger === "update" && session) {
-        token.name = session.user.name;
-        token.picture = session.user.image;
-        (token as any).gender = session.user.gender;
+      if (trigger === "update" && session?.user) {
+        // This block runs when `update({ ... })` is called from the client
+        if (session.user.name) token.name = session.user.name;
+        if (session.user.image) token.picture = session.user.image;
+        if (session.user.gender) token.gender = session.user.gender;
+        if (session.user.notificationSoundEnabled !== undefined) token.notificationSoundEnabled = session.user.notificationSoundEnabled;
+        if (session.user.notificationStyle) token.notificationStyle = session.user.notificationStyle;
+        if (session.user.advancedFeaturesEnabled !== undefined) token.advancedFeaturesEnabled = session.user.advancedFeaturesEnabled;
       }
       
       return token;
@@ -95,7 +109,13 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
-        (session.user as any).gender = (token as any).gender;
+        session.user.name = token.name;
+        session.user.email = token.email;
+        session.user.image = token.picture as string | undefined;
+        session.user.gender = token.gender;
+        session.user.notificationSoundEnabled = token.notificationSoundEnabled;
+        session.user.notificationStyle = token.notificationStyle as 'dock' | 'float' | undefined;
+        session.user.advancedFeaturesEnabled = token.advancedFeaturesEnabled;
       }
       return session;
     },

@@ -1,13 +1,24 @@
 
+export interface UserSubset {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export interface Task {
   id: string;
   title: string;
   notes: string;
+  status: 'todo' | 'in-progress' | 'done';
   category?: string;
-  priority?: 'high' | 'medium' | 'low' | string; // AI might return other strings
+  priority?: 'high' | 'medium' | 'low' | string;
   createdAt: number; // timestamp
-  teamId?: string; 
+  teamId?: string;
+  team?: { name: string };
+  assignedTo?: UserSubset;
 }
+
+export interface TeamMember extends UserSubset {}
 
 export interface SmartSortTaskInput {
   id: string;
@@ -18,7 +29,29 @@ export interface SmartSortTaskInput {
 export interface Team {
   id: string;
   name: string;
-  code: string; // Team code (e.g., 6-digit OTP)
-  members: string[]; // Array of user identifiers (e.g., email or ID)
+  code: string;
+  members: TeamMember[];
   createdAt: number; // timestamp
+  ownerId: string;
+  pendingRequests?: TeamMember[];
+}
+
+export type NotificationStyle = "dock" | "float";
+
+export type NotificationType = "JOIN_REQUEST" | "TEAM_INVITE" | "TASK_ASSIGNED";
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  message: string;
+  data: {
+    teamId?: string;
+    teamName?: string;
+    requestingUserId?: string;
+    requestingUserName?: string;
+    invitingUserId?: string;
+    invitingUserName?: string;
+  };
+  isRead: boolean;
+  createdAt: string; // ISO date string
 }

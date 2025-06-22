@@ -25,15 +25,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Task, Team } from "@/types";
-import useLocalStorage from "@/hooks/useLocalStorage";
-import { useEffect } from "react";
+import type { Task, Team, TeamMember } from "@/types";
+import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 const taskFormSchema = z.object({
   title: z.string().min(1, "Title is required").max(100, "Title must be 100 characters or less"),
   notes: z.string().max(500, "Notes must be 500 characters or less").optional(),
   priority: z.string().optional(),
   teamId: z.string().optional(),
+  assignedTo: z.string().optional(),
 });
 
 type TaskFormValues = z.infer<typeof taskFormSchema>;
@@ -43,10 +44,12 @@ interface TaskFormProps {
   onClose: () => void;
   onSubmit: (data: TaskFormValues, existingTask?: Task) => void;
   taskToEdit?: Task;
+  teams: Team[];
 }
 
-export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProps) {
-  const [teams] = useLocalStorage<Team[]>("taskflow-teams", []);
+export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskFormProps) {
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
@@ -55,8 +58,11 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
       notes: "",
       priority: "",
       teamId: "__none__",
+      assignedTo: "__none__",
     },
   });
+  
+  const selectedTeamId = form.watch('teamId');
 
   useEffect(() => {
     if (isOpen) {
@@ -66,6 +72,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
           notes: taskToEdit.notes,
           priority: taskToEdit.priority || "",
           teamId: taskToEdit.teamId || "__none__",
+          assignedTo: taskToEdit.assignedTo?.id || "__none__",
         });
       } else {
         form.reset({
@@ -73,24 +80,47 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
           notes: "",
           priority: "",
           teamId: "__none__",
+          assignedTo: "__none__",
         });
       }
     }
   }, [taskToEdit, form, isOpen]);
 
+  useEffect(() => {
+    const fetchMembers = async (teamId: string) => {
+      if (teamId === '__none__') {
+        setMembers([]);
+        form.setValue('assignedTo', '__none__');
+        return;
+      }
+      setIsLoadingMembers(true);
+      try {
+        const res = await fetch(`/api/teams/${teamId}/members`);
+        if (!res.ok) throw new Error('Failed to fetch team members');
+        const data = await res.json();
+        setMembers(data);
+      } catch (error) {
+        console.error(error);
+        setMembers([]);
+      } finally {
+        setIsLoadingMembers(false);
+      }
+    };
+    
+    if (selectedTeamId) {
+      fetchMembers(selectedTeamId);
+    }
+  }, [selectedTeamId, form]);
+
 
   const handleSubmit = (data: TaskFormValues) => {
-    const processedData = {
-      ...data,
-      teamId: data.teamId === "__none__" ? "" : data.teamId,
-    };
-    onSubmit(processedData, taskToEdit);
+    onSubmit(data, taskToEdit);
     form.reset();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if(!open) onClose(); }}>
-      <DialogContent className="sm:max-w-[425px] bg-card rounded-lg shadow-xl">
+      <DialogContent className="sm:max-w-xl bg-card rounded-lg shadow-xl">
         <DialogHeader>
           <DialogTitle className="font-headline text-2xl">
             {taskToEdit ? "Edit Task" : "Create New Task"}
@@ -121,18 +151,13 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
                 <FormItem>
                   <FormLabel className="text-foreground/80">Notes (Optional)</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="Add any relevant details or context..."
-                      className="resize-none bg-background border-input focus:ring-primary"
-                      rows={3}
-                      {...field}
-                    />
+                    <Textarea placeholder="Add any relevant details or context..." className="resize-none bg-background border-input focus:ring-primary" rows={3} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <FormField
                 control={form.control}
                 name="priority"
@@ -141,9 +166,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
                     <FormLabel className="text-foreground/80">Priority</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value || ""}>
                       <FormControl>
-                        <SelectTrigger className="bg-background border-input focus:ring-primary">
-                          <SelectValue placeholder="Select priority" />
-                        </SelectTrigger>
+                        <SelectTrigger className="bg-background border-input focus:ring-primary"><SelectValue placeholder="Select priority" /></SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="none">None</SelectItem>
@@ -156,39 +179,55 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
                   </FormItem>
                 )}
               />
-              {teams.length > 0 && (
-                 <FormField
-                  control={form.control}
-                  name="teamId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground/80">Assign to Team</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="bg-background border-input focus:ring-primary">
-                            <SelectValue placeholder="Select a team" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="__none__">No Team / Personal</SelectItem>
-                          {teams.map((team) => (
-                            <SelectItem key={team.id} value={team.id}>
-                              {team.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+               <FormField
+                control={form.control}
+                name="teamId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-foreground/80">Assign to Team</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="bg-background border-input focus:ring-primary"><SelectValue placeholder="Select a team" /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="__none__">No Team / Personal</SelectItem>
+                        {teams.map((team) => (
+                          <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="assignedTo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-foreground/80">Assign to Member</FormLabel>
+                     <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingMembers || selectedTeamId === '__none__' || members.length === 0}>
+                      <FormControl>
+                        <SelectTrigger className="bg-background border-input focus:ring-primary">
+                          {isLoadingMembers && <Loader2 className="h-4 w-4 animate-spin mr-2"/>}
+                          <SelectValue placeholder="Select a member" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="__none__">Unassigned</SelectItem>
+                         {members.map((member) => (
+                          <SelectItem key={member.id} value={member.id}>{member.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
             <DialogFooter className="mt-8">
               <DialogClose asChild>
-                <Button type="button" variant="outline">
-                  Cancel
-                </Button>
+                <Button type="button" variant="outline">Cancel</Button>
               </DialogClose>
               <Button type="submit" variant="default">
                 {taskToEdit ? "Save Changes" : "Create Task"}
@@ -200,3 +239,5 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
     </Dialog>
   );
 }
+
+    
