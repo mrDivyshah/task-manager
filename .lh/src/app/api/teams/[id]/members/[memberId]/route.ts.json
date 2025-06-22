@@ -1,0 +1,22 @@
+{
+    "sourceFile": "src/app/api/teams/[id]/members/[memberId]/route.ts",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1750599736952,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1750599742683,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -28,9 +28,8 @@\n \n     // Only the team owner can remove members\n     if (team.ownerId.toString() !== session.user.id) {\n       return NextResponse.json({ message: 'You are not authorized to manage this team\\'s members' }, { status: 403 });\n-\n     }\n     \n     // The owner cannot remove themselves\n     if (memberId === team.ownerId.toString()) {\n"
+                }
+            ],
+            "date": 1750599736952,
+            "name": "Commit-0",
+            "content": "\nimport { NextResponse } from 'next/server';\nimport { getServerSession } from 'next-auth/next';\nimport { authOptions } from '@/app/api/auth/[...nextauth]/route';\nimport dbConnect from '@/lib/mongodb';\nimport Team from '@/models/team';\nimport mongoose from 'mongoose';\n\nexport async function DELETE(req: Request, { params }: { params: { id: string; memberId: string } }) {\n  const session = await getServerSession(authOptions);\n  if (!session?.user?.id) {\n    return NextResponse.json({ message: 'Not authenticated' }, { status: 401 });\n  }\n\n  try {\n    await dbConnect();\n    const { id: teamId, memberId } = params;\n\n    if (!mongoose.Types.ObjectId.isValid(teamId) || !mongoose.Types.ObjectId.isValid(memberId)) {\n        return NextResponse.json({ message: 'Invalid team or member ID' }, { status: 400 });\n    }\n\n    const team = await Team.findById(teamId);\n\n    if (!team) {\n      return NextResponse.json({ message: 'Team not found' }, { status: 404 });\n    }\n\n    // Only the team owner can remove members\n    if (team.ownerId.toString() !== session.user.id) {\nreturn NextResponse.json({ message: 'You are not authorized to manage this team\\'s members' }, { status: 403 });\n\n    }\n    \n    // The owner cannot remove themselves\n    if (memberId === team.ownerId.toString()) {\n        return NextResponse.json({ message: 'The team owner cannot be removed' }, { status: 400 });\n    }\n\n    // Pull the member from the members array\n    await Team.updateOne({ _id: teamId }, { $pull: { members: memberId } });\n\n    // Here you might also want to unassign tasks from the removed member in this team\n    // For now, we'll just remove them from the team.\n\n    return NextResponse.json({ message: 'Member removed successfully' }, { status: 200 });\n\n  } catch (error) {\n    console.error('Error removing team member:', error);\n    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });\n  }\n}\n"
+        }
+    ]
+}
