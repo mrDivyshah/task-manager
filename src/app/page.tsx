@@ -10,7 +10,7 @@ import { TaskForm } from "@/components/TaskForm";
 import { TaskList } from "@/components/TaskList";
 import { useToast } from "@/hooks/use-toast";
 import type { Task, Team } from "@/types";
-import { PlusCircle, Wand2, Loader2, LogIn, Mail, Eye, EyeOff, Search, Filter, SearchX, CheckCircle2, AlertTriangle, Info, Plus, UserPlus, Users, UserCheck } from "lucide-react";
+import { PlusCircle, Wand2, Loader2, LogIn, Mail, Eye, EyeOff, Search, Filter, SearchX, CheckCircle2, AlertTriangle, Info, Plus, UserPlus, Users, UserCheck, XCircle } from "lucide-react";
 import { smartSortTasksAction } from "./actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,8 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -123,9 +125,19 @@ export default function Home() {
       if (pA !== pB) return pA - pB;
       return (b.createdAt ?? 0) - (a.createdAt ?? 0); // Sort by most recent
     });
-  
-  const allTasksAreDisplayed = displayedTasks.length === tasks.length && searchTerm.trim() === "" && priorityFilter === "all" && teamFilter === "all" && !assignedToMeFilter;
 
+  const handleResetFilters = () => {
+    setSearchTerm("");
+    setPriorityFilter("all");
+    setTeamFilter("all");
+    setAssignedToMeFilter(false);
+  };
+  
+  const activeFilterCount =
+    (searchTerm.trim() ? 1 : 0) +
+    (priorityFilter !== "all" ? 1 : 0) +
+    (teamFilter !== "all" ? 1 : 0) +
+    (assignedToMeFilter ? 1 : 0);
 
   const handleOpenTaskForm = (task?: Task) => {
     setTaskToEdit(task);
@@ -431,7 +443,7 @@ export default function Home() {
           <div className="flex items-baseline gap-2">
             <h2 className="text-2xl font-headline font-semibold text-foreground">Your Tasks</h2>
             <span className="text-sm text-muted-foreground">
-              {allTasksAreDisplayed
+              {activeFilterCount === 0
                 ? `(${tasks.length} task${tasks.length === 1 ? "" : "s"})`
                 : `(${displayedTasks.length} of ${tasks.length} task${tasks.length === 1 ? "" : "s"} shown)`}
             </span>
@@ -448,45 +460,84 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 p-4 bg-card/50 rounded-lg border">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-              <Input type="search" placeholder="Search tasks..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 w-full bg-background border-input focus:ring-primary shadow-sm" />
-            </div>
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-full bg-background border-input focus:ring-primary shadow-sm">
-                <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
-                <SelectValue placeholder="Filter by priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Priorities</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="none">No Priority</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={teamFilter} onValueChange={setTeamFilter}>
-              <SelectTrigger className="w-full bg-background border-input focus:ring-primary shadow-sm">
-                <Users className="mr-2 h-4 w-4 text-muted-foreground" />
-                <SelectValue placeholder="Filter by team" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Teams</SelectItem>
-                <SelectItem value="personal">Personal (No Team)</SelectItem>
-                <Separator/>
-                {teams.map(team => (
-                  <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="flex items-center space-x-2 justify-center p-2 rounded-md border bg-background shadow-sm">
-                <Checkbox id="assigned-to-me" checked={assignedToMeFilter} onCheckedChange={(checked) => setAssignedToMeFilter(Boolean(checked))} />
-                <Label htmlFor="assigned-to-me" className="text-sm font-medium leading-none cursor-pointer flex items-center gap-2">
-                  <UserCheck className="h-4 w-4 text-muted-foreground" /> Assigned to Me
-                </Label>
-            </div>
+        <div className="flex items-center gap-4 mb-8">
+            <Popover>
+                <PopoverTrigger asChild>
+                    <Button variant="outline" className="shadow-sm">
+                        <Filter className="mr-2 h-4 w-4" />
+                        Filters
+                        {activeFilterCount > 0 && (
+                        <Badge variant="secondary" className="ml-2 rounded-full h-5 w-5 flex items-center justify-center p-0">
+                            {activeFilterCount}
+                        </Badge>
+                        )}
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-96" align="start">
+                    <div className="grid gap-y-6">
+                        <div className="space-y-2">
+                            <h4 className="font-medium leading-none">Filter Tasks</h4>
+                            <p className="text-sm text-muted-foreground">
+                                Refine your task list with the options below.
+                            </p>
+                        </div>
+                        <div className="grid gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="search-filter">Search</Label>
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                    <Input id="search-filter" type="search" placeholder="Search tasks..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 w-full bg-background" />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="priority-filter">Priority</Label>
+                                <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                                    <SelectTrigger id="priority-filter" className="w-full bg-background">
+                                        <SelectValue placeholder="Filter by priority" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Priorities</SelectItem>
+                                        <SelectItem value="high">High</SelectItem>
+                                        <SelectItem value="medium">Medium</SelectItem>
+                                        <SelectItem value="low">Low</SelectItem>
+                                        <SelectItem value="none">No Priority</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="team-filter">Team</Label>
+                                <Select value={teamFilter} onValueChange={setTeamFilter}>
+                                    <SelectTrigger id="team-filter" className="w-full bg-background">
+                                        <SelectValue placeholder="Filter by team" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Teams & Personal</SelectItem>
+                                        <SelectItem value="personal">Personal (No Team)</SelectItem>
+                                        <Separator />
+                                        {teams.map(team => (
+                                        <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="flex items-center space-x-2 pt-2">
+                                <Checkbox id="assigned-to-me-filter" checked={assignedToMeFilter} onCheckedChange={(checked) => setAssignedToMeFilter(Boolean(checked))} />
+                                <Label htmlFor="assigned-to-me-filter" className="text-sm font-medium leading-none cursor-pointer">
+                                    Only show tasks assigned to me
+                                </Label>
+                            </div>
+                        </div>
+                         {activeFilterCount > 0 && (
+                            <Button size="sm" variant="ghost" onClick={handleResetFilters} className="justify-start p-0 h-auto text-sm text-muted-foreground hover:text-foreground">
+                                <XCircle className="mr-2 h-4 w-4" />
+                                Clear all filters
+                            </Button>
+                        )}
+                    </div>
+                </PopoverContent>
+            </Popover>
         </div>
+
 
         {tasks.length > 0 && displayedTasks.length === 0 && (
           <div className="mt-12 flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-2 border-dashed border-border rounded-xl bg-card/50">

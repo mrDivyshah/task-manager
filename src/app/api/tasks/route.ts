@@ -15,7 +15,18 @@ export async function GET(req: Request) {
 
   try {
     await dbConnect();
-    const tasks = await Task.find({ userId: session.user.id })
+
+    // Find all teams the user is a member of
+    const userTeams = await Team.find({ members: session.user.id }).select('_id');
+    const userTeamIds = userTeams.map(team => team._id);
+
+    // Find tasks created by the user OR assigned to any of the user's teams
+    const tasks = await Task.find({
+      $or: [
+        { userId: session.user.id }, // Personal tasks created by the user
+        { teamId: { $in: userTeamIds } } // Tasks in teams the user is a member of
+      ]
+    })
       .populate({ path: 'teamId', model: Team, select: 'name' })
       .populate({ path: 'assignedTo', model: User, select: 'name email' })
       .sort({ createdAt: -1 });
