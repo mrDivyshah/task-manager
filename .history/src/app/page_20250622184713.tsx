@@ -471,7 +471,7 @@ export default function Home() {
           </div>
         </main>
         <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-          © {currentYear} TaskFlow. Developed By Dravya shah
+          © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
         </footer>
       </div>
     );
@@ -617,7 +617,7 @@ export default function Home() {
       <TaskForm isOpen={isTaskFormOpen} onClose={handleCloseTaskForm} onSubmit={handleSaveTask} taskToEdit={taskToEdit} teams={teams} />
 
       <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-        © {currentYear} TaskFlow. Developed Dravya Shah
+        © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
       </footer>
     </div>
   );
