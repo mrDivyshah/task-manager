@@ -16,10 +16,12 @@ import type { Team, TeamMember } from "@/types";
 import { ArrowLeft, Edit3, Users, Trash2, PlusCircle, Save, XCircle, CheckCircle2, AlertTriangle, Info, SearchX, UserPlus, Loader2, Check, X } from "lucide-react";
 import { formatDistanceToNow } from 'date-fns';
 import { Separator } from "@/components/ui/separator";
+import { useNotifications } from "@/context/NotificationContext";
 
 function PendingRequestItem({ teamId, request, onHandleRequest }: { teamId: string, request: TeamMember, onHandleRequest: (teamId: string, userId: string) => void }) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState<'accept' | 'reject' | null>(null);
+  const { fetchNotifications } = useNotifications();
 
   const handleRequest = async (action: 'accept' | 'reject') => {
     setIsLoading(action);
@@ -34,6 +36,7 @@ function PendingRequestItem({ teamId, request, onHandleRequest }: { teamId: stri
 
       toast({ title: `Request ${action}ed`, description: `${request.name} has been ${action}ed.`, icon: <CheckCircle2 className="h-5 w-5 text-primary" /> });
       onHandleRequest(teamId, request.id);
+      await fetchNotifications(); // This will refresh the notification list in the header
     } catch (error) {
       toast({ title: `Failed to ${action} request`, description: (error as Error).message, variant: "destructive" });
     } finally {
@@ -110,7 +113,7 @@ export default function TeamsPage() {
       }
       return team;
     }));
-    // Optionally, re-fetch all teams to get updated member lists
+    // Re-fetch all teams to get updated member lists and ensure data consistency
     fetchTeams();
   };
 

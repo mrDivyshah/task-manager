@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LogoIcon } from './icons/LogoIcon';
 import { ThemeToggle } from './ThemeToggle';
 import {
@@ -37,6 +37,7 @@ import type { Notification, NotificationStyle } from "@/types";
 import { cn } from "@/lib/utils";
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
+import { useNotifications } from '@/context/NotificationContext';
 
 const NotificationBellButton = React.forwardRef<
   HTMLButtonElement,
@@ -138,38 +139,14 @@ export function Header() {
   const isLoading = status === "loading";
 
   const [mounted, setMounted] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
+  const { notifications, isLoading: isLoadingNotifications, removeNotification } = useNotifications();
   
   const notificationStyle: NotificationStyle = session?.user?.notificationStyle ?? 'dock';
 
-  const fetchNotifications = useCallback(async () => {
-    if (status !== "authenticated") return;
-    setIsLoadingNotifications(true);
-    try {
-      const res = await fetch('/api/notifications');
-      if (!res.ok) throw new Error("Failed to fetch notifications");
-      const data = await res.json();
-      setNotifications(data);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsLoadingNotifications(false);
-    }
-  }, [status]);
-
   useEffect(() => {
     setMounted(true);
-    fetchNotifications();
-    // Set up polling for notifications
-    const interval = setInterval(fetchNotifications, 30000); // Poll every 30 seconds
-    return () => clearInterval(interval);
-  }, [fetchNotifications]);
+  }, []);
   
-  const handleNotificationHandled = (notificationId: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== notificationId));
-  }
-
   const getUserInitials = (name?: string | null) => {
     if (!name) return 'U';
     const names = name.split(' ');
@@ -186,7 +163,7 @@ export function Header() {
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <NotificationList notifications={notifications} onNotificationHandled={handleNotificationHandled} />
+        <NotificationList notifications={notifications} onNotificationHandled={removeNotification} />
       )}
     </>
   );
