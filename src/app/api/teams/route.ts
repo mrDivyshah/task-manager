@@ -16,7 +16,7 @@ export async function GET(req: Request) {
     await dbConnect();
     // Find teams where the current user is a member
     const teams = await Team.find({ members: session.user.id })
-      .populate({ path: 'members', model: User, select: 'email' })
+      .populate({ path: 'members', model: User, select: 'id name email' })
       .populate({ path: 'pendingRequests', model: User, select: 'id name email' })
       .sort({ createdAt: -1 });
     
@@ -27,7 +27,11 @@ export async function GET(req: Request) {
         name: team.name,
         code: team.code,
         ownerId: team.ownerId.toString(),
-        members: team.members.map((member: any) => member.email),
+        members: team.members.map((member: any) => ({
+            id: member._id.toString(),
+            name: member.name,
+            email: member.email,
+        })),
         createdAt: team.createdAt.getTime(),
         pendingRequests: isOwner ? team.pendingRequests.map((member: any) => ({
             id: member._id.toString(),
@@ -72,13 +76,15 @@ export async function POST(req: Request) {
         });
         await newTeam.save();
 
+        const newTeamObject = newTeam.toObject();
+
         return NextResponse.json({
-            id: newTeam._id.toString(),
-            name: newTeam.name,
-            code: newTeam.code,
-            ownerId: newTeam.ownerId.toString(),
-            members: [session.user.email], // Return email for immediate display
-            createdAt: newTeam.createdAt.getTime(),
+            id: newTeamObject._id.toString(),
+            name: newTeamObject.name,
+            code: newTeamObject.code,
+            ownerId: newTeamObject.ownerId.toString(),
+            members: [{ id: session.user.id, name: session.user.name, email: session.user.email }],
+            createdAt: newTeamObject.createdAt.getTime(),
         }, { status: 201 });
 
     } catch (error) {

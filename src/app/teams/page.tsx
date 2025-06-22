@@ -8,15 +8,17 @@ import { useSession } from "next-auth/react";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import type { Team, TeamMember } from "@/types";
-import { ArrowLeft, Edit3, Users, Trash2, PlusCircle, Save, XCircle, CheckCircle2, AlertTriangle, Info, SearchX, UserPlus, Loader2, Check, X } from "lucide-react";
+import { ArrowLeft, Edit3, Users, Trash2, PlusCircle, Save, XCircle, CheckCircle2, AlertTriangle, SearchX, UserPlus, Loader2, Check, X, Send, UserX } from "lucide-react";
 import { formatDistanceToNow } from 'date-fns';
 import { Separator } from "@/components/ui/separator";
 import { useNotifications } from "@/context/NotificationContext";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 function PendingRequestItem({ teamId, request, onHandleRequest }: { teamId: string, request: TeamMember, onHandleRequest: (teamId: string, userId: string) => void }) {
   const { toast } = useToast();
@@ -36,7 +38,7 @@ function PendingRequestItem({ teamId, request, onHandleRequest }: { teamId: stri
 
       toast({ title: `Request ${action}ed`, description: `${request.name} has been ${action}ed.`, icon: <CheckCircle2 className="h-5 w-5 text-primary" /> });
       onHandleRequest(teamId, request.id);
-      await fetchNotifications(); // This will refresh the notification list in the header
+      await fetchNotifications();
     } catch (error) {
       toast({ title: `Failed to ${action} request`, description: (error as Error).message, variant: "destructive" });
     } finally {
@@ -78,7 +80,18 @@ export default function TeamsPage() {
   const [joinTeamCodeDigits, setJoinTeamCodeDigits] = useState<string[]>(Array(6).fill(""));
   const joinTeamCodeInputsRef = Array(6).fill(null).map(() => React.createRef<HTMLInputElement>());
 
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [teamToInviteTo, setTeamToInviteTo] = useState<Team | null>(null);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [isSendingInvite, setIsSendingInvite] = useState(false);
+
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+
+  const getUserInitials = (name?: string | null) => {
+    if (!name) return "U";
+    const names = name.split(" ");
+    return names.length > 1 ? `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase() : names[0][0].toUpperCase();
+  };
 
   const fetchTeams = useCallback(async () => {
     setIsLoading(true);
@@ -113,8 +126,53 @@ export default function TeamsPage() {
       }
       return team;
     }));
-    // Re-fetch all teams to get updated member lists and ensure data consistency
     fetchTeams();
+  };
+  
+  const handleOpenInviteDialog = (team: Team) => {
+    setTeamToInviteTo(team);
+    setIsInviteDialogOpen(true);
+  };
+  
+  const handleCloseInviteDialog = () => {
+    setTeamToInviteTo(null);
+    setInviteEmail("");
+    setIsInviteDialogOpen(false);
+  };
+
+  const handleSendInvite = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!teamToInviteTo || !inviteEmail) return;
+    setIsSendingInvite(true);
+    try {
+      const res = await fetch(`/api/teams/${teamToInviteTo.id}/invites`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: inviteEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      toast({ title: "Invitation Sent", description: `An invite has been sent to ${inviteEmail}.`, icon: <CheckCircle2 className="h-5 w-5 text-primary" /> });
+      handleCloseInviteDialog();
+    } catch(error) {
+      toast({ title: "Error Sending Invite", description: (error as Error).message, variant: "destructive" });
+    } finally {
+      setIsSendingInvite(false);
+    }
+  };
+
+  const handleRemoveMember = async (teamId: string, memberId: string) => {
+    try {
+      const res = await fetch(`/api/teams/${teamId}/members/${memberId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      toast({ title: "Member Removed", icon: <CheckCircle2 className="h-5 w-5 text-primary" /> });
+      fetchTeams(); // Re-fetch teams to update member list
+    } catch(error) {
+      toast({ title: "Error Removing Member", description: (error as Error).message, variant: "destructive" });
+    }
   };
 
   const handleOpenEditDialog = (team: Team) => {
@@ -143,12 +201,7 @@ export default function TeamsPage() {
         body: JSON.stringify({ name: editedTeamName.trim() }),
       });
       if (!res.ok) throw new Error('Failed to update team');
-
-      setTeams(prevTeams =>
-        prevTeams.map(team =>
-          team.id === teamToEdit.id ? { ...team, name: editedTeamName.trim() } : team
-        )
-      );
+      fetchTeams();
       toast({ title: "Team Updated", description: `Team name changed to "${editedTeamName.trim()}".`, icon: <CheckCircle2 className="h-5 w-5 text-primary" /> });
       handleCloseEditDialog();
     } catch (error) {
@@ -157,19 +210,16 @@ export default function TeamsPage() {
   };
 
   const handleDeleteTeam = async (teamId: string) => {
-    const teamToDelete = teams.find(t => t.id === teamId);
-    if (teamToDelete) {
-        try {
-            const res = await fetch(`/api/teams/${teamId}`, { method: 'DELETE' });
-            if (!res.ok) {
-              const data = await res.json();
-              throw new Error(data.message || 'Failed to delete team');
-            }
-            setTeams(prevTeams => prevTeams.filter(team => team.id !== teamId));
-            toast({ title: "Team Deleted", description: `Team "${teamToDelete.name}" has been removed.`, variant: "destructive" });
-        } catch(error) {
-            toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
+    try {
+        const res = await fetch(`/api/teams/${teamId}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.message || 'Failed to delete team');
         }
+        toast({ title: "Team Deleted", variant: "destructive" });
+        fetchTeams();
+    } catch(error) {
+        toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
     }
   };
 
@@ -178,7 +228,6 @@ export default function TeamsPage() {
       const newCode = [...joinTeamCodeDigits];
       newCode[index] = value.toUpperCase();
       setJoinTeamCodeDigits(newCode);
-
       if (value && index < 5 && joinTeamCodeInputsRef[index + 1]?.current) {
         joinTeamCodeInputsRef[index + 1].current?.focus();
       }
@@ -195,7 +244,6 @@ export default function TeamsPage() {
     e.preventDefault();
     setIsJoinTeamLoading(true);
     const finalJoinTeamCode = joinTeamCodeDigits.join("");
-    
     try {
         const res = await fetch('/api/teams/join', {
             method: 'POST',
@@ -204,7 +252,6 @@ export default function TeamsPage() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);
-
         toast({ title: "Request Sent!", description: `Your request to join the team has been sent to the owner.`, icon: <CheckCircle2 className="h-5 w-5 text-primary" /> });
         setIsJoinTeamDialogOpen(false);
         setJoinTeamCodeDigits(Array(6).fill(""));
@@ -253,7 +300,7 @@ export default function TeamsPage() {
                 </div>
             </div>
             <CardTitle className="font-headline text-2xl">Manage Teams</CardTitle>
-            <CardDescription>View, edit, or delete your teams. You can also join an existing team using a team code.</CardDescription>
+            <CardDescription>View your teams, manage members, and join existing teams.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {teams.length === 0 ? (
@@ -261,110 +308,99 @@ export default function TeamsPage() {
                 <SearchX size={64} className="mb-4 opacity-50" />
                 <h3 className="text-xl font-semibold mb-2 text-foreground">No Teams Yet</h3>
                 <p className="max-w-sm">
-                  You haven't created or joined any teams. Use the buttons above to create a new team or join an existing one.
+                  You haven't created or joined any teams. Use the buttons above to get started.
                 </p>
               </div>
             ) : (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {teams.map(team => (
-                  <Card key={team.id} className="shadow-md rounded-lg flex flex-col">
-                    <CardHeader>
-                      <CardTitle className="font-semibold text-xl break-all">{team.name}</CardTitle>
-                      <CardDescription>Code: <span className="font-mono text-primary">{team.code}</span></CardDescription>
-                       <div className="text-xs text-muted-foreground pt-1">
-                        Created: {formatDistanceToNow(new Date(team.createdAt), { addSuffix: true })}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="flex-grow space-y-4">
-                      <div>
-                        <h4 className="text-sm font-medium text-foreground mb-1">Members ({team.members.length}):</h4>
-                        {team.members.length > 0 ? (
-                          <ul className="list-disc list-inside text-sm text-muted-foreground space-y-0.5">
-                            {team.members.slice(0, 3).map(member => (
-                              <li key={member} className="truncate" title={member}>
-                                {member === session?.user?.email ? `${member} (You)` : member}
-                              </li>
-                            ))}
-                            {team.members.length > 3 && <li>...and {team.members.length - 3} more</li>}
-                          </ul>
-                        ) : (
-                          <p className="text-sm text-muted-foreground italic">No members yet.</p>
-                        )}
-                      </div>
-                      {team.pendingRequests && team.pendingRequests.length > 0 && (
-                        <div>
-                          <Separator className="my-3" />
-                          <h4 className="text-sm font-medium text-foreground mb-2">Pending Requests ({team.pendingRequests.length}):</h4>
-                          <div className="space-y-2">
-                             {team.pendingRequests.map(request => (
-                               <PendingRequestItem key={request.id} teamId={team.id} request={request} onHandleRequest={handleRequestHandled} />
-                             ))}
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                    <CardFooter className="border-t pt-4 flex justify-end gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleOpenEditDialog(team)} disabled={team.ownerId !== session?.user.id}>
-                        <Edit3 className="mr-2 h-4 w-4" /> Edit
-                      </Button>
-                      <Button variant="destructive" size="icon" className="h-9 w-9" onClick={() => handleDeleteTeam(team.id)} disabled={team.ownerId !== session?.user.id}>
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Delete Team</span>
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
+              <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+                {teams.map(team => {
+                    const isOwner = team.ownerId === session?.user.id;
+                    return (
+                        <Card key={team.id} className="shadow-md rounded-lg flex flex-col">
+                            <CardHeader>
+                                <div className="flex justify-between items-start">
+                                    <CardTitle className="font-semibold text-xl break-all">{team.name}</CardTitle>
+                                    {isOwner && (
+                                        <div className="flex gap-2">
+                                            <Button variant="outline" size="sm" onClick={() => handleOpenEditDialog(team)}><Edit3 className="mr-2 h-4 w-4" /> Edit</Button>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild><Button variant="destructive" size="icon" className="h-9 w-9"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
+                                                <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete the team and all associated data. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteTeam(team.id)}>Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+                                            </AlertDialog>
+                                        </div>
+                                    )}
+                                </div>
+                                <CardDescription>Code: <span className="font-mono text-primary">{team.code}</span></CardDescription>
+                                <div className="text-xs text-muted-foreground pt-1">Created: {formatDistanceToNow(new Date(team.createdAt), { addSuffix: true })}</div>
+                            </CardHeader>
+                            <CardContent className="flex-grow space-y-4">
+                            <div>
+                                <h4 className="text-sm font-medium text-foreground mb-2 flex items-center justify-between">
+                                    Members ({team.members.length})
+                                    {isOwner && <Button size="sm" variant="ghost" className="h-auto px-2 py-1" onClick={() => handleOpenInviteDialog(team)}><Send className="mr-2 h-4 w-4"/>Invite</Button>}
+                                </h4>
+                                {team.members.length > 0 ? (
+                                    <ul className="space-y-2">
+                                    {team.members.map(member => (
+                                        <li key={member.id} className="flex items-center justify-between text-sm">
+                                            <div className="flex items-center gap-2">
+                                                <Avatar className="h-6 w-6"><AvatarFallback className="text-xs bg-muted">{getUserInitials(member.name)}</AvatarFallback></Avatar>
+                                                <div className="flex flex-col"><span className="font-medium">{member.name}</span><span className="text-xs text-muted-foreground">{member.email}</span></div>
+                                            </div>
+                                            {isOwner && member.id !== team.ownerId && (
+                                              <AlertDialog>
+                                                  <AlertDialogTrigger asChild><Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"><UserX className="h-4 w-4" /></Button></AlertDialogTrigger>
+                                                  <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Remove {member.name}?</AlertDialogTitle><AlertDialogDescription>Are you sure you want to remove this member from the team?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveMember(team.id, member.id)}>Remove</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+                                              </AlertDialog>
+                                            )}
+                                        </li>
+                                    ))}
+                                    </ul>
+                                ) : (<p className="text-sm text-muted-foreground italic">No members yet.</p>)}
+                            </div>
+                            {team.pendingRequests && team.pendingRequests.length > 0 && (
+                                <div><Separator className="my-3" /><h4 className="text-sm font-medium text-foreground mb-2">Pending Requests ({team.pendingRequests.length}):</h4><div className="space-y-2">{team.pendingRequests.map(request => (<PendingRequestItem key={request.id} teamId={team.id} request={request} onHandleRequest={handleRequestHandled} />))}</div></div>
+                            )}
+                            </CardContent>
+                        </Card>
+                    )
+                })}
               </div>
             )}
           </CardContent>
         </Card>
       </main>
 
-      {teamToEdit && (
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-[425px] bg-card rounded-lg shadow-xl">
-            <DialogHeader>
-              <DialogTitle className="font-headline text-2xl">Edit Team: {teamToEdit.name}</DialogTitle>
-              <DialogDescription>Modify the team's name. Only the team owner can do this.</DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSaveTeamChanges} className="space-y-6 py-4">
-              <div>
-                <Label htmlFor="edit-team-name" className="text-foreground/80">Team Name</Label>
-                <Input id="edit-team-name" value={editedTeamName} onChange={(e) => setEditedTeamName(e.target.value)} className="mt-1 bg-background border-input focus:ring-primary" required />
-              </div>
-              <DialogFooter className="mt-8">
-                <Button type="button" variant="outline" onClick={handleCloseEditDialog}><XCircle className="mr-2 h-4 w-4" />Cancel</Button>
-                <Button type="submit" variant="default"><Save className="mr-2 h-4 w-4" />Save Changes</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      <Dialog open={isJoinTeamDialogOpen} onOpenChange={setIsJoinTeamDialogOpen}>
+      <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
         <DialogContent className="sm:max-w-md bg-card rounded-lg shadow-xl">
           <DialogHeader>
-            <DialogTitle className="font-headline text-2xl">Join a Team</DialogTitle>
-            <DialogDescription>Enter the 6-digit code of the team you want to join.</DialogDescription>
+            <DialogTitle className="font-headline text-2xl">Invite to {teamToInviteTo?.name}</DialogTitle>
+            <DialogDescription>Enter the email address of the user you want to invite.</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleJoinTeamSubmit} className="space-y-6 py-4">
+          <form onSubmit={handleSendInvite} className="space-y-4 py-4">
             <div>
-              <Label htmlFor="join-team-code-0" className="text-foreground/80">Team Code (6 digits)</Label>
-              <div className="flex justify-between gap-2 mt-1">
-                {joinTeamCodeDigits.map((digit, index) => (
-                  <Input key={index} id={`join-team-code-${index}`} ref={joinTeamCodeInputsRef[index]} type="text" maxLength={1} value={digit} onChange={(e) => handleJoinTeamCodeChange(index, e.target.value)} onKeyDown={(e) => handleJoinTeamCodeKeyDown(index, e)} className="w-10 h-12 text-center text-lg font-mono bg-background border-input focus:ring-primary" pattern="[a-zA-Z0-9]*" inputMode="text" required />
-                ))}
-              </div>
+              <Label htmlFor="invite-email" className="text-foreground/80">User's Email</Label>
+              <Input id="invite-email" type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="user@example.com" className="mt-1 bg-background border-input focus:ring-primary" required />
             </div>
-            <DialogFooter className="mt-8">
-              <DialogClose asChild><Button type="button" variant="outline" disabled={isJoinTeamLoading}>Cancel</Button></DialogClose>
-              <Button type="submit" variant="default" disabled={isJoinTeamLoading}>
-                {isJoinTeamLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />} 
-                Send Request
+            <DialogFooter className="mt-6">
+              <Button type="button" variant="outline" onClick={handleCloseInviteDialog} disabled={isSendingInvite}>Cancel</Button>
+              <Button type="submit" variant="default" disabled={isSendingInvite}>
+                {isSendingInvite ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />} 
+                Send Invite
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
+      </Dialog>
+
+      {teamToEdit && (
+        <Dialog open={isEditDialogOpen} onOpenChange={handleCloseEditDialog}>
+          <DialogContent className="sm:max-w-[425px] bg-card rounded-lg shadow-xl"><DialogHeader><DialogTitle className="font-headline text-2xl">Edit Team: {teamToEdit.name}</DialogTitle><DialogDescription>Modify the team's name. Only the team owner can do this.</DialogDescription></DialogHeader><form onSubmit={handleSaveTeamChanges} className="space-y-6 py-4"><div><Label htmlFor="edit-team-name" className="text-foreground/80">Team Name</Label><Input id="edit-team-name" value={editedTeamName} onChange={(e) => setEditedTeamName(e.target.value)} className="mt-1 bg-background border-input focus:ring-primary" required /></div><DialogFooter className="mt-8"><Button type="button" variant="outline" onClick={handleCloseEditDialog}><XCircle className="mr-2 h-4 w-4" />Cancel</Button><Button type="submit" variant="default"><Save className="mr-2 h-4 w-4" />Save Changes</Button></DialogFooter></form></DialogContent>
+        </Dialog>
+      )}
+
+      <Dialog open={isJoinTeamDialogOpen} onOpenChange={setIsJoinTeamDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-card rounded-lg shadow-xl"><DialogHeader><DialogTitle className="font-headline text-2xl">Join a Team</DialogTitle><DialogDescription>Enter the 6-digit code of the team you want to join.</DialogDescription></DialogHeader><form onSubmit={handleJoinTeamSubmit} className="space-y-6 py-4"><div><Label htmlFor="join-team-code-0" className="text-foreground/80">Team Code (6 characters)</Label><div className="flex justify-between gap-2 mt-1">{joinTeamCodeDigits.map((digit, index) => (<Input key={index} id={`join-team-code-${index}`} ref={joinTeamCodeInputsRef[index]} type="text" maxLength={1} value={digit} onChange={(e) => handleJoinTeamCodeChange(index, e.target.value)} onKeyDown={(e) => handleJoinTeamCodeKeyDown(index, e)} className="w-10 h-12 text-center text-lg font-mono bg-background border-input focus:ring-primary" pattern="[a-zA-Z0-9]*" inputMode="text" required />))}</div></div><DialogFooter className="mt-8"><DialogClose asChild><Button type="button" variant="outline" disabled={isJoinTeamLoading}>Cancel</Button></DialogClose><Button type="submit" variant="default" disabled={isJoinTeamLoading}>{isJoinTeamLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />} Send Request</Button></DialogFooter></form></DialogContent>
       </Dialog>
 
        <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">

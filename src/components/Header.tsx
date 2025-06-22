@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -62,7 +61,6 @@ function JoinRequestNotification({ notification, onHandled }: { notification: No
   const handleRequest = async (action: 'accept' | 'reject') => {
     if (!notification.data.teamId || !notification.data.requestingUserId) return;
     setIsLoading(action);
-
     try {
       const res = await fetch(`/api/teams/${notification.data.teamId}/requests`, {
         method: 'POST',
@@ -71,7 +69,6 @@ function JoinRequestNotification({ notification, onHandled }: { notification: No
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
-
       toast({ title: `Request ${action}ed!`, icon: <CheckCircle2 className="h-5 w-5 text-primary" /> });
       onHandled(notification.id);
     } catch (error) {
@@ -84,18 +81,45 @@ function JoinRequestNotification({ notification, onHandled }: { notification: No
   return (
     <div className="p-3 hover:bg-muted/50 rounded-lg">
       <p className="text-sm mb-2">{notification.message}</p>
-      <div className="text-xs text-muted-foreground mb-3">
-        {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
-      </div>
+      <div className="text-xs text-muted-foreground mb-3">{formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}</div>
       <div className="flex gap-2">
-        <Button size="sm" className="h-7 px-2 bg-green-500 hover:bg-green-600 text-white" onClick={() => handleRequest('accept')} disabled={!!isLoading}>
-          {isLoading === 'accept' ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />}
-          Accept
-        </Button>
-        <Button size="sm" className="h-7 px-2" variant="destructive" onClick={() => handleRequest('reject')} disabled={!!isLoading}>
-          {isLoading === 'reject' ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <X className="mr-1 h-4 w-4" />}
-          Decline
-        </Button>
+        <Button size="sm" className="h-7 px-2 bg-green-500 hover:bg-green-600 text-white" onClick={() => handleRequest('accept')} disabled={!!isLoading}>{isLoading === 'accept' ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />}Accept</Button>
+        <Button size="sm" className="h-7 px-2" variant="destructive" onClick={() => handleRequest('reject')} disabled={!!isLoading}>{isLoading === 'reject' ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <X className="mr-1 h-4 w-4" />}Decline</Button>
+      </div>
+    </div>
+  );
+}
+
+function TeamInviteNotification({ notification, onHandled }: { notification: Notification, onHandled: (notificationId: string) => void }) {
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState<'accept' | 'reject' | null>(null);
+
+  const handleInvite = async (action: 'accept' | 'reject') => {
+    setIsLoading(action);
+    try {
+      const res = await fetch(`/api/invites/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notificationId: notification.id, action }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      toast({ title: `Invite ${action}ed!`, icon: <CheckCircle2 className="h-5 w-5 text-primary" /> });
+      onHandled(notification.id);
+    } catch (error) {
+      toast({ title: `Failed to ${action} invite`, description: (error as Error).message, variant: "destructive" });
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
+  return (
+    <div className="p-3 hover:bg-muted/50 rounded-lg">
+      <p className="text-sm mb-2">{notification.message}</p>
+      <div className="text-xs text-muted-foreground mb-3">{formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}</div>
+      <div className="flex gap-2">
+        <Button size="sm" className="h-7 px-2 bg-green-500 hover:bg-green-600 text-white" onClick={() => handleInvite('accept')} disabled={!!isLoading}>{isLoading === 'accept' ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />}Accept</Button>
+        <Button size="sm" className="h-7 px-2" variant="destructive" onClick={() => handleInvite('reject')} disabled={!!isLoading}>{isLoading === 'reject' ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <X className="mr-1 h-4 w-4" />}Decline</Button>
       </div>
     </div>
   );
@@ -104,29 +128,26 @@ function JoinRequestNotification({ notification, onHandled }: { notification: No
 const NotificationList = ({ notifications, onNotificationHandled }: { notifications: Notification[], onNotificationHandled: (notificationId: string) => void }) => {
   if (notifications.length === 0) {
     return (
-       <div className="p-4 py-8">
-        <p className="text-sm text-muted-foreground text-center">
-          No new notifications yet.
-        </p>
-      </div>
+       <div className="p-4 py-8"><p className="text-sm text-muted-foreground text-center">No new notifications yet.</p></div>
     );
   }
 
   return (
     <div className="p-2 space-y-2">
       {notifications.map(notification => {
-        if (notification.type === 'JOIN_REQUEST') {
-          return <JoinRequestNotification key={notification.id} notification={notification} onHandled={onNotificationHandled} />;
+        switch (notification.type) {
+          case 'JOIN_REQUEST':
+            return <JoinRequestNotification key={notification.id} notification={notification} onHandled={onNotificationHandled} />;
+          case 'TEAM_INVITE':
+            return <TeamInviteNotification key={notification.id} notification={notification} onHandled={onNotificationHandled} />;
+          default:
+            return (
+              <div key={notification.id} className="p-3 hover:bg-muted/50 rounded-lg">
+                <p className="text-sm">{notification.message}</p>
+                <p className="text-xs text-muted-foreground mt-1">{formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}</p>
+              </div>
+            );
         }
-        // Can add more notification types here in the future
-        return (
-          <div key={notification.id} className="p-3 hover:bg-muted/50 rounded-lg">
-            <p className="text-sm">{notification.message}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
-            </p>
-          </div>
-        );
       })}
     </div>
   )
@@ -159,9 +180,7 @@ export function Header() {
   const notificationContent = (
     <>
       {isLoadingNotifications && notifications.length === 0 ? (
-        <div className="p-4 py-8 flex justify-center items-center">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
+        <div className="p-4 py-8 flex justify-center items-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : (
         <NotificationList notifications={notifications} onNotificationHandled={removeNotification} />
       )}
@@ -173,158 +192,55 @@ export function Header() {
       <div className="container mx-auto flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3">
           <LogoIcon className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-headline font-semibold text-foreground">
-            TaskFlow
-          </h1>
+          <h1 className="text-3xl font-headline font-semibold text-foreground">TaskFlow</h1>
         </Link>
         <div className="flex items-center gap-3">
           <ThemeToggle />
-
           {status === 'authenticated' && (
             <>
               {mounted && notificationStyle === "dock" && (
                 <Sheet>
-                  <SheetTrigger asChild>
-                    <NotificationBellButton aria-label="View notifications (Dock)" notificationCount={notifications.length} />
-                  </SheetTrigger>
-                  <SheetContent side="right">
-                    <SheetHeader>
-                      <SheetTitle>Notifications</SheetTitle>
-                      <SheetDescription>Here are your latest updates.</SheetDescription>
-                    </SheetHeader>
-                    {notificationContent}
-                    <SheetFooter>
-                      <SheetClose asChild>
-                        <Button variant="outline" className="w-full">Close</Button>
-                      </SheetClose>
-                    </SheetFooter>
-                  </SheetContent>
+                  <SheetTrigger asChild><NotificationBellButton aria-label="View notifications (Dock)" notificationCount={notifications.length} /></SheetTrigger>
+                  <SheetContent side="right"><SheetHeader><SheetTitle>Notifications</SheetTitle><SheetDescription>Here are your latest updates.</SheetDescription></SheetHeader>{notificationContent}<SheetFooter><SheetClose asChild><Button variant="outline" className="w-full">Close</Button></SheetClose></SheetFooter></SheetContent>
                 </Sheet>
               )}
-
               {mounted && notificationStyle === "float" && (
                 <Popover>
-                  <PopoverTrigger asChild>
-                    <NotificationBellButton aria-label="View notifications (Float)" notificationCount={notifications.length} />
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 p-0" align="end">
-                    <div className="p-4 border-b">
-                      <h3 className="text-lg font-semibold leading-none tracking-tight">Notifications</h3>
-                      <p className="text-sm text-muted-foreground">Here are your latest updates.</p>
-                    </div>
-                    {notificationContent}
-                  </PopoverContent>
+                  <PopoverTrigger asChild><NotificationBellButton aria-label="View notifications (Float)" notificationCount={notifications.length} /></PopoverTrigger>
+                  <PopoverContent className="w-80 p-0" align="end"><div className="p-4 border-b"><h3 className="text-lg font-semibold leading-none tracking-tight">Notifications</h3><p className="text-sm text-muted-foreground">Here are your latest updates.</p></div>{notificationContent}</PopoverContent>
                 </Popover>
               )}
-              
-              {!mounted && ( 
-                 <Button variant="outline" size="icon" className="h-9 w-9" aria-label="View notifications" disabled>
-                    <Bell className="h-5 w-5" />
-                 </Button>
-              )}
+              {!mounted && (<Button variant="outline" size="icon" className="h-9 w-9" aria-label="View notifications" disabled><Bell className="h-5 w-5" /></Button>)}
             </>
           )}
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon" className="h-9 w-9">
-                {isLoading ? (
-                  <Menu className="h-5 w-5 animate-pulse" />
-                ) : session?.user?.image ? (
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={session.user.image} alt={session.user.name || "User Avatar"} />
-                    <AvatarFallback>{getUserInitials(session.user.name)}</AvatarFallback>
-                  </Avatar>
-                ) : session?.user ? ( 
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback>{getUserInitials(session.user.name)}</AvatarFallback>
-                  </Avatar>
-                ) : (
-                  <Menu className="h-5 w-5" />
-                )}
+                {isLoading ? (<Menu className="h-5 w-5 animate-pulse" />) : session?.user?.image ? (<Avatar className="h-8 w-8"><AvatarImage src={session.user.image} alt={session.user.name || "User Avatar"} /><AvatarFallback>{getUserInitials(session.user.name)}</AvatarFallback></Avatar>) : session?.user ? (<Avatar className="h-8 w-8"><AvatarFallback>{getUserInitials(session.user.name)}</AvatarFallback></Avatar>) : (<Menu className="h-5 w-5" />)}
                 <span className="sr-only">Open menu</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {isLoading ? (
-                <DropdownMenuLabel>Loading...</DropdownMenuLabel>
-              ) : session?.user ? (
+              {isLoading ? (<DropdownMenuLabel>Loading...</DropdownMenuLabel>) : session?.user ? (
                 <>
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        {session.user.name || "User"}
-                      </p>
-                      <p className="text-xs leading-none text-muted-foreground">
-                        {session.user.email}
-                      </p>
-                    </div>
-                  </DropdownMenuLabel>
+                  <DropdownMenuLabel className="font-normal"><div className="flex flex-col space-y-1"><p className="text-sm font-medium leading-none">{session.user.name || "User"}</p><p className="text-xs leading-none text-muted-foreground">{session.user.email}</p></div></DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild className={cn(pathname === "/" && "text-primary font-semibold")}>
-                    <Link href="/" className="flex items-center">
-                      <HomeIcon className="mr-2 h-4 w-4" />
-                      Home
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild className={cn(pathname === "/profile" && "text-primary font-semibold")}>
-                    <Link href="/profile" className="flex items-center">
-                      <User className="mr-2 h-4 w-4" />
-                      Profile
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild className={cn(pathname === "/settings" && "text-primary font-semibold")}>
-                    <Link href="/settings" className="flex items-center">
-                      <SettingsIcon className="mr-2 h-4 w-4" />
-                      Settings
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild className={cn(pathname === "/teams" && "text-primary font-semibold")}>
-                    <Link href="/teams" className="flex items-center">
-                      <Users className="mr-2 h-4 w-4" />
-                      Manage Teams
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild className={cn(pathname === "/about" && "text-primary font-semibold")}>
-                    <Link href="/about" className="flex items-center">
-                      <Info className="mr-2 h-4 w-4" />
-                      About
-                    </Link>
-                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild className={cn(pathname === "/" && "text-primary font-semibold")}><Link href="/" className="flex items-center"><HomeIcon className="mr-2 h-4 w-4" />Home</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild className={cn(pathname === "/profile" && "text-primary font-semibold")}><Link href="/profile" className="flex items-center"><User className="mr-2 h-4 w-4" />Profile</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild className={cn(pathname === "/settings" && "text-primary font-semibold")}><Link href="/settings" className="flex items-center"><SettingsIcon className="mr-2 h-4 w-4" />Settings</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild className={cn(pathname === "/teams" && "text-primary font-semibold")}><Link href="/teams" className="flex items-center"><Users className="mr-2 h-4 w-4" />Manage Teams</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild className={cn(pathname === "/about" && "text-primary font-semibold")}><Link href="/about" className="flex items-center"><Info className="mr-2 h-4 w-4" />About</Link></DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/' })} className="flex items-center cursor-pointer">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/' })} className="flex items-center cursor-pointer"><LogOut className="mr-2 h-4 w-4" />Logout</DropdownMenuItem>
                 </>
               ) : (
                 <>
                   <DropdownMenuLabel>Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                   <DropdownMenuItem asChild className={cn(pathname === "/" && "text-primary font-semibold")}>
-                    <Link href="/" className="flex items-center">
-                      <HomeIcon className="mr-2 h-4 w-4" />
-                      Home
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => signIn("google", { callbackUrl: "/" })} className="flex items-center cursor-pointer">
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Login with Google
-                  </DropdownMenuItem>
-                   <DropdownMenuItem onClick={() => {
-                      const mainPageEmailInput = document.getElementById('email-login');
-                      if (mainPageEmailInput) mainPageEmailInput.focus();
-                      else router.push('/'); 
-                    }} className="flex items-center cursor-pointer">
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Login with Email
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild className={cn(pathname === "/about" && "text-primary font-semibold")}>
-                    <Link href="/about" className="flex items-center">
-                      <Info className="mr-2 h-4 w-4" />
-                      About
-                    </Link>
-                  </DropdownMenuItem>
+                   <DropdownMenuItem asChild className={cn(pathname === "/" && "text-primary font-semibold")}><Link href="/" className="flex items-center"><HomeIcon className="mr-2 h-4 w-4" />Home</Link></DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => signIn("google", { callbackUrl: "/" })} className="flex items-center cursor-pointer"><LogIn className="mr-2 h-4 w-4" />Login with Google</DropdownMenuItem>
+                   <DropdownMenuItem onClick={() => { const mainPageEmailInput = document.getElementById('email-login'); if (mainPageEmailInput) mainPageEmailInput.focus(); else router.push('/'); }} className="flex items-center cursor-pointer"><LogIn className="mr-2 h-4 w-4" />Login with Email</DropdownMenuItem>
+                  <DropdownMenuItem asChild className={cn(pathname === "/about" && "text-primary font-semibold")}><Link href="/about" className="flex items-center"><Info className="mr-2 h-4 w-4" />About</Link></DropdownMenuItem>
                 </>
               )}
             </DropdownMenuContent>

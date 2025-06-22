@@ -29,7 +29,7 @@ export interface Team {
   id: string;
   name: string;
   code: string;
-  members: string[]; // Array of user emails for display
+  members: TeamMember[];
   createdAt: number; // timestamp
   ownerId: string;
   pendingRequests?: TeamMember[];
@@ -37,7 +37,7 @@ export interface Team {
 
 export type NotificationStyle = "dock" | "float";
 
-export type NotificationType = "JOIN_REQUEST" | "TASK_ASSIGNED";
+export type NotificationType = "JOIN_REQUEST" | "TEAM_INVITE" | "TASK_ASSIGNED";
 
 export interface Notification {
   id: string;
@@ -48,6 +48,8 @@ export interface Notification {
     teamName?: string;
     requestingUserId?: string;
     requestingUserName?: string;
+    invitingUserId?: string;
+    invitingUserName?: string;
   };
   isRead: boolean;
   createdAt: string; // ISO date string

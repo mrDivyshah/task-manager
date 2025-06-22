@@ -15,17 +15,15 @@ export async function GET(req: Request) {
   try {
     await dbConnect();
     
-    // Find notifications for the current user and populate the requesting user's info
     const notifications = await Notification.find({ userId: session.user.id })
-      .populate({
-        path: 'data.requestingUserId',
-        model: User,
-        select: 'name email',
-      })
+      .populate({ path: 'data.requestingUserId', model: User, select: 'name email' })
+      .populate({ path: 'data.invitingUserId', model: User, select: 'name email' })
       .sort({ createdAt: -1 });
 
     const formattedNotifications = notifications.map(notif => {
       const requestingUserData = notif.data.requestingUserId as any;
+      const invitingUserData = notif.data.invitingUserId as any;
+
       return {
         id: notif._id.toString(),
         type: notif.type,
@@ -35,6 +33,8 @@ export async function GET(req: Request) {
           teamName: notif.data.teamName,
           requestingUserId: requestingUserData?._id.toString(),
           requestingUserName: requestingUserData?.name,
+          invitingUserId: invitingUserData?._id.toString(),
+          invitingUserName: invitingUserData?.name,
         },
         isRead: notif.isRead,
         createdAt: notif.createdAt.toISOString(),
