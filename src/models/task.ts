@@ -8,6 +8,7 @@ export interface ITask extends Document {
   category?: string;
   priority?: 'high' | 'medium' | 'low' | string;
   teamId?: Schema.Types.ObjectId;
+  assignedTo?: Schema.Types.ObjectId;
 }
 
 const TaskSchema = new Schema<ITask>({
@@ -17,7 +18,10 @@ const TaskSchema = new Schema<ITask>({
   category: { type: String },
   priority: { type: String, enum: ['high', 'medium', 'low', 'none', ''] },
   teamId: { type: Schema.Types.ObjectId, ref: 'Team', default: null },
+  assignedTo: { type: Schema.Types.ObjectId, ref: 'User', default: null },
 }, { timestamps: true });
 
 const Task = models.Task || model<ITask>('Task', TaskSchema);
 export default Task;
+
+    

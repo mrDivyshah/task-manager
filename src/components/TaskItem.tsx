@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Pencil, Trash2, GripVertical, Tag, Zap, Clock, Users } from "lucide-react";
+import { Pencil, Trash2, GripVertical, Tag, Zap, Clock, Users, User } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import type { Task } from "@/types";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from 'date-fns';
 import React, { useEffect, useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 
 interface TaskItemProps {
   task: Task;
@@ -28,6 +29,7 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
   }, []);
   
   const assignedTeam = task.team;
+  const assignedUser = task.assignedTo;
 
   const priorityColors = {
     high: "bg-red-500/20 text-red-700 border-red-500/50 dark:text-red-400 dark:border-red-500/70",
@@ -44,6 +46,15 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
     if (p === 'low') return priorityColors.low;
     return priorityColors.default;
   }
+  
+  const getUserInitials = (name?: string | null) => {
+    if (!name) return "U";
+    const names = name.split(" ");
+    if (names.length > 1) {
+      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+    }
+    return names[0][0].toUpperCase();
+  };
 
   return (
     <Card 
@@ -52,7 +63,7 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
       onDragOver={onDragOver}
       onDrop={(e) => onDrop(e, task.id)}
       className={cn(
-        "w-full shadow-lg rounded-xl transition-all duration-300 ease-in-out hover:shadow-xl bg-card animate-subtle-appear",
+        "w-full shadow-lg rounded-xl transition-all duration-300 ease-in-out hover:shadow-xl bg-card animate-subtle-appear flex flex-col",
         isDragging ? "opacity-50 ring-2 ring-primary" : "opacity-100",
       )}
       style={{ animationDelay: animationDelay }}
@@ -69,36 +80,44 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
           <GripVertical size={20} />
         </Button>
       </CardHeader>
-      <CardContent className="pb-4">
+      <CardContent className="pb-4 flex-grow">
         {task.notes && (
           <CardDescription className="text-sm text-foreground/80 whitespace-pre-wrap break-words leading-relaxed">
             {task.notes}
           </CardDescription>
         )}
-        {(task.category || task.priority || assignedTeam) && (
-          <div className="mt-4 flex flex-wrap gap-2 items-center">
-            {task.category && (
-              <Badge variant="secondary" className="text-xs py-1 px-2.5 rounded-full bg-accent/10 text-accent-foreground border-accent/30">
-                <Tag size={14} className="mr-1.5 text-accent" />
-                {task.category}
-              </Badge>
-            )}
-            {task.priority && (
-              <Badge variant="outline" className={cn("text-xs py-1 px-2.5 rounded-full", getPriorityColor(task.priority))}>
-                <Zap size={14} className="mr-1.5" />
-                Priority: {task.priority}
-              </Badge>
-            )}
-            {assignedTeam && (
-              <Badge variant="outline" className="text-xs py-1 px-2.5 rounded-full border-primary/50 bg-primary/10 text-primary-foreground">
-                <Users size={14} className="mr-1.5 text-primary" />
-                Team: {assignedTeam.name}
-              </Badge>
-            )}
-          </div>
-        )}
+        <div className="mt-4 flex flex-wrap gap-2 items-center">
+          {task.category && (
+            <Badge variant="secondary" className="text-xs py-1 px-2.5 rounded-full bg-accent/10 text-accent-foreground border-accent/30">
+              <Tag size={14} className="mr-1.5 text-accent" />
+              {task.category}
+            </Badge>
+          )}
+          {task.priority && (
+            <Badge variant="outline" className={cn("text-xs py-1 px-2.5 rounded-full", getPriorityColor(task.priority))}>
+              <Zap size={14} className="mr-1.5" />
+              Priority: {task.priority}
+            </Badge>
+          )}
+          {assignedTeam && (
+            <Badge variant="outline" className="text-xs py-1 px-2.5 rounded-full border-primary/50 bg-primary/10 text-primary-foreground">
+              <Users size={14} className="mr-1.5 text-primary" />
+              Team: {assignedTeam.name}
+            </Badge>
+          )}
+          {assignedUser && (
+            <div className="flex items-center gap-2" title={`Assigned to ${assignedUser.name}`}>
+              <Avatar className="h-6 w-6 border-2 border-primary/20">
+                  <AvatarFallback className="text-xs bg-muted">
+                    {getUserInitials(assignedUser.name)}
+                  </AvatarFallback>
+              </Avatar>
+              <span className="text-sm font-medium text-muted-foreground">{assignedUser.name}</span>
+            </div>
+          )}
+        </div>
       </CardContent>
-      <CardFooter className="flex justify-end gap-2 pt-2 border-t border-border/50">
+      <CardFooter className="flex justify-end gap-2 pt-2 border-t border-border/50 mt-auto">
         <Button variant="outline" size="sm" onClick={() => onEdit(task)} aria-label={`Edit task ${task.title}`}>
           <Pencil size={16} className="mr-2" />
           Edit
@@ -110,3 +129,5 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
     </Card>
   );
 }
+
+    

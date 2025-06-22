@@ -10,7 +10,7 @@ import { TaskForm } from "@/components/TaskForm";
 import { TaskList } from "@/components/TaskList";
 import { useToast } from "@/hooks/use-toast";
 import type { Task, Team } from "@/types";
-import { PlusCircle, Wand2, Loader2, LogIn, Mail, Eye, EyeOff, Search, Filter, SearchX, CheckCircle2, AlertTriangle, Info, Plus, UserPlus } from "lucide-react";
+import { PlusCircle, Wand2, Loader2, LogIn, Mail, Eye, EyeOff, Search, Filter, SearchX, CheckCircle2, AlertTriangle, Info, Plus, UserPlus, Users, UserCheck } from "lucide-react";
 import { smartSortTasksAction } from "./actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,6 +45,8 @@ export default function Home() {
   const [rememberMe, setRememberMe] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [teamFilter, setTeamFilter] = useState<string>("all");
+  const [assignedToMeFilter, setAssignedToMeFilter] = useState<boolean>(false);
   
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
@@ -96,13 +98,18 @@ export default function Home() {
       );
     })
     .filter(task => {
-      if (priorityFilter === "all") {
-        return true;
-      }
-      if (priorityFilter === "none") {
-        return !task.priority || task.priority.trim() === "";
-      }
+      if (priorityFilter === "all") return true;
+      if (priorityFilter === "none") return !task.priority || task.priority.trim() === "";
       return task.priority?.toLowerCase() === priorityFilter;
+    })
+    .filter(task => {
+      if (teamFilter === "all") return true;
+      if (teamFilter === "personal") return !task.teamId;
+      return task.teamId === teamFilter;
+    })
+    .filter(task => {
+      if (!assignedToMeFilter) return true;
+      return task.assignedTo?.id === session?.user?.id;
     })
     .sort((a, b) => {
       const priorityOrder: Record<string, number> = { high: 1, medium: 2, low: 3, default: 4 };
@@ -117,7 +124,7 @@ export default function Home() {
       return (b.createdAt ?? 0) - (a.createdAt ?? 0); // Sort by most recent
     });
   
-  const allTasksAreDisplayed = displayedTasks.length === tasks.length && searchTerm.trim() === "" && priorityFilter === "all";
+  const allTasksAreDisplayed = displayedTasks.length === tasks.length && searchTerm.trim() === "" && priorityFilter === "all" && teamFilter === "all" && !assignedToMeFilter;
 
 
   const handleOpenTaskForm = (task?: Task) => {
@@ -131,7 +138,7 @@ export default function Home() {
   };
 
   const handleSaveTask = async (
-    data: { title: string; notes?: string; priority?: string; teamId?: string },
+    data: { title: string; notes?: string; priority?: string; teamId?: string, assignedTo?: string },
     existingTask?: Task
   ) => {
     const url = existingTask ? `/api/tasks/${existingTask.id}` : '/api/tasks';
@@ -149,13 +156,7 @@ export default function Home() {
         throw new Error(errorData.message || `Failed to ${existingTask ? 'update' : 'create'} task`);
       }
 
-      const savedTask = await res.json();
-
-      if (existingTask) {
-        setTasks(tasks.map((task) => task.id === existingTask.id ? { ...task, ...savedTask, team: teams.find(t => t.id === savedTask.teamId) ? {name: teams.find(t => t.id === savedTask.teamId)!.name} : undefined } : task));
-      } else {
-        setTasks([savedTask, ...tasks]);
-      }
+      await fetchData(); // Re-fetch to get latest state for all tasks
       
       toast({
         title: existingTask ? "Task Updated" : "Task Created",
@@ -426,7 +427,7 @@ export default function Home() {
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
           <div className="flex items-baseline gap-2">
             <h2 className="text-2xl font-headline font-semibold text-foreground">Your Tasks</h2>
             <span className="text-sm text-muted-foreground">
@@ -435,13 +436,25 @@ export default function Home() {
                 : `(${displayedTasks.length} of ${tasks.length} task${tasks.length === 1 ? "" : "s"} shown)`}
             </span>
           </div>
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto flex-wrap">
-            <div className="relative w-full sm:w-auto sm:min-w-[200px] md:min-w-[230px]">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <Button onClick={handleSmartSort} disabled={isSorting || tasks.length === 0} variant="outline" className="shadow-sm hover:shadow-md transition-shadow w-full sm:w-auto">
+              {isSorting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4 text-accent" />}
+              Smart Sort
+            </Button>
+            <Button onClick={() => handleOpenTaskForm()} className="shadow-sm hover:shadow-lg focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-150 bg-primary hover:bg-primary/90 text-primary-foreground w-full sm:w-auto">
+              <PlusCircle className="mr-2 h-5 w-5" />
+              Add New Task
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 p-4 bg-card/50 rounded-lg border">
+            <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
               <Input type="search" placeholder="Search tasks..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 w-full bg-background border-input focus:ring-primary shadow-sm" />
             </div>
             <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-full sm:w-auto sm:min-w-[170px] bg-background border-input focus:ring-primary shadow-sm">
+              <SelectTrigger className="w-full bg-background border-input focus:ring-primary shadow-sm">
                 <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
                 <SelectValue placeholder="Filter by priority" />
               </SelectTrigger>
@@ -453,15 +466,26 @@ export default function Home() {
                 <SelectItem value="none">No Priority</SelectItem>
               </SelectContent>
             </Select>
-            <Button onClick={handleSmartSort} disabled={isSorting || tasks.length === 0} variant="outline" className="shadow-sm hover:shadow-md transition-shadow w-full sm:w-auto">
-              {isSorting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4 text-accent" />}
-              Smart Sort
-            </Button>
-            <Button onClick={() => handleOpenTaskForm()} className="shadow-sm hover:shadow-lg focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-150 bg-primary hover:bg-primary/90 text-primary-foreground w-full sm:w-auto">
-              <PlusCircle className="mr-2 h-5 w-5" />
-              Add New Task
-            </Button>
-          </div>
+            <Select value={teamFilter} onValueChange={setTeamFilter}>
+              <SelectTrigger className="w-full bg-background border-input focus:ring-primary shadow-sm">
+                <Users className="mr-2 h-4 w-4 text-muted-foreground" />
+                <SelectValue placeholder="Filter by team" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Teams</SelectItem>
+                <SelectItem value="personal">Personal (No Team)</SelectItem>
+                <Separator/>
+                {teams.map(team => (
+                  <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex items-center space-x-2 justify-center p-2 rounded-md border bg-background shadow-sm">
+                <Checkbox id="assigned-to-me" checked={assignedToMeFilter} onCheckedChange={(checked) => setAssignedToMeFilter(Boolean(checked))} />
+                <Label htmlFor="assigned-to-me" className="text-sm font-medium leading-none cursor-pointer flex items-center gap-2">
+                  <UserCheck className="h-4 w-4 text-muted-foreground" /> Assigned to Me
+                </Label>
+            </div>
         </div>
 
         {tasks.length > 0 && displayedTasks.length === 0 && (
@@ -499,3 +523,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

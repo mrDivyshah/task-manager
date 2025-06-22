@@ -1,4 +1,10 @@
 
+export interface UserSubset {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -7,8 +13,11 @@ export interface Task {
   priority?: 'high' | 'medium' | 'low' | string;
   createdAt: number; // timestamp
   teamId?: string;
-  team?: { name: string }; // For populated team data on task
+  team?: { name: string };
+  assignedTo?: UserSubset;
 }
+
+export interface TeamMember extends UserSubset {}
 
 export interface SmartSortTaskInput {
   id: string;
@@ -26,3 +35,5 @@ export interface Team {
 }
 
 export type NotificationStyle = "dock" | "float";
+
+    
