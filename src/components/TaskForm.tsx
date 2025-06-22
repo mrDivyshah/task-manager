@@ -26,7 +26,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Task, Team } from "@/types";
-import useLocalStorage from "@/hooks/useLocalStorage";
 import { useEffect } from "react";
 
 const taskFormSchema = z.object({
@@ -43,11 +42,10 @@ interface TaskFormProps {
   onClose: () => void;
   onSubmit: (data: TaskFormValues, existingTask?: Task) => void;
   taskToEdit?: Task;
+  teams: Team[];
 }
 
-export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProps) {
-  const [teams] = useLocalStorage<Team[]>("taskflow-teams", []);
-
+export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskFormProps) {
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
@@ -80,11 +78,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
 
 
   const handleSubmit = (data: TaskFormValues) => {
-    const processedData = {
-      ...data,
-      teamId: data.teamId === "__none__" ? "" : data.teamId,
-    };
-    onSubmit(processedData, taskToEdit);
+    onSubmit(data, taskToEdit);
     form.reset();
   };
 
@@ -121,12 +115,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
                 <FormItem>
                   <FormLabel className="text-foreground/80">Notes (Optional)</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="Add any relevant details or context..."
-                      className="resize-none bg-background border-input focus:ring-primary"
-                      rows={3}
-                      {...field}
-                    />
+                    <Textarea placeholder="Add any relevant details or context..." className="resize-none bg-background border-input focus:ring-primary" rows={3} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -141,9 +130,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
                     <FormLabel className="text-foreground/80">Priority</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value || ""}>
                       <FormControl>
-                        <SelectTrigger className="bg-background border-input focus:ring-primary">
-                          <SelectValue placeholder="Select priority" />
-                        </SelectTrigger>
+                        <SelectTrigger className="bg-background border-input focus:ring-primary"><SelectValue placeholder="Select priority" /></SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="none">None</SelectItem>
@@ -165,16 +152,12 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
                       <FormLabel className="text-foreground/80">Assign to Team</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger className="bg-background border-input focus:ring-primary">
-                            <SelectValue placeholder="Select a team" />
-                          </SelectTrigger>
+                          <SelectTrigger className="bg-background border-input focus:ring-primary"><SelectValue placeholder="Select a team" /></SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="__none__">No Team / Personal</SelectItem>
                           {teams.map((team) => (
-                            <SelectItem key={team.id} value={team.id}>
-                              {team.name}
-                            </SelectItem>
+                            <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -186,9 +169,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit }: TaskFormProp
             </div>
             <DialogFooter className="mt-8">
               <DialogClose asChild>
-                <Button type="button" variant="outline">
-                  Cancel
-                </Button>
+                <Button type="button" variant="outline">Cancel</Button>
               </DialogClose>
               <Button type="submit" variant="default">
                 {taskToEdit ? "Save Changes" : "Create Task"}

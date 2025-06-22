@@ -7,12 +7,18 @@ declare module "next-auth" {
     user: {
       id: string;
       gender?: string;
+      notificationSoundEnabled?: boolean;
+      notificationStyle?: 'dock' | 'float';
+      advancedFeaturesEnabled?: boolean;
     } & DefaultSession["user"];
   }
 
   interface User extends DefaultUser {
     id: string;
     gender?: string;
+    notificationSoundEnabled?: boolean;
+    notificationStyle?: 'dock' | 'float';
+    advancedFeaturesEnabled?: boolean;
   }
 }
 
@@ -20,5 +26,8 @@ declare module "next-auth/jwt" {
   interface JWT extends DefaultJWT {
     id: string;
     gender?: string;
+    notificationSoundEnabled?: boolean;
+    notificationStyle?: 'dock' | 'float';
+    advancedFeaturesEnabled?: boolean;
   }
 }

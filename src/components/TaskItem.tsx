@@ -5,12 +5,10 @@ import { Pencil, Trash2, GripVertical, Tag, Zap, Clock, Users } from "lucide-rea
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import type { Task, Team } from "@/types";
+import type { Task } from "@/types";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from 'date-fns';
-import useLocalStorage from "@/hooks/useLocalStorage";
 import React, { useEffect, useState } from "react";
-
 
 interface TaskItemProps {
   task: Task;
@@ -23,17 +21,13 @@ interface TaskItemProps {
 }
 
 export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDrop, isDragging }: TaskItemProps) {
-  const [teams] = useLocalStorage<Team[]>("taskflow-teams", []);
   const [animationDelay, setAnimationDelay] = useState('0s');
 
   useEffect(() => {
     setAnimationDelay(`${Math.random() * 0.2}s`);
   }, []);
   
-  const assignedTeam = React.useMemo(() => {
-    if (!task.teamId) return null;
-    return teams.find(team => team.id === task.teamId);
-  }, [task.teamId, teams]);
+  const assignedTeam = task.team;
 
   const priorityColors = {
     high: "bg-red-500/20 text-red-700 border-red-500/50 dark:text-red-400 dark:border-red-500/70",

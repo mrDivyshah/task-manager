@@ -4,9 +4,10 @@ export interface Task {
   title: string;
   notes: string;
   category?: string;
-  priority?: 'high' | 'medium' | 'low' | string; // AI might return other strings
+  priority?: 'high' | 'medium' | 'low' | string;
   createdAt: number; // timestamp
-  teamId?: string; 
+  teamId?: string;
+  team?: { name: string }; // For populated team data on task
 }
 
 export interface SmartSortTaskInput {
@@ -18,7 +19,10 @@ export interface SmartSortTaskInput {
 export interface Team {
   id: string;
   name: string;
-  code: string; // Team code (e.g., 6-digit OTP)
-  members: string[]; // Array of user identifiers (e.g., email or ID)
+  code: string;
+  members: string[]; // Array of user emails for display
   createdAt: number; // timestamp
+  ownerId: string;
 }
+
+export type NotificationStyle = "dock" | "float";

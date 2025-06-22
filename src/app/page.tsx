@@ -8,9 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
 import { TaskForm } from "@/components/TaskForm";
 import { TaskList } from "@/components/TaskList";
-import useLocalStorage from "@/hooks/useLocalStorage";
 import { useToast } from "@/hooks/use-toast";
-import type { Task } from "@/types";
+import type { Task, Team } from "@/types";
 import { PlusCircle, Wand2, Loader2, LogIn, Mail, Eye, EyeOff, Search, Filter, SearchX, CheckCircle2, AlertTriangle, Info, Plus, UserPlus } from "lucide-react";
 import { smartSortTasksAction } from "./actions";
 import { Input } from "@/components/ui/input";
@@ -20,13 +19,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-
-const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
-
 export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [tasks, setTasks] = useLocalStorage<Task[]>("taskflow-tasks", []);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [isDataLoading, setIsDataLoading] = useState(true);
+
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | undefined>(undefined);
   const [isSorting, setIsSorting] = useState(false);
@@ -47,13 +46,45 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   
-  const [mounted, setMounted] = useState(false);
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
-    setMounted(true);
     setCurrentYear(new Date().getFullYear());
-  }, []);
+    if (status === "authenticated") {
+      fetchData();
+    } else if (status === "unauthenticated") {
+      setIsDataLoading(false);
+    }
+  }, [status]);
+  
+  const fetchData = async () => {
+    setIsDataLoading(true);
+    try {
+      const [tasksRes, teamsRes] = await Promise.all([
+        fetch('/api/tasks'),
+        fetch('/api/teams')
+      ]);
+      
+      if (!tasksRes.ok || !teamsRes.ok) {
+        throw new Error('Failed to fetch data');
+      }
+      
+      const tasksData = await tasksRes.json();
+      const teamsData = await teamsRes.json();
+      
+      setTasks(tasksData);
+      setTeams(teamsData);
+      
+    } catch (error) {
+      toast({
+        title: "Error fetching data",
+        description: (error as Error).message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsDataLoading(false);
+    }
+  };
 
   const displayedTasks = tasks
     .filter(task => {
@@ -83,7 +114,7 @@ export default function Home() {
       const pB = getPrioValue(b.priority);
 
       if (pA !== pB) return pA - pB;
-      return (a.createdAt ?? 0) - (b.createdAt ?? 0);
+      return (b.createdAt ?? 0) - (a.createdAt ?? 0); // Sort by most recent
     });
   
   const allTasksAreDisplayed = displayedTasks.length === tasks.length && searchTerm.trim() === "" && priorityFilter === "all";
@@ -99,68 +130,75 @@ export default function Home() {
     setTaskToEdit(undefined);
   };
 
-  const handleSaveTask = (
+  const handleSaveTask = async (
     data: { title: string; notes?: string; priority?: string; teamId?: string },
     existingTask?: Task
   ) => {
-    const taskPriorityToSave = data.priority === "none" || data.priority === ""
-      ? undefined
-      : (data.priority as Task['priority'] || undefined);
-    const taskTeamIdToSave = data.teamId === "" ? undefined : data.teamId;
+    const url = existingTask ? `/api/tasks/${existingTask.id}` : '/api/tasks';
+    const method = existingTask ? 'PUT' : 'POST';
 
-    if (existingTask) {
-      setTasks(
-        tasks.map((task) =>
-          task.id === existingTask.id
-            ? {
-                ...task,
-                title: data.title,
-                notes: data.notes || "",
-                priority: taskPriorityToSave,
-                teamId: taskTeamIdToSave,
-                createdAt: task.createdAt || Date.now()
-              }
-            : task
-        )
-      );
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || `Failed to ${existingTask ? 'update' : 'create'} task`);
+      }
+
+      const savedTask = await res.json();
+
+      if (existingTask) {
+        setTasks(tasks.map((task) => task.id === existingTask.id ? { ...task, ...savedTask, team: teams.find(t => t.id === savedTask.teamId) ? {name: teams.find(t => t.id === savedTask.teamId)!.name} : undefined } : task));
+      } else {
+        setTasks([savedTask, ...tasks]);
+      }
+      
       toast({
-        title: "Task Updated",
-        description: `"${data.title}" has been updated.`,
+        title: existingTask ? "Task Updated" : "Task Created",
+        description: `"${data.title}" has been saved.`,
         icon: <CheckCircle2 className="h-5 w-5 text-primary" />,
       });
-    } else {
-      const newTask: Task = {
-        id: generateId(),
-        title: data.title,
-        notes: data.notes || "",
-        priority: taskPriorityToSave,
-        teamId: taskTeamIdToSave,
-        createdAt: Date.now(),
-      };
-      setTasks([...tasks, newTask]);
+      handleCloseTaskForm();
+    } catch (error) {
       toast({
-        title: "Task Created",
-        description: `"${data.title}" has been added.`,
-        icon: <CheckCircle2 className="h-5 w-5 text-primary" />,
+        title: `Error ${existingTask ? 'Updating' : 'Creating'} Task`,
+        description: (error as Error).message,
+        variant: "destructive",
       });
     }
-    handleCloseTaskForm();
   };
 
-  const handleDeleteTask = (taskId: string) => {
+  const handleDeleteTask = async (taskId: string) => {
     const taskToDelete = tasks.find(t => t.id === taskId);
-    setTasks(tasks.filter((task) => task.id !== taskId));
-    if (taskToDelete) {
+    if (!taskToDelete) return;
+    
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        throw new Error('Failed to delete task from server.');
+      }
+      setTasks(tasks.filter((task) => task.id !== taskId));
       toast({
         title: "Task Deleted",
         description: `"${taskToDelete.title}" has been removed.`,
         variant: "destructive",
         icon: <AlertTriangle className="h-5 w-5" />,
       });
+    } catch(error) {
+      toast({
+        title: "Error Deleting Task",
+        description: (error as Error).message,
+        variant: "destructive",
+      });
     }
   };
 
   const handleReorderTasks = (reorderedTasks: Task[]) => {
+    // Note: This only updates local state. To persist order, a backend update is needed.
     setTasks(reorderedTasks);
   };
 
@@ -176,27 +214,22 @@ export default function Home() {
     setIsSorting(true);
     try {
       const sortedInfos = await smartSortTasksAction(tasks);
-      setTasks(prevTasks => {
-        const newTasks = prevTasks.map(task => {
-          const sortInfo = sortedInfos.find(info => info.id === task.id);
-          if (sortInfo) {
-            return { ...task, category: sortInfo.category, priority: sortInfo.priority as Task['priority'] };
-          }
-          return task;
-        });
-        const priorityOrder: Record<string, number> = { high: 1, medium: 2, low: 3, default: 4 };
-        newTasks.sort((a,b) => {
-          const getPrioValue = (priority?: string) => {
-            if (!priority || priority.trim() === "" || priority === "none") return priorityOrder.default;
-            return priorityOrder[priority.toLowerCase()] || priorityOrder.default;
-          };
-          const pA = getPrioValue(a.priority);
-          const pB = getPrioValue(b.priority);
-          if (pA !== pB) return pA - pB;
-          return (a.createdAt ?? 0) - (b.createdAt ?? 0);
-        });
-        return newTasks;
-      });
+      
+      const updatePromises = sortedInfos.map(info => 
+        fetch(`/api/tasks/${info.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ category: info.category, priority: info.priority })
+        })
+      );
+
+      const results = await Promise.all(updatePromises);
+      if(results.some(res => !res.ok)) {
+        throw new Error("Failed to update one or more tasks on the server.");
+      }
+
+      await fetchData(); // Re-fetch all data to ensure consistency
+      
       toast({
         title: "Tasks Smart Sorted!",
         description: "Categories and priorities have been updated.",
@@ -226,31 +259,19 @@ export default function Home() {
       });
 
       if (result?.error) {
-        let description = "Login failed. Please check your credentials.";
-        if (result.error === "CredentialsSignin") {
-          description = "Invalid email or password.";
-        } else if (result.error !== "Callback" && result.error !== "SessionRequired" && result.error !== "OAuthAccountNotLinked" && result.error !== "Default") {
-          description = `Error: ${result.error}`;
-        }
-         toast({
+        toast({
             title: "Login Issue",
-            description: description,
+            description: "Login failed. Please check your credentials.",
             variant: "destructive",
-            icon: <AlertTriangle className="h-5 w-5" />,
         });
       } else if (result?.ok) {
-        // Login successful
+        // Successful login, router will redirect based on session status change
       }
-    } catch (error: unknown) {
-      let errorMessage = "An unexpected error occurred during login.";
-      if (error instanceof Error && error.message) {
-        errorMessage = error.message;
-      }
-      toast({
+    } catch (error) {
+       toast({
         title: "Login System Error",
-        description: `Error: "${errorMessage}". CRITICAL: Check your Next.js server terminal logs for errors from NextAuth. Also verify NEXTAUTH_URL in .env is correct (e.g., http://localhost:9002).`,
+        description: "An unexpected error occurred during login.",
         variant: "destructive",
-        icon: <AlertTriangle className="h-5 w-5" />,
       });
     } finally {
       setIsCredentialsLoading(false);
@@ -264,14 +285,8 @@ export default function Home() {
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: signupName,
-          email: signupEmail,
-          password: signupPassword,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: signupName, email: signupEmail, password: signupPassword }),
       });
 
       const data = await res.json();
@@ -282,10 +297,9 @@ export default function Home() {
             description: "You can now log in with your credentials.",
             icon: <CheckCircle2 className="h-5 w-5 text-primary" />,
         });
-        setAuthMode('login'); // Switch to login form
-        setEmail(signupEmail); // Pre-fill email for convenience
+        setAuthMode('login');
+        setEmail(signupEmail);
         setPassword('');
-        // Clear signup form
         setSignupName('');
         setSignupEmail('');
         setSignupPassword('');
@@ -294,7 +308,6 @@ export default function Home() {
             title: "Sign Up Failed",
             description: data.message || "An error occurred during sign up.",
             variant: "destructive",
-            icon: <AlertTriangle className="h-5 w-5" />,
         });
       }
     } catch (error) {
@@ -302,15 +315,13 @@ export default function Home() {
         title: "Sign Up Error",
         description: "Could not connect to the server. Please try again later.",
         variant: "destructive",
-        icon: <AlertTriangle className="h-5 w-5" />,
       });
     } finally {
       setIsSignupLoading(false);
     }
   };
 
-
-  if (status === "loading" || !mounted) {
+  if (status === "loading" || isDataLoading) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
@@ -352,61 +363,25 @@ export default function Home() {
               <form onSubmit={handleCredentialsLogin} className="space-y-6 text-left">
                 <div className="space-y-2">
                   <Label htmlFor="email-login">Email</Label>
-                  <Input
-                    id="email-login"
-                    type="email"
-                    placeholder="user@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="bg-background border-input focus:ring-primary"
-                  />
+                  <Input id="email-login" type="email" placeholder="user@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required className="bg-background border-input focus:ring-primary" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password-login">Password</Label>
                   <div className="relative">
-                    <Input
-                      id="password-login"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      className="bg-background border-input focus:ring-primary pr-10"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                    >
-                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    <Input id="password-login" type={showPassword ? "text" : "password"} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required className="bg-background border-input focus:ring-primary pr-10" />
+                    <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground hover:bg-transparent" onClick={() => setShowPassword(!showPassword)}>
+                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </Button>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="remember-me"
-                      checked={rememberMe}
-                      onCheckedChange={(checked) => setRememberMe(Boolean(checked))}
-                    />
-                    <Label
-                      htmlFor="remember-me"
-                      className="text-sm font-normal text-muted-foreground cursor-pointer"
-                    >
-                      Remember me
-                    </Label>
+                    <Checkbox id="remember-me" checked={rememberMe} onCheckedChange={(checked) => setRememberMe(Boolean(checked))} />
+                    <Label htmlFor="remember-me" className="text-sm font-normal text-muted-foreground cursor-pointer">Remember me</Label>
                   </div>
                 </div>
                 <Button type="submit" size="lg" className="w-full shadow-md hover:shadow-lg transition-shadow" disabled={isCredentialsLoading}>
-                  {isCredentialsLoading ? (
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  ) : (
-                    <Mail className="mr-2 h-5 w-5" />
-                  )}
+                  {isCredentialsLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Mail className="mr-2 h-5 w-5" />}
                   Login with Email
                 </Button>
               </form>
@@ -414,46 +389,18 @@ export default function Home() {
               <form onSubmit={handleSignUp} className="space-y-4 text-left">
                 <div className="space-y-2">
                   <Label htmlFor="name-signup">Full Name</Label>
-                  <Input
-                    id="name-signup"
-                    type="text"
-                    placeholder="John Doe"
-                    value={signupName}
-                    onChange={(e) => setSignupName(e.target.value)}
-                    required
-                    className="bg-background border-input focus:ring-primary"
-                  />
+                  <Input id="name-signup" type="text" placeholder="John Doe" value={signupName} onChange={(e) => setSignupName(e.target.value)} required className="bg-background border-input focus:ring-primary" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email-signup">Email</Label>
-                  <Input
-                    id="email-signup"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={signupEmail}
-                    onChange={(e) => setSignupEmail(e.target.value)}
-                    required
-                    className="bg-background border-input focus:ring-primary"
-                  />
+                  <Input id="email-signup" type="email" placeholder="you@example.com" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} required className="bg-background border-input focus:ring-primary" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password-signup">Password</Label>
-                  <Input
-                    id="password-signup"
-                    type="password"
-                    placeholder="••••••••"
-                    value={signupPassword}
-                    onChange={(e) => setSignupPassword(e.target.value)}
-                    required
-                    className="bg-background border-input focus:ring-primary"
-                  />
+                  <Input id="password-signup" type="password" placeholder="••••••••" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required className="bg-background border-input focus:ring-primary" />
                 </div>
                 <Button type="submit" size="lg" className="w-full shadow-md hover:shadow-lg transition-shadow" disabled={isSignupLoading}>
-                  {isSignupLoading ? (
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  ) : (
-                    <UserPlus className="mr-2 h-5 w-5" />
-                  )}
+                  {isSignupLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <UserPlus className="mr-2 h-5 w-5" />}
                   Create Account
                 </Button>
               </form>
@@ -461,24 +408,10 @@ export default function Home() {
 
             <p className="mt-6 text-center text-sm text-muted-foreground">
               {authMode === 'login' ? (
-                <>
-                  Don&apos;t have an account?{" "}
-                  <Button variant="link" className="p-0 h-auto font-semibold" onClick={() => setAuthMode('signup')}>
-                    Sign Up
-                  </Button>
-                </>
+                <> Don&apos;t have an account?{" "} <Button variant="link" className="p-0 h-auto font-semibold" onClick={() => setAuthMode('signup')}>Sign Up</Button> </>
               ) : (
-                <>
-                  Already have an account?{" "}
-                  <Button variant="link" className="p-0 h-auto font-semibold" onClick={() => setAuthMode('login')}>
-                    Log In
-                  </Button>
-                </>
+                <> Already have an account?{" "} <Button variant="link" className="p-0 h-auto font-semibold" onClick={() => setAuthMode('login')}>Log In</Button> </>
               )}
-            </p>
-
-            <p className="mt-4 text-xs text-muted-foreground">
-              Sign up for a new account or use Google to log in.
             </p>
           </div>
         </main>
@@ -489,112 +422,76 @@ export default function Home() {
     );
   }
   
-
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {mounted && (
-          <>
-            <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-              <div className="flex items-baseline gap-2">
-                <h2 className="text-2xl font-headline font-semibold text-foreground">Your Tasks</h2>
-                <span className="text-sm text-muted-foreground">
-                  {allTasksAreDisplayed
-                    ? `(${tasks.length} task${tasks.length === 1 ? "" : "s"})`
-                    : `(${displayedTasks.length} of ${tasks.length} task${tasks.length === 1 ? "" : "s"} shown)`}
-                </span>
-              </div>
-              <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto flex-wrap">
-                <div className="relative w-full sm:w-auto sm:min-w-[200px] md:min-w-[230px]">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                  <Input
-                    type="search"
-                    placeholder="Search tasks..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 w-full bg-background border-input focus:ring-primary shadow-sm"
-                  />
-                </div>
-                <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                  <SelectTrigger className="w-full sm:w-auto sm:min-w-[170px] bg-background border-input focus:ring-primary shadow-sm">
-                    <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
-                    <SelectValue placeholder="Filter by priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Priorities</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="none">No Priority</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button onClick={handleSmartSort} disabled={isSorting || tasks.length === 0} variant="outline" className="shadow-sm hover:shadow-md transition-shadow w-full sm:w-auto">
-                  {isSorting ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Wand2 className="mr-2 h-4 w-4 text-accent" />
-                  )}
-                  Smart Sort
-                </Button>
-                <Button 
-                  onClick={() => handleOpenTaskForm()} 
-                  className="shadow-sm hover:shadow-lg focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-150 bg-primary hover:bg-primary/90 text-primary-foreground w-full sm:w-auto"
-                >
-                  <PlusCircle className="mr-2 h-5 w-5" />
-                  Add New Task
-                </Button>
-              </div>
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+          <div className="flex items-baseline gap-2">
+            <h2 className="text-2xl font-headline font-semibold text-foreground">Your Tasks</h2>
+            <span className="text-sm text-muted-foreground">
+              {allTasksAreDisplayed
+                ? `(${tasks.length} task${tasks.length === 1 ? "" : "s"})`
+                : `(${displayedTasks.length} of ${tasks.length} task${tasks.length === 1 ? "" : "s"} shown)`}
+            </span>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto flex-wrap">
+            <div className="relative w-full sm:w-auto sm:min-w-[200px] md:min-w-[230px]">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              <Input type="search" placeholder="Search tasks..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 w-full bg-background border-input focus:ring-primary shadow-sm" />
             </div>
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger className="w-full sm:w-auto sm:min-w-[170px] bg-background border-input focus:ring-primary shadow-sm">
+                <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
+                <SelectValue placeholder="Filter by priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Priorities</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="none">No Priority</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={handleSmartSort} disabled={isSorting || tasks.length === 0} variant="outline" className="shadow-sm hover:shadow-md transition-shadow w-full sm:w-auto">
+              {isSorting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4 text-accent" />}
+              Smart Sort
+            </Button>
+            <Button onClick={() => handleOpenTaskForm()} className="shadow-sm hover:shadow-lg focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-150 bg-primary hover:bg-primary/90 text-primary-foreground w-full sm:w-auto">
+              <PlusCircle className="mr-2 h-5 w-5" />
+              Add New Task
+            </Button>
+          </div>
+        </div>
 
-            {tasks.length > 0 && displayedTasks.length === 0 && (
-              <div className="mt-12 flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-2 border-dashed border-border rounded-xl bg-card/50">
-                <SearchX size={64} className="mb-4 opacity-50" />
-                <h3 className="text-xl font-semibold mb-2 text-foreground">No Matching Tasks</h3>
-                <p className="max-w-sm">
-                  Try adjusting your search or filter criteria.
-                </p>
-              </div>
-            )}
-
-            { (tasks.length === 0 || displayedTasks.length > 0) && (
-                <TaskList
-                  tasks={displayedTasks}
-                  onEditTask={handleOpenTaskForm}
-                  onDeleteTask={handleDeleteTask}
-                  onReorderTasks={handleReorderTasks}
-                />
-              )
-            }
-          </>
+        {tasks.length > 0 && displayedTasks.length === 0 && (
+          <div className="mt-12 flex flex-col items-center justify-center text-center text-muted-foreground p-8 border-2 border-dashed border-border rounded-xl bg-card/50">
+            <SearchX size={64} className="mb-4 opacity-50" />
+            <h3 className="text-xl font-semibold mb-2 text-foreground">No Matching Tasks</h3>
+            <p className="max-w-sm">Try adjusting your search or filter criteria.</p>
+          </div>
         )}
+
+        { (tasks.length === 0 || displayedTasks.length > 0) && (
+            <TaskList tasks={displayedTasks} onEditTask={handleOpenTaskForm} onDeleteTask={handleDeleteTask} onReorderTasks={handleReorderTasks} />
+          )
+        }
       </main>
 
-      {session && mounted && (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={() => handleOpenTaskForm()}
-                className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-xl hover:shadow-2xl focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-150 bg-primary hover:bg-primary/90 text-primary-foreground p-0 z-50 flex items-center justify-center"
-                aria-label="Quick Add Task"
-              >
-                <Plus className="h-7 w-7" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Quick Add Task</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )}
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button onClick={() => handleOpenTaskForm()} className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-xl hover:shadow-2xl focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-150 bg-primary hover:bg-primary/90 text-primary-foreground p-0 z-50 flex items-center justify-center" aria-label="Quick Add Task">
+              <Plus className="h-7 w-7" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Quick Add Task</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
 
-      <TaskForm
-        isOpen={isTaskFormOpen}
-        onClose={handleCloseTaskForm}
-        onSubmit={handleSaveTask}
-        taskToEdit={taskToEdit}
-      />
+      <TaskForm isOpen={isTaskFormOpen} onClose={handleCloseTaskForm} onSubmit={handleSaveTask} taskToEdit={taskToEdit} teams={teams} />
 
       <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
         © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.

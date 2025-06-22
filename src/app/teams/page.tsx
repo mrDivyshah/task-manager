@@ -12,18 +12,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import useLocalStorage from "@/hooks/useLocalStorage";
 import type { Team } from "@/types";
 import { ArrowLeft, Edit3, Users, Trash2, PlusCircle, Save, XCircle, CheckCircle2, AlertTriangle, Info, SearchX, UserPlus, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from 'date-fns';
 
-const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
-
 export default function TeamsPage() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const { toast } = useToast();
-  const [teams, setTeams] = useLocalStorage<Team[]>("taskflow-teams", []);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [teamToEdit, setTeamToEdit] = useState<Team | null>(null);
@@ -33,14 +31,30 @@ export default function TeamsPage() {
   const [joinTeamCodeDigits, setJoinTeamCodeDigits] = useState<string[]>(Array(6).fill(""));
   const joinTeamCodeInputsRef = Array(6).fill(null).map(() => React.createRef<HTMLInputElement>());
 
-  const [mounted, setMounted] = useState(false);
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
-    setMounted(true);
     setCurrentYear(new Date().getFullYear());
-  }, []);
-
+    if (status === 'authenticated') {
+      fetchTeams();
+    } else if (status === 'unauthenticated') {
+      router.push('/');
+    }
+  }, [status, router]);
+  
+  const fetchTeams = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/teams');
+      if (!res.ok) throw new Error('Failed to fetch teams');
+      const data = await res.json();
+      setTeams(data);
+    } catch (error) {
+      toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleOpenEditDialog = (team: Team) => {
     setTeamToEdit(team);
@@ -54,47 +68,54 @@ export default function TeamsPage() {
     setEditedTeamName("");
   };
 
-  const handleSaveTeamChanges = (e: FormEvent) => {
+  const handleSaveTeamChanges = async (e: FormEvent) => {
     e.preventDefault();
     if (!teamToEdit || editedTeamName.trim() === "") {
-      toast({
-        title: "Invalid Name",
-        description: "Team name cannot be empty.",
-        variant: "destructive",
-        icon: <AlertTriangle className="h-5 w-5" />,
-      });
+      toast({ title: "Invalid Name", description: "Team name cannot be empty.", variant: "destructive" });
       return;
     }
-    setTeams(prevTeams =>
-      prevTeams.map(team =>
-        team.id === teamToEdit.id ? { ...team, name: editedTeamName.trim() } : team
-      )
-    );
-    toast({
-      title: "Team Updated",
-      description: `Team "${editedTeamName.trim()}" has been updated.`,
-      icon: <CheckCircle2 className="h-5 w-5 text-primary" />,
-    });
-    handleCloseEditDialog();
+    
+    try {
+      const res = await fetch(`/api/teams/${teamToEdit.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editedTeamName.trim() }),
+      });
+      if (!res.ok) throw new Error('Failed to update team');
+
+      setTeams(prevTeams =>
+        prevTeams.map(team =>
+          team.id === teamToEdit.id ? { ...team, name: editedTeamName.trim() } : team
+        )
+      );
+      toast({ title: "Team Updated", description: `Team name changed to "${editedTeamName.trim()}".`, icon: <CheckCircle2 className="h-5 w-5 text-primary" /> });
+      handleCloseEditDialog();
+    } catch (error) {
+      toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
+    }
   };
 
-  const handleDeleteTeam = (teamId: string) => {
+  const handleDeleteTeam = async (teamId: string) => {
     const teamToDelete = teams.find(t => t.id === teamId);
     if (teamToDelete) {
-        setTeams(prevTeams => prevTeams.filter(team => team.id !== teamId));
-        toast({
-            title: "Team Deleted",
-            description: `Team "${teamToDelete.name}" has been removed.`,
-            variant: "destructive",
-            icon: <Trash2 className="h-5 w-5" />,
-        });
+        try {
+            const res = await fetch(`/api/teams/${teamId}`, { method: 'DELETE' });
+            if (!res.ok) {
+              const data = await res.json();
+              throw new Error(data.message || 'Failed to delete team');
+            }
+            setTeams(prevTeams => prevTeams.filter(team => team.id !== teamId));
+            toast({ title: "Team Deleted", description: `Team "${teamToDelete.name}" has been removed.`, variant: "destructive" });
+        } catch(error) {
+            toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
+        }
     }
   };
 
   const handleJoinTeamCodeChange = (index: number, value: string) => {
-    if (/^[0-9]?$/.test(value)) {
+    if (/^[a-zA-Z0-9]?$/.test(value)) {
       const newCode = [...joinTeamCodeDigits];
-      newCode[index] = value;
+      newCode[index] = value.toUpperCase();
       setJoinTeamCodeDigits(newCode);
 
       if (value && index < 5 && joinTeamCodeInputsRef[index + 1]?.current) {
@@ -109,71 +130,29 @@ export default function TeamsPage() {
     }
   };
 
-  const handleJoinTeamSubmit = (e: FormEvent) => {
+  const handleJoinTeamSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!session?.user?.email) {
-      toast({
-        title: "Login Required",
-        description: "You must be logged in to join a team.",
-        variant: "destructive",
-        icon: <AlertTriangle className="h-5 w-5" />,
-      });
-      return;
-    }
-
     const finalJoinTeamCode = joinTeamCodeDigits.join("");
+    
+    try {
+        const res = await fetch('/api/teams/join', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: finalJoinTeamCode })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
 
-    if (finalJoinTeamCode.length !== 6 || !/^\d{6}$/.test(finalJoinTeamCode)) {
-      toast({
-        title: "Invalid Code Format",
-        description: "Team code must be exactly 6 digits.",
-        variant: "destructive",
-        icon: <AlertTriangle className="h-5 w-5" />,
-      });
-      return;
+        setTeams(prevTeams => [...prevTeams, data]);
+        toast({ title: "Successfully Joined Team!", description: `You have joined "${data.name}".`, icon: <CheckCircle2 className="h-5 w-5 text-primary" /> });
+        setIsJoinTeamDialogOpen(false);
+        setJoinTeamCodeDigits(Array(6).fill(""));
+    } catch(error) {
+        toast({ title: "Failed to Join Team", description: (error as Error).message, variant: "destructive" });
     }
-
-    const targetTeam = teams.find(team => team.code === finalJoinTeamCode);
-
-    if (!targetTeam) {
-      toast({
-        title: "Team Not Found",
-        description: "No team found with this code. Please check the code and try again.",
-        variant: "destructive",
-        icon: <AlertTriangle className="h-5 w-5" />,
-      });
-      return;
-    }
-
-    if (targetTeam.members.includes(session.user.email)) {
-      toast({
-        title: "Already a Member",
-        description: `You are already a member of "${targetTeam.name}".`,
-        icon: <Info className="h-5 w-5 text-primary" />,
-      });
-      setIsJoinTeamDialogOpen(false);
-      setJoinTeamCodeDigits(Array(6).fill(""));
-      return;
-    }
-
-    setTeams(prevTeams =>
-      prevTeams.map(team =>
-        team.id === targetTeam.id
-          ? { ...team, members: [...team.members, session.user!.email!] }
-          : team
-      )
-    );
-
-    toast({
-      title: "Successfully Joined Team!",
-      description: `You have joined "${targetTeam.name}".`,
-      icon: <CheckCircle2 className="h-5 w-5 text-primary" />,
-    });
-    setIsJoinTeamDialogOpen(false);
-    setJoinTeamCodeDigits(Array(6).fill(""));
   };
 
-  if (!mounted) {
+  if (isLoading || status === 'loading') {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
@@ -200,14 +179,7 @@ export default function TeamsPage() {
                 Back
                 </Button>
                 <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                    <Button 
-                        onClick={() => {
-                            setIsJoinTeamDialogOpen(true);
-                            setJoinTeamCodeDigits(Array(6).fill("")); 
-                        }} 
-                        variant="outline" 
-                        className="shadow-sm hover:shadow-md transition-shadow w-full sm:w-auto"
-                    >
+                    <Button onClick={() => setIsJoinTeamDialogOpen(true)} variant="outline" className="shadow-sm hover:shadow-md transition-shadow w-full sm:w-auto">
                         <UserPlus className="mr-2 h-4 w-4" />
                         Join a Team
                     </Button>
@@ -235,9 +207,7 @@ export default function TeamsPage() {
                   <Card key={team.id} className="shadow-md rounded-lg flex flex-col">
                     <CardHeader>
                       <CardTitle className="font-semibold text-xl break-all">{team.name}</CardTitle>
-                      <CardDescription>
-                        Code: <span className="font-mono text-primary">{team.code}</span>
-                      </CardDescription>
+                      <CardDescription>Code: <span className="font-mono text-primary">{team.code}</span></CardDescription>
                        <div className="text-xs text-muted-foreground pt-1">
                         Created: {formatDistanceToNow(new Date(team.createdAt), { addSuffix: true })}
                       </div>
@@ -258,11 +228,10 @@ export default function TeamsPage() {
                       )}
                     </CardContent>
                     <CardFooter className="border-t pt-4 flex justify-end gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleOpenEditDialog(team)}>
-                        <Edit3 className="mr-2 h-4 w-4" />
-                        Edit
+                      <Button variant="outline" size="sm" onClick={() => handleOpenEditDialog(team)} disabled={team.ownerId !== session?.user.id}>
+                        <Edit3 className="mr-2 h-4 w-4" /> Edit
                       </Button>
-                      <Button variant="destructive" size="icon" className="h-9 w-9" onClick={() => handleDeleteTeam(team.id)}>
+                      <Button variant="destructive" size="icon" className="h-9 w-9" onClick={() => handleDeleteTeam(team.id)} disabled={team.ownerId !== session?.user.id}>
                         <Trash2 className="h-4 w-4" />
                         <span className="sr-only">Delete Team</span>
                       </Button>
@@ -280,88 +249,40 @@ export default function TeamsPage() {
           <DialogContent className="sm:max-w-[425px] bg-card rounded-lg shadow-xl">
             <DialogHeader>
               <DialogTitle className="font-headline text-2xl">Edit Team: {teamToEdit.name}</DialogTitle>
-              <DialogDescription>
-                Modify the team's name. User management is coming soon.
-              </DialogDescription>
+              <DialogDescription>Modify the team's name. Only the team owner can do this.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSaveTeamChanges} className="space-y-6 py-4">
               <div>
                 <Label htmlFor="edit-team-name" className="text-foreground/80">Team Name</Label>
-                <Input
-                  id="edit-team-name"
-                  value={editedTeamName}
-                  onChange={(e) => setEditedTeamName(e.target.value)}
-                  className="mt-1 bg-background border-input focus:ring-primary"
-                  required
-                />
-              </div>
-               <div className="space-y-2">
-                <Label className="text-foreground/80">Team Code</Label>
-                <p className="text-sm text-muted-foreground font-mono bg-muted px-3 py-2 rounded-md">{teamToEdit.code}</p>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-foreground/80">Members</Label>
-                <p className="text-sm text-muted-foreground italic">
-                  User management functionality will be available here in a future update.
-                </p>
+                <Input id="edit-team-name" value={editedTeamName} onChange={(e) => setEditedTeamName(e.target.value)} className="mt-1 bg-background border-input focus:ring-primary" required />
               </div>
               <DialogFooter className="mt-8">
-                <Button type="button" variant="outline" onClick={handleCloseEditDialog}>
-                   <XCircle className="mr-2 h-4 w-4" />
-                  Cancel
-                </Button>
-                <Button type="submit" variant="default">
-                  <Save className="mr-2 h-4 w-4" />
-                  Save Changes
-                </Button>
+                <Button type="button" variant="outline" onClick={handleCloseEditDialog}><XCircle className="mr-2 h-4 w-4" />Cancel</Button>
+                <Button type="submit" variant="default"><Save className="mr-2 h-4 w-4" />Save Changes</Button>
               </DialogFooter>
             </form>
           </DialogContent>
         </Dialog>
       )}
 
-      <Dialog open={isJoinTeamDialogOpen} onOpenChange={(isOpen) => {
-          setIsJoinTeamDialogOpen(isOpen);
-          if (!isOpen) setJoinTeamCodeDigits(Array(6).fill("")); 
-      }}>
+      <Dialog open={isJoinTeamDialogOpen} onOpenChange={setIsJoinTeamDialogOpen}>
         <DialogContent className="sm:max-w-md bg-card rounded-lg shadow-xl">
           <DialogHeader>
             <DialogTitle className="font-headline text-2xl">Join a Team</DialogTitle>
-            <DialogDescription>
-              Enter the 6-digit code of the team you want to join.
-            </DialogDescription>
+            <DialogDescription>Enter the 6-digit code of the team you want to join.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleJoinTeamSubmit} className="space-y-6 py-4">
             <div>
               <Label htmlFor="join-team-code-0" className="text-foreground/80">Team Code (6 digits)</Label>
               <div className="flex justify-between gap-2 mt-1">
                 {joinTeamCodeDigits.map((digit, index) => (
-                  <Input
-                    key={index}
-                    id={`join-team-code-${index}`}
-                    ref={joinTeamCodeInputsRef[index]}
-                    type="text"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleJoinTeamCodeChange(index, e.target.value)}
-                    onKeyDown={(e) => handleJoinTeamCodeKeyDown(index, e)}
-                    className="w-10 h-12 text-center text-lg font-mono bg-background border-input focus:ring-primary"
-                    pattern="[0-9]*"
-                    inputMode="numeric"
-                    required
-                  />
+                  <Input key={index} id={`join-team-code-${index}`} ref={joinTeamCodeInputsRef[index]} type="text" maxLength={1} value={digit} onChange={(e) => handleJoinTeamCodeChange(index, e.target.value)} onKeyDown={(e) => handleJoinTeamCodeKeyDown(index, e)} className="w-10 h-12 text-center text-lg font-mono bg-background border-input focus:ring-primary" pattern="[a-zA-Z0-9]*" inputMode="text" required />
                 ))}
               </div>
             </div>
             <DialogFooter className="mt-8">
-              <DialogClose asChild>
-                <Button type="button" variant="outline" onClick={() => { setIsJoinTeamDialogOpen(false); setJoinTeamCodeDigits(Array(6).fill("")); }}>
-                  Cancel
-                </Button>
-              </DialogClose>
-              <Button type="submit" variant="default">
-                <UserPlus className="mr-2 h-4 w-4" /> Join Team
-              </Button>
+              <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
+              <Button type="submit" variant="default"><UserPlus className="mr-2 h-4 w-4" /> Join Team</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -373,5 +294,3 @@ export default function TeamsPage() {
     </div>
   );
 }
-
-
