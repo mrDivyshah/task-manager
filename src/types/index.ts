@@ -32,8 +32,23 @@ export interface Team {
   members: string[]; // Array of user emails for display
   createdAt: number; // timestamp
   ownerId: string;
+  pendingRequests?: TeamMember[];
 }
 
 export type NotificationStyle = "dock" | "float";
 
-    
+export type NotificationType = "JOIN_REQUEST" | "TASK_ASSIGNED";
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  message: string;
+  data: {
+    teamId?: string;
+    teamName?: string;
+    requestingUserId?: string;
+    requestingUserName?: string;
+  };
+  isRead: boolean;
+  createdAt: string; // ISO date string
+}

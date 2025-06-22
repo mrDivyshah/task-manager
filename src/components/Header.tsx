@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { LogoIcon } from './icons/LogoIcon';
 import { ThemeToggle } from './ThemeToggle';
 import {
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Menu, LogIn, LogOut, User, Settings as SettingsIcon, Bell, Home as HomeIcon, Users, Info } from "lucide-react";
+import { Menu, LogIn, LogOut, User, Settings as SettingsIcon, Bell, Home as HomeIcon, Users, Info, Loader2, Check, X, CheckCircle2 } from "lucide-react";
 import Link from 'next/link';
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
@@ -33,28 +33,103 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import useLocalStorage from "@/hooks/useLocalStorage";
-import type { NotificationStyle } from "@/app/settings/page";
+import type { Notification, NotificationStyle } from "@/types";
 import { cn } from "@/lib/utils";
+import { useToast } from '@/hooks/use-toast';
+import { formatDistanceToNow } from 'date-fns';
 
-const NotificationTriggerButton = React.forwardRef<
+const NotificationBellButton = React.forwardRef<
   HTMLButtonElement,
-  React.ComponentProps<typeof Button> & { 'aria-label': string }
->((props, ref) => (
-  <Button ref={ref} variant="outline" size="icon" className="h-9 w-9" {...props}>
+  React.ComponentProps<typeof Button> & { 'aria-label': string, notificationCount?: number }
+>(({ notificationCount = 0, ...props }, ref) => (
+  <Button ref={ref} variant="outline" size="icon" className="h-9 w-9 relative" {...props}>
     <Bell className="h-5 w-5" />
+    {notificationCount > 0 && (
+      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+        {notificationCount}
+      </span>
+    )}
     <span className="sr-only">Notifications</span>
   </Button>
 ));
-NotificationTriggerButton.displayName = "NotificationTriggerButton";
+NotificationBellButton.displayName = "NotificationBellButton";
 
-const ActualNotificationList = () => (
-  <div className="p-4 py-8">
-    <p className="text-sm text-muted-foreground text-center">
-      No new notifications yet.
-    </p>
-  </div>
-);
+function JoinRequestNotification({ notification, onHandled }: { notification: Notification, onHandled: (notificationId: string) => void }) {
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState<'accept' | 'reject' | null>(null);
+
+  const handleRequest = async (action: 'accept' | 'reject') => {
+    if (!notification.data.teamId || !notification.data.requestingUserId) return;
+    setIsLoading(action);
+
+    try {
+      const res = await fetch(`/api/teams/${notification.data.teamId}/requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestingUserId: notification.data.requestingUserId, action }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+
+      toast({ title: `Request ${action}ed!`, icon: <CheckCircle2 className="h-5 w-5 text-primary" /> });
+      onHandled(notification.id);
+    } catch (error) {
+      toast({ title: `Failed to ${action} request`, description: (error as Error).message, variant: "destructive" });
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
+  return (
+    <div className="p-3 hover:bg-muted/50 rounded-lg">
+      <p className="text-sm mb-2">{notification.message}</p>
+      <div className="text-xs text-muted-foreground mb-3">
+        {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+      </div>
+      <div className="flex gap-2">
+        <Button size="sm" className="h-7 px-2 bg-green-500 hover:bg-green-600 text-white" onClick={() => handleRequest('accept')} disabled={!!isLoading}>
+          {isLoading === 'accept' ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />}
+          Accept
+        </Button>
+        <Button size="sm" className="h-7 px-2" variant="destructive" onClick={() => handleRequest('reject')} disabled={!!isLoading}>
+          {isLoading === 'reject' ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <X className="mr-1 h-4 w-4" />}
+          Decline
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+const NotificationList = ({ notifications, onNotificationHandled }: { notifications: Notification[], onNotificationHandled: (notificationId: string) => void }) => {
+  if (notifications.length === 0) {
+    return (
+       <div className="p-4 py-8">
+        <p className="text-sm text-muted-foreground text-center">
+          No new notifications yet.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-2 space-y-2">
+      {notifications.map(notification => {
+        if (notification.type === 'JOIN_REQUEST') {
+          return <JoinRequestNotification key={notification.id} notification={notification} onHandled={onNotificationHandled} />;
+        }
+        // Can add more notification types here in the future
+        return (
+          <div key={notification.id} className="p-3 hover:bg-muted/50 rounded-lg">
+            <p className="text-sm">{notification.message}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+            </p>
+          </div>
+        );
+      })}
+    </div>
+  )
+};
 
 export function Header() {
   const { data: session, status } = useSession();
@@ -63,22 +138,37 @@ export function Header() {
   const isLoading = status === "loading";
 
   const [mounted, setMounted] = useState(false);
-  const [persistedNotificationStyle] = useLocalStorage<NotificationStyle>("taskflow-notification-style", "dock");
-  const [persistedNotificationSoundEnabled] = useLocalStorage<boolean>("taskflow-notification-sound", false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
+  
+  const notificationStyle: NotificationStyle = session?.user?.notificationStyle ?? 'dock';
+
+  const fetchNotifications = useCallback(async () => {
+    if (status !== "authenticated") return;
+    setIsLoadingNotifications(true);
+    try {
+      const res = await fetch('/api/notifications');
+      if (!res.ok) throw new Error("Failed to fetch notifications");
+      const data = await res.json();
+      setNotifications(data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoadingNotifications(false);
+    }
+  }, [status]);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
-
-
-  const handleNotificationOpenChange = (open: boolean) => {
-    if (open && mounted && persistedNotificationSoundEnabled) {
-      console.log("Playing notification sound... (beep boop!)");
-      // To play an actual sound, you would do something like:
-      // const audio = new Audio('/sounds/notification.mp3'); // Ensure sound file is in /public/sounds
-      // audio.play().catch(error => console.error("Error playing sound:", error));
-    }
-  };
+    fetchNotifications();
+    // Set up polling for notifications
+    const interval = setInterval(fetchNotifications, 30000); // Poll every 30 seconds
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
+  
+  const handleNotificationHandled = (notificationId: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== notificationId));
+  }
 
   const getUserInitials = (name?: string | null) => {
     if (!name) return 'U';
@@ -88,6 +178,18 @@ export function Header() {
     }
     return names[0][0].toUpperCase();
   };
+
+  const notificationContent = (
+    <>
+      {isLoadingNotifications && notifications.length === 0 ? (
+        <div className="p-4 py-8 flex justify-center items-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <NotificationList notifications={notifications} onNotificationHandled={handleNotificationHandled} />
+      )}
+    </>
+  );
 
   return (
     <header className="py-4 px-4 sm:px-6 lg:px-8 border-b border-border/50 shadow-sm bg-card">
@@ -101,45 +203,49 @@ export function Header() {
         <div className="flex items-center gap-3">
           <ThemeToggle />
 
-          {mounted && persistedNotificationStyle === "dock" && (
-            <Sheet onOpenChange={handleNotificationOpenChange}>
-              <SheetTrigger asChild>
-                <NotificationTriggerButton aria-label="View notifications (Dock)" />
-              </SheetTrigger>
-              <SheetContent side="right">
-                <SheetHeader>
-                  <SheetTitle>Notifications</SheetTitle>
-                  <SheetDescription>Here are your latest updates.</SheetDescription>
-                </SheetHeader>
-                <ActualNotificationList />
-                <SheetFooter>
-                  <SheetClose asChild>
-                    <Button variant="outline" className="w-full">Close</Button>
-                  </SheetClose>
-                </SheetFooter>
-              </SheetContent>
-            </Sheet>
-          )}
+          {status === 'authenticated' && (
+            <>
+              {mounted && notificationStyle === "dock" && (
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <NotificationBellButton aria-label="View notifications (Dock)" notificationCount={notifications.length} />
+                  </SheetTrigger>
+                  <SheetContent side="right">
+                    <SheetHeader>
+                      <SheetTitle>Notifications</SheetTitle>
+                      <SheetDescription>Here are your latest updates.</SheetDescription>
+                    </SheetHeader>
+                    {notificationContent}
+                    <SheetFooter>
+                      <SheetClose asChild>
+                        <Button variant="outline" className="w-full">Close</Button>
+                      </SheetClose>
+                    </SheetFooter>
+                  </SheetContent>
+                </Sheet>
+              )}
 
-          {mounted && persistedNotificationStyle === "float" && (
-             <Popover onOpenChange={handleNotificationOpenChange}>
-              <PopoverTrigger asChild>
-                <NotificationTriggerButton aria-label="View notifications (Float)" />
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-0" align="end">
-                <div className="p-4 border-b">
-                  <h3 className="text-lg font-semibold leading-none tracking-tight">Notifications</h3>
-                  <p className="text-sm text-muted-foreground">Here are your latest updates.</p>
-                </div>
-                <ActualNotificationList />
-              </PopoverContent>
-            </Popover>
-          )}
-          
-          {!mounted && ( 
-             <Button variant="outline" size="icon" className="h-9 w-9" aria-label="View notifications" disabled>
-                <Bell className="h-5 w-5" />
-             </Button>
+              {mounted && notificationStyle === "float" && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <NotificationBellButton aria-label="View notifications (Float)" notificationCount={notifications.length} />
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-0" align="end">
+                    <div className="p-4 border-b">
+                      <h3 className="text-lg font-semibold leading-none tracking-tight">Notifications</h3>
+                      <p className="text-sm text-muted-foreground">Here are your latest updates.</p>
+                    </div>
+                    {notificationContent}
+                  </PopoverContent>
+                </Popover>
+              )}
+              
+              {!mounted && ( 
+                 <Button variant="outline" size="icon" className="h-9 w-9" aria-label="View notifications" disabled>
+                    <Bell className="h-5 w-5" />
+                 </Button>
+              )}
+            </>
           )}
 
           <DropdownMenu>
@@ -251,4 +357,3 @@ export function Header() {
     </header>
   );
 }
-

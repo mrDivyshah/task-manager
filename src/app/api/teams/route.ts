@@ -17,16 +17,25 @@ export async function GET(req: Request) {
     // Find teams where the current user is a member
     const teams = await Team.find({ members: session.user.id })
       .populate({ path: 'members', model: User, select: 'email' })
+      .populate({ path: 'pendingRequests', model: User, select: 'id name email' })
       .sort({ createdAt: -1 });
     
-    const formattedTeams = teams.map(team => ({
-      id: team._id.toString(),
-      name: team.name,
-      code: team.code,
-      ownerId: team.ownerId.toString(),
-      members: team.members.map((member: any) => member.email),
-      createdAt: team.createdAt.getTime(),
-    }));
+    const formattedTeams = teams.map(team => {
+      const isOwner = team.ownerId.toString() === session.user.id;
+      return {
+        id: team._id.toString(),
+        name: team.name,
+        code: team.code,
+        ownerId: team.ownerId.toString(),
+        members: team.members.map((member: any) => member.email),
+        createdAt: team.createdAt.getTime(),
+        pendingRequests: isOwner ? team.pendingRequests.map((member: any) => ({
+            id: member._id.toString(),
+            name: member.name,
+            email: member.email,
+        })) : undefined,
+      };
+    });
 
     return NextResponse.json(formattedTeams, { status: 200 });
   } catch (error) {
@@ -37,7 +46,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user?.id || !session?.user?.email) {
         return NextResponse.json({ message: 'Not authenticated' }, { status: 401 });
     }
 
@@ -59,6 +68,7 @@ export async function POST(req: Request) {
             code,
             ownerId: session.user.id,
             members: [session.user.id], // The creator is the first member
+            pendingRequests: [],
         });
         await newTeam.save();
 

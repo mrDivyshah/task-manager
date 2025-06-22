@@ -6,6 +6,7 @@ export interface ITeam extends Document {
   code: string;
   ownerId: Schema.Types.ObjectId;
   members: Schema.Types.ObjectId[];
+  pendingRequests: Schema.Types.ObjectId[];
 }
 
 const TeamSchema = new Schema<ITeam>({
@@ -13,6 +14,7 @@ const TeamSchema = new Schema<ITeam>({
   code: { type: String, required: true, unique: true },
   ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   members: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+  pendingRequests: [{ type: Schema.Types.ObjectId, ref: 'User' }],
 }, { timestamps: true });
 
 const Team = models.Team || model<ITeam>('Team', TeamSchema);

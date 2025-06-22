@@ -4,12 +4,13 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import dbConnect from '@/lib/mongodb';
 import Team from '@/models/team';
+import Notification from '@/models/notification';
 import mongoose from 'mongoose';
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ message: 'Not authenticated' }, { status: 401 });
+  if (!session?.user?.id || !session?.user?.name) {
+    return NextResponse.json({ message: 'Not authenticated or user name is missing' }, { status: 401 });
   }
 
   try {
@@ -17,7 +18,7 @@ export async function POST(req: Request) {
     const { code } = await req.json();
 
     if (!code || code.length !== 6) {
-      return NextResponse.json({ message: 'A 6-digit team code is required' }, { status: 400 });
+      return NextResponse.json({ message: 'A 6-character team code is required' }, { status: 400 });
     }
 
     const team = await Team.findOne({ code });
@@ -32,22 +33,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'You are already a member of this team' }, { status: 409 });
     }
 
-    team.members.push(userId);
+    if (team.pendingRequests.includes(userId)) {
+        return NextResponse.json({ message: 'You have already sent a request to join this team' }, { status: 409 });
+    }
+    
+    // Add user to pending requests instead of directly to members
+    team.pendingRequests.push(userId);
     await team.save();
 
-    await team.populate({ path: 'members', select: 'email' });
+    // Create a notification for the team owner
+    const newNotification = new Notification({
+      userId: team.ownerId,
+      type: 'JOIN_REQUEST',
+      message: `${session.user.name} wants to join your team "${team.name}"`,
+      data: {
+        teamId: team._id,
+        teamName: team.name,
+        requestingUserId: userId,
+        requestingUserName: session.user.name,
+      }
+    });
+    await newNotification.save();
 
-    return NextResponse.json({
-      id: team._id.toString(),
-      name: team.name,
-      code: team.code,
-      ownerId: team.ownerId.toString(),
-      members: team.members.map((member: any) => member.email),
-      createdAt: team.createdAt.getTime(),
-    }, { status: 200 });
+    return NextResponse.json({ message: 'Your request to join the team has been sent.' }, { status: 200 });
 
   } catch (error) {
-    console.error('Error joining team:', error);
+    console.error('Error sending join request:', error);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }

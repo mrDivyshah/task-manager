@@ -2,7 +2,7 @@
 "use client";
 
 import type { FormEvent, KeyboardEvent } from "react";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Header } from "@/components/Header";
@@ -12,9 +12,52 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import type { Team } from "@/types";
-import { ArrowLeft, Edit3, Users, Trash2, PlusCircle, Save, XCircle, CheckCircle2, AlertTriangle, Info, SearchX, UserPlus, Loader2 } from "lucide-react";
+import type { Team, TeamMember } from "@/types";
+import { ArrowLeft, Edit3, Users, Trash2, PlusCircle, Save, XCircle, CheckCircle2, AlertTriangle, Info, SearchX, UserPlus, Loader2, Check, X } from "lucide-react";
 import { formatDistanceToNow } from 'date-fns';
+import { Separator } from "@/components/ui/separator";
+
+function PendingRequestItem({ teamId, request, onHandleRequest }: { teamId: string, request: TeamMember, onHandleRequest: (teamId: string, userId: string) => void }) {
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState<'accept' | 'reject' | null>(null);
+
+  const handleRequest = async (action: 'accept' | 'reject') => {
+    setIsLoading(action);
+    try {
+      const res = await fetch(`/api/teams/${teamId}/requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestingUserId: request.id, action }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+
+      toast({ title: `Request ${action}ed`, description: `${request.name} has been ${action}ed.`, icon: <CheckCircle2 className="h-5 w-5 text-primary" /> });
+      onHandleRequest(teamId, request.id);
+    } catch (error) {
+      toast({ title: `Failed to ${action} request`, description: (error as Error).message, variant: "destructive" });
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between text-sm">
+      <div className="flex flex-col">
+        <span className="font-medium">{request.name}</span>
+        <span className="text-xs text-muted-foreground">{request.email}</span>
+      </div>
+      <div className="flex gap-2">
+        <Button size="icon" className="h-7 w-7 bg-green-500 hover:bg-green-600" onClick={() => handleRequest('accept')} disabled={!!isLoading}>
+          {isLoading === 'accept' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+        </Button>
+        <Button size="icon" className="h-7 w-7" variant="destructive" onClick={() => handleRequest('reject')} disabled={!!isLoading}>
+          {isLoading === 'reject' ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 export default function TeamsPage() {
   const router = useRouter();
@@ -28,21 +71,13 @@ export default function TeamsPage() {
   const [editedTeamName, setEditedTeamName] = useState("");
 
   const [isJoinTeamDialogOpen, setIsJoinTeamDialogOpen] = useState(false);
+  const [isJoinTeamLoading, setIsJoinTeamLoading] = useState(false);
   const [joinTeamCodeDigits, setJoinTeamCodeDigits] = useState<string[]>(Array(6).fill(""));
   const joinTeamCodeInputsRef = Array(6).fill(null).map(() => React.createRef<HTMLInputElement>());
 
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
-  useEffect(() => {
-    setCurrentYear(new Date().getFullYear());
-    if (status === 'authenticated') {
-      fetchTeams();
-    } else if (status === 'unauthenticated') {
-      router.push('/');
-    }
-  }, [status, router]);
-  
-  const fetchTeams = async () => {
+  const fetchTeams = useCallback(async () => {
     setIsLoading(true);
     try {
       const res = await fetch('/api/teams');
@@ -54,6 +89,29 @@ export default function TeamsPage() {
     } finally {
       setIsLoading(false);
     }
+  }, [toast]);
+
+  useEffect(() => {
+    setCurrentYear(new Date().getFullYear());
+    if (status === 'authenticated') {
+      fetchTeams();
+    } else if (status === 'unauthenticated') {
+      router.push('/');
+    }
+  }, [status, router, fetchTeams]);
+
+  const handleRequestHandled = (teamId: string, userId: string) => {
+    setTeams(prevTeams => prevTeams.map(team => {
+      if (team.id === teamId) {
+        return {
+          ...team,
+          pendingRequests: team.pendingRequests?.filter(req => req.id !== userId)
+        };
+      }
+      return team;
+    }));
+    // Optionally, re-fetch all teams to get updated member lists
+    fetchTeams();
   };
 
   const handleOpenEditDialog = (team: Team) => {
@@ -132,6 +190,7 @@ export default function TeamsPage() {
 
   const handleJoinTeamSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setIsJoinTeamLoading(true);
     const finalJoinTeamCode = joinTeamCodeDigits.join("");
     
     try {
@@ -143,12 +202,13 @@ export default function TeamsPage() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.message);
 
-        setTeams(prevTeams => [...prevTeams, data]);
-        toast({ title: "Successfully Joined Team!", description: `You have joined "${data.name}".`, icon: <CheckCircle2 className="h-5 w-5 text-primary" /> });
+        toast({ title: "Request Sent!", description: `Your request to join the team has been sent to the owner.`, icon: <CheckCircle2 className="h-5 w-5 text-primary" /> });
         setIsJoinTeamDialogOpen(false);
         setJoinTeamCodeDigits(Array(6).fill(""));
     } catch(error) {
-        toast({ title: "Failed to Join Team", description: (error as Error).message, variant: "destructive" });
+        toast({ title: "Failed to Send Request", description: (error as Error).message, variant: "destructive" });
+    } finally {
+      setIsJoinTeamLoading(false);
     }
   };
 
@@ -212,19 +272,32 @@ export default function TeamsPage() {
                         Created: {formatDistanceToNow(new Date(team.createdAt), { addSuffix: true })}
                       </div>
                     </CardHeader>
-                    <CardContent className="flex-grow">
-                      <h4 className="text-sm font-medium text-foreground mb-1">Members ({team.members.length}):</h4>
-                      {team.members.length > 0 ? (
-                        <ul className="list-disc list-inside text-sm text-muted-foreground space-y-0.5">
-                          {team.members.slice(0, 3).map(member => (
-                            <li key={member} className="truncate" title={member}>
-                              {member === session?.user?.email ? `${member} (You)` : member}
-                            </li>
-                          ))}
-                          {team.members.length > 3 && <li>...and {team.members.length - 3} more</li>}
-                        </ul>
-                      ) : (
-                        <p className="text-sm text-muted-foreground italic">No members yet.</p>
+                    <CardContent className="flex-grow space-y-4">
+                      <div>
+                        <h4 className="text-sm font-medium text-foreground mb-1">Members ({team.members.length}):</h4>
+                        {team.members.length > 0 ? (
+                          <ul className="list-disc list-inside text-sm text-muted-foreground space-y-0.5">
+                            {team.members.slice(0, 3).map(member => (
+                              <li key={member} className="truncate" title={member}>
+                                {member === session?.user?.email ? `${member} (You)` : member}
+                              </li>
+                            ))}
+                            {team.members.length > 3 && <li>...and {team.members.length - 3} more</li>}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-muted-foreground italic">No members yet.</p>
+                        )}
+                      </div>
+                      {team.pendingRequests && team.pendingRequests.length > 0 && (
+                        <div>
+                          <Separator className="my-3" />
+                          <h4 className="text-sm font-medium text-foreground mb-2">Pending Requests ({team.pendingRequests.length}):</h4>
+                          <div className="space-y-2">
+                             {team.pendingRequests.map(request => (
+                               <PendingRequestItem key={request.id} teamId={team.id} request={request} onHandleRequest={handleRequestHandled} />
+                             ))}
+                          </div>
+                        </div>
                       )}
                     </CardContent>
                     <CardFooter className="border-t pt-4 flex justify-end gap-2">
@@ -281,8 +354,11 @@ export default function TeamsPage() {
               </div>
             </div>
             <DialogFooter className="mt-8">
-              <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-              <Button type="submit" variant="default"><UserPlus className="mr-2 h-4 w-4" /> Join Team</Button>
+              <DialogClose asChild><Button type="button" variant="outline" disabled={isJoinTeamLoading}>Cancel</Button></DialogClose>
+              <Button type="submit" variant="default" disabled={isJoinTeamLoading}>
+                {isJoinTeamLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />} 
+                Send Request
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
