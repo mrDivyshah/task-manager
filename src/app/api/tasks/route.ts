@@ -38,6 +38,7 @@ export async function GET(req: Request) {
             id: task._id.toString(),
             title: task.title,
             notes: task.notes,
+            status: task.status,
             category: task.category,
             priority: task.priority,
             createdAt: task.createdAt.getTime(),
@@ -73,6 +74,7 @@ export async function POST(req: Request) {
             title,
             notes,
             priority: priority && priority !== "none" ? priority : undefined,
+            // status will be set by default in the schema
         };
 
         if (teamId && teamId !== '__none__') {
@@ -98,6 +100,7 @@ export async function POST(req: Request) {
         return NextResponse.json({
             ...taskObject,
             id: task._id.toString(),
+            status: task.status,
             createdAt: task.createdAt.getTime(),
             team: teamData ? { name: teamData.name } : undefined,
             assignedTo: assignedToData ? { id: assignedToData._id.toString(), name: assignedToData.name, email: assignedToData.email } : undefined,
@@ -109,5 +112,3 @@ export async function POST(req: Request) {
         return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
     }
 }
-
-    

@@ -7,6 +7,26 @@ import Task from '@/models/task';
 import User from '@/models/user';
 import Team from '@/models/team';
 
+async function checkTaskPermission(taskId: string, userId: string): Promise<boolean> {
+    const task = await Task.findById(taskId);
+    if (!task) {
+        return false; // Task doesn't exist
+    }
+
+    if (task.userId.toString() === userId) {
+        return true; // User is the owner
+    }
+
+    if (task.teamId) {
+        const team = await Team.findOne({ _id: task.teamId, members: userId });
+        if (team) {
+            return true; // User is a member of the team assigned to the task
+        }
+    }
+
+    return false;
+}
+
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -16,21 +36,26 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     try {
         await dbConnect();
         const { id } = params;
-        const body = await req.json();
+        const hasPermission = await checkTaskPermission(id, session.user.id);
 
-        const task = await Task.findOne({ _id: id, userId: session.user.id });
-
-        if (!task) {
+        if (!hasPermission) {
             return NextResponse.json({ message: 'Task not found or you do not have permission to edit it' }, { status: 404 });
         }
+        
+        const task = await Task.findById(id);
+        if (!task) {
+             return NextResponse.json({ message: 'Task not found' }, { status: 404 });
+        }
 
-        const { title, notes, priority, teamId, assignedTo, category } = body;
+        const body = await req.json();
+        const { title, notes, priority, teamId, assignedTo, category, status } = body;
         
         task.title = title ?? task.title;
         task.notes = notes ?? task.notes;
         task.priority = (priority === 'none' || priority === '') ? undefined : (priority ?? task.priority);
         task.teamId = (teamId === '__none__' || teamId === "") ? undefined : (teamId ?? task.teamId);
         task.assignedTo = (assignedTo === '__none__' || assignedTo === "") ? undefined : (assignedTo ?? task.assignedTo);
+        task.status = status ?? task.status;
         
         if (category !== undefined) {
           task.category = category;
@@ -49,6 +74,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         return NextResponse.json({
             ...taskObject,
             id: task._id.toString(),
+            status: task.status,
             createdAt: task.createdAt.getTime(),
             team: teamData ? { name: teamData.name } : undefined,
             assignedTo: assignedToData ? { id: assignedToData._id.toString(), name: assignedToData.name, email: assignedToData.email } : undefined,
@@ -70,12 +96,14 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     try {
         await dbConnect();
         const { id } = params;
-
-        const result = await Task.deleteOne({ _id: id, userId: session.user.id });
-
-        if (result.deletedCount === 0) {
+        
+        const hasPermission = await checkTaskPermission(id, session.user.id);
+        
+        if (!hasPermission) {
             return NextResponse.json({ message: 'Task not found or you do not have permission to delete it' }, { status: 404 });
         }
+
+        await Task.deleteOne({ _id: id });
 
         return new NextResponse(null, { status: 204 });
 
@@ -84,5 +112,3 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
         return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
     }
 }
-
-    

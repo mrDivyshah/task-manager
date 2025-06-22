@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Task } from "@/types";
@@ -10,9 +11,10 @@ interface TaskListProps {
   onEditTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
   onReorderTasks: (tasks: Task[]) => void;
+  onStatusChange: (taskId: string, status: Task['status']) => void;
 }
 
-export function TaskList({ tasks, onEditTask, onDeleteTask, onReorderTasks }: TaskListProps) {
+export function TaskList({ tasks, onEditTask, onDeleteTask, onReorderTasks, onStatusChange }: TaskListProps) {
   const [draggedItemId, setDraggedItemId] = React.useState<string | null>(null);
 
   const handleDragStart = (event: React.DragEvent<HTMLDivElement>, taskId: string) => {
@@ -70,6 +72,7 @@ export function TaskList({ tasks, onEditTask, onDeleteTask, onReorderTasks }: Ta
           task={task}
           onEdit={onEditTask}
           onDelete={onDeleteTask}
+          onStatusChange={onStatusChange}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDrop={handleDrop}

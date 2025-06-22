@@ -9,6 +9,7 @@ export interface Task {
   id: string;
   title: string;
   notes: string;
+  status: 'todo' | 'in-progress' | 'done';
   category?: string;
   priority?: 'high' | 'medium' | 'low' | string;
   createdAt: number; // timestamp

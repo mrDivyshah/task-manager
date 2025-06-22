@@ -114,6 +114,9 @@ export default function Home() {
       return task.assignedTo?.id === session?.user?.id;
     })
     .sort((a, b) => {
+      if (a.status === 'done' && b.status !== 'done') return 1;
+      if (a.status !== 'done' && b.status === 'done') return -1;
+      
       const priorityOrder: Record<string, number> = { high: 1, medium: 2, low: 3, default: 4 };
       const getPrioValue = (priority?: string) => {
         if (!priority || priority.trim() === "" || priority === "none") return priorityOrder.default;
@@ -168,7 +171,13 @@ export default function Home() {
         throw new Error(errorData.message || `Failed to ${existingTask ? 'update' : 'create'} task`);
       }
 
-      await fetchData(); // Re-fetch to get latest state for all tasks
+      const savedTask: Task = await res.json();
+      
+      if (existingTask) {
+        setTasks(prevTasks => prevTasks.map(t => t.id === savedTask.id ? savedTask : t));
+      } else {
+        setTasks(prevTasks => [savedTask, ...prevTasks]);
+      }
       
       toast({
         title: existingTask ? "Task Updated" : "Task Created",
@@ -214,6 +223,36 @@ export default function Home() {
     // Note: This only updates local state. To persist order, a backend update is needed.
     setTasks(reorderedTasks);
   };
+  
+  const handleStatusChange = async (taskId: string, status: Task['status']) => {
+    const originalTasks = tasks;
+    setTasks(prevTasks => prevTasks.map(t => 
+      t.id === taskId ? { ...t, status } : t
+    ));
+
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      
+      if (!res.ok) {
+        throw new Error("Failed to update status on server.");
+      }
+      
+      const updatedTask = await res.json();
+      setTasks(prevTasks => prevTasks.map(t => t.id === updatedTask.id ? updatedTask : t));
+      
+    } catch (error) {
+      setTasks(originalTasks);
+      toast({
+        title: "Update Failed",
+        description: (error as Error).message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleSmartSort = async () => {
     if (tasks.length === 0) {
@@ -237,8 +276,11 @@ export default function Home() {
       );
 
       const results = await Promise.all(updatePromises);
-      if(results.some(res => !res.ok)) {
-        throw new Error("Failed to update one or more tasks on the server.");
+      const failedUpdates = results.filter(res => !res.ok);
+
+      if (failedUpdates.length > 0) {
+        console.error(`${failedUpdates.length} tasks failed to update.`);
+        throw new Error(`Failed to update ${failedUpdates.length} task(s). You may not have permission to edit tasks in some teams.`);
       }
 
       await fetchData(); // Re-fetch all data to ensure consistency
@@ -548,7 +590,13 @@ export default function Home() {
         )}
 
         { (tasks.length === 0 || displayedTasks.length > 0) && (
-            <TaskList tasks={displayedTasks} onEditTask={handleOpenTaskForm} onDeleteTask={handleDeleteTask} onReorderTasks={handleReorderTasks} />
+            <TaskList 
+              tasks={displayedTasks} 
+              onEditTask={handleOpenTaskForm} 
+              onDeleteTask={handleDeleteTask} 
+              onReorderTasks={handleReorderTasks}
+              onStatusChange={handleStatusChange}
+            />
           )
         }
       </main>
@@ -574,5 +622,3 @@ export default function Home() {
     </div>
   );
 }
-
-    

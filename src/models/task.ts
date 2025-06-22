@@ -7,6 +7,7 @@ export interface ITask extends Document {
   notes: string;
   category?: string;
   priority?: 'high' | 'medium' | 'low' | string;
+  status: 'todo' | 'in-progress' | 'done';
   teamId?: Schema.Types.ObjectId;
   assignedTo?: Schema.Types.ObjectId;
 }
@@ -17,6 +18,7 @@ const TaskSchema = new Schema<ITask>({
   notes: { type: String, default: "" },
   category: { type: String },
   priority: { type: String, enum: ['high', 'medium', 'low', 'none', ''] },
+  status: { type: String, enum: ['todo', 'in-progress', 'done'], default: 'todo' },
   teamId: { type: Schema.Types.ObjectId, ref: 'Team', default: null },
   assignedTo: { type: Schema.Types.ObjectId, ref: 'User', default: null },
 }, { timestamps: true });

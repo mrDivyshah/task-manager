@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Pencil, Trash2, GripVertical, Tag, Zap, Clock, Users, User } from "lucide-react";
+import { Pencil, Trash2, GripVertical, Tag, Zap, Clock, Users, User, CheckCircle, Circle, MoreHorizontal } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from 'date-fns';
 import React, { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 interface TaskItemProps {
   task: Task;
@@ -18,10 +20,11 @@ interface TaskItemProps {
   onDragStart: (event: React.DragEvent<HTMLDivElement>, taskId: string) => void;
   onDragOver: (event: React.DragEvent<HTMLDivElement>) => void;
   onDrop: (event: React.DragEvent<HTMLDivElement>, targetTaskId: string) => void;
+  onStatusChange: (taskId: string, status: Task['status']) => void;
   isDragging?: boolean;
 }
 
-export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDrop, isDragging }: TaskItemProps) {
+export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDrop, onStatusChange, isDragging }: TaskItemProps) {
   const [animationDelay, setAnimationDelay] = useState('0s');
 
   useEffect(() => {
@@ -31,7 +34,7 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
   const assignedTeam = task.team;
   const assignedUser = task.assignedTo;
 
-  const priorityColors = {
+  const priorityColors: Record<string, string> = {
     high: "bg-red-500/20 text-red-700 border-red-500/50 dark:text-red-400 dark:border-red-500/70",
     medium: "bg-yellow-500/20 text-yellow-700 border-yellow-500/50 dark:text-yellow-400 dark:border-yellow-500/70",
     low: "bg-green-500/20 text-green-700 border-green-500/50 dark:text-green-400 dark:border-green-500/70",
@@ -41,11 +44,17 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
   const getPriorityColor = (priority?: string) => {
     if (!priority) return priorityColors.default;
     const p = priority.toLowerCase();
-    if (p === 'high') return priorityColors.high;
-    if (p === 'medium') return priorityColors.medium;
-    if (p === 'low') return priorityColors.low;
-    return priorityColors.default;
+    return priorityColors[p] || priorityColors.default;
   }
+
+  const statusConfig = {
+    todo: { label: 'To Do', icon: Circle, color: 'text-muted-foreground' },
+    'in-progress': { label: 'In Progress', icon: MoreHorizontal, color: 'text-blue-500' },
+    done: { label: 'Done', icon: CheckCircle, color: 'text-green-500' },
+  };
+
+  const currentStatusConfig = statusConfig[task.status] || statusConfig.todo;
+  const StatusIcon = currentStatusConfig.icon;
   
   const getUserInitials = (name?: string | null) => {
     if (!name) return "U";
@@ -65,12 +74,15 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
       className={cn(
         "w-full shadow-lg rounded-xl transition-all duration-300 ease-in-out hover:shadow-xl bg-card animate-subtle-appear flex flex-col",
         isDragging ? "opacity-50 ring-2 ring-primary" : "opacity-100",
+        task.status === 'done' && 'opacity-60 bg-card/80',
       )}
       style={{ animationDelay: animationDelay }}
     >
       <CardHeader className="flex flex-row items-start justify-between pb-3">
         <div className="flex-1">
-          <CardTitle className="font-headline text-xl mb-1 break-all">{task.title}</CardTitle>
+          <CardTitle className={cn("font-headline text-xl mb-1 break-all", task.status === 'done' && 'line-through text-muted-foreground')}>
+            {task.title}
+          </CardTitle>
           <div className="flex items-center text-xs text-muted-foreground">
             <Clock className="w-3 h-3 mr-1" />
             Created {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}
@@ -117,7 +129,20 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
           )}
         </div>
       </CardContent>
-      <CardFooter className="flex justify-end gap-2 pt-2 border-t border-border/50 mt-auto">
+      <CardFooter className="flex justify-end items-center gap-2 pt-2 border-t border-border/50 mt-auto">
+        <Select value={task.status} onValueChange={(newStatus: 'todo' | 'in-progress' | 'done') => onStatusChange(task.id, newStatus)}>
+            <SelectTrigger className="text-sm h-9 w-40 mr-auto bg-background/50 hover:bg-background/80" aria-label="Change status">
+              <div className="flex items-center gap-2">
+                <StatusIcon className={cn("h-4 w-4", currentStatusConfig.color)} />
+                <SelectValue placeholder="Change status..." />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="todo">To Do</SelectItem>
+                <SelectItem value="in-progress">In Progress</SelectItem>
+                <SelectItem value="done">Done</SelectItem>
+            </SelectContent>
+        </Select>
         <Button variant="outline" size="sm" onClick={() => onEdit(task)} aria-label={`Edit task ${task.title}`}>
           <Pencil size={16} className="mr-2" />
           Edit
@@ -129,5 +154,3 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
     </Card>
   );
 }
-
-    

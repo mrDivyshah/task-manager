@@ -20,7 +20,7 @@ import { Separator } from "@/components/ui/separator";
 import { useNotifications } from "@/context/NotificationContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-function PendingRequestItem({ teamId, request, onHandleRequest }: { teamId: string, request: TeamMember, onHandleRequest: (teamId: string, userId: string) => void }) {
+function PendingRequestItem({ teamId, request, onHandleRequest }: { teamId: string, request: TeamMember, onHandleRequest: (teamId: string, userId: string, accepted: boolean) => void }) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState<'accept' | 'reject' | null>(null);
   const { fetchNotifications } = useNotifications();
@@ -37,8 +37,8 @@ function PendingRequestItem({ teamId, request, onHandleRequest }: { teamId: stri
       if (!res.ok) throw new Error(data.message);
 
       toast({ title: `Request ${action}ed`, description: `${request.name} has been ${action}ed.`, icon: <CheckCircle2 className="h-5 w-5 text-primary" /> });
-      onHandleRequest(teamId, request.id);
-      await fetchNotifications();
+      onHandleRequest(teamId, request.id, action === 'accept');
+      await fetchNotifications(); // Force notification list to refresh
     } catch (error) {
       toast({ title: `Failed to ${action} request`, description: (error as Error).message, variant: "destructive" });
     } finally {
@@ -116,7 +116,7 @@ export default function TeamsPage() {
     }
   }, [status, router, fetchTeams]);
 
-  const handleRequestHandled = (teamId: string, userId: string) => {
+  const handleRequestHandled = (teamId: string, userId: string, accepted: boolean) => {
     setTeams(prevTeams => prevTeams.map(team => {
       if (team.id === teamId) {
         return {
@@ -126,7 +126,9 @@ export default function TeamsPage() {
       }
       return team;
     }));
-    fetchTeams();
+    if (accepted) {
+        fetchTeams(); // Re-fetch all team data to update member lists
+    }
   };
   
   const handleOpenInviteDialog = (team: Team) => {
@@ -358,7 +360,7 @@ export default function TeamsPage() {
                                     </ul>
                                 ) : (<p className="text-sm text-muted-foreground italic">No members yet.</p>)}
                             </div>
-                            {team.pendingRequests && team.pendingRequests.length > 0 && (
+                            {isOwner && team.pendingRequests && team.pendingRequests.length > 0 && (
                                 <div><Separator className="my-3" /><h4 className="text-sm font-medium text-foreground mb-2">Pending Requests ({team.pendingRequests.length}):</h4><div className="space-y-2">{team.pendingRequests.map(request => (<PendingRequestItem key={request.id} teamId={team.id} request={request} onHandleRequest={handleRequestHandled} />))}</div></div>
                             )}
                             </CardContent>
