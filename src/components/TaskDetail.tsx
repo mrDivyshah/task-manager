@@ -9,8 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import type { Task, Activity, UserSubset } from "@/types";
-import { Pencil, Loader2, MessageSquare, Send, ArrowRight, User, Calendar as CalendarIcon, Clock, Circle, CheckCircle, MoreHorizontal, Tag, Zap, Users as UsersIcon, X, Info, Trash2 } from "lucide-react";
+import type { Task, Activity } from "@/types";
+import { Pencil, Loader2, MessageSquare, Send, ArrowRight, User, Calendar as CalendarIcon, MoreHorizontal, CheckCircle, Circle, Tag, Users as UsersIcon, Trash2, Info } from "lucide-react";
 import { useState, useEffect, type FormEvent, useCallback } from "react";
 import { format, formatDistanceToNow, isPast } from 'date-fns';
 import { cn } from "@/lib/utils";
@@ -25,6 +25,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useSession } from "next-auth/react";
+
 
 interface TaskDetailProps {
   task: Task | null;
@@ -41,18 +50,6 @@ const statusConfig = {
     done: { label: 'Done', icon: CheckCircle, color: 'text-green-500' },
 };
 
-const priorityColors: Record<string, string> = {
-    high: "bg-red-500/20 text-red-700 border-red-500/50 dark:text-red-400 dark:border-red-500/70",
-    medium: "bg-yellow-500/20 text-yellow-700 border-yellow-500/50 dark:text-yellow-400 dark:border-yellow-500/70",
-    low: "bg-green-500/20 text-green-700 border-green-500/50 dark:text-green-400 dark:border-green-500/70",
-    default: "bg-muted text-muted-foreground border-border",
-};
-
-const getPriorityColor = (priority?: string) => {
-    if (!priority || priority === 'none') return priorityColors.default;
-    return priorityColors[priority.toLowerCase()] || priorityColors.default;
-}
-
 const getUserInitials = (name?: string | null) => {
     if (!name) return "?";
     const names = name.split(" ");
@@ -60,14 +57,6 @@ const getUserInitials = (name?: string | null) => {
 };
 
 const ActivityItem = ({ activity }: { activity: Activity }) => {
-    const Icon = {
-        CREATE: Info,
-        COMMENT: MessageSquare,
-        STATUS_CHANGE: ArrowRight,
-        ASSIGNMENT_CHANGE: User,
-        UPDATE: Pencil,
-    }[activity.type];
-
     const renderDetails = () => {
         switch(activity.type) {
             case 'CREATE':
@@ -118,6 +107,7 @@ const ActivityItem = ({ activity }: { activity: Activity }) => {
 
 export function TaskDetail({ task, isOpen, onClose, onTaskUpdate, onOpenEdit, onDelete }: TaskDetailProps) {
   const { toast } = useToast();
+  const { data: session } = useSession();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoadingActivities, setIsLoadingActivities] = useState(false);
   const [newComment, setNewComment] = useState("");
@@ -169,6 +159,9 @@ export function TaskDetail({ task, isOpen, onClose, onTaskUpdate, onOpenEdit, on
   }
 
   if (!task) return null;
+  
+  const comments = activities.filter(act => act.type === 'COMMENT');
+  const otherActivities = activities.filter(act => act.type !== 'COMMENT');
 
   const currentStatus = statusConfig[task.status] || statusConfig.todo;
   const dueDate = task.dueDate ? new Date(task.dueDate) : null;
@@ -179,38 +172,49 @@ export function TaskDetail({ task, isOpen, onClose, onTaskUpdate, onOpenEdit, on
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="sm:max-w-2xl w-full flex flex-col p-0">
         <SheetHeader className="p-6 border-b">
-          <div className="flex justify-between items-center">
-            <SheetTitle className="font-headline text-2xl break-all">{task.title}</SheetTitle>
-            <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => onOpenEdit(task)}>
-                    <Pencil className="mr-2 h-4 w-4" /> Edit
-                </Button>
-                <AlertDialog>
+          <div className="flex justify-between items-start gap-4">
+             <div className="flex-grow">
+                <SheetTitle className="font-headline text-2xl break-all">{task.title}</SheetTitle>
+                <SheetDescription className="mt-1">
+                    In teams: {task.teams && task.teams.length > 0 ? task.teams.map(t => t.name).join(', ') : 'Personal'}
+                </SheetDescription>
+             </div>
+             <AlertDialog>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                        <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onOpenEdit(task)} className="cursor-pointer">
+                        <Pencil className="mr-2 h-4 w-4" />
+                        <span>Edit Task</span>
+                    </DropdownMenuItem>
                     <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="icon" className="h-9 w-9">
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
+                      <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        <span>Delete Task</span>
+                      </DropdownMenuItem>
                     </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                            <AlertDialogDescription>This action cannot be undone. This will permanently delete the task.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => onDelete(task.id)}>Delete</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>This action cannot be undone. This will permanently delete the task.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => onDelete(task.id)}>Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+             </AlertDialog>
           </div>
-          <SheetDescription>
-            In teams: {task.teams && task.teams.length > 0 ? task.teams.map(t => t.name).join(', ') : 'Personal'}
-          </SheetDescription>
         </SheetHeader>
         
-        <ScrollArea className="flex-grow">
-          <div className="p-6 space-y-6">
+        <div className="flex-grow flex flex-col min-h-0">
+          <div className="p-6 pb-2 space-y-4">
               {task.notes && (
                   <div>
                       <h4 className="font-semibold text-foreground mb-2">Notes</h4>
@@ -224,12 +228,12 @@ export function TaskDetail({ task, isOpen, onClose, onTaskUpdate, onOpenEdit, on
                     <div><p className="text-sm text-muted-foreground">Status</p><p className="font-medium text-foreground capitalize">{currentStatus.label}</p></div>
                 </div>
                 <div className="flex items-center gap-3 p-3 border rounded-lg">
-                    <div className="p-2 bg-muted rounded-md"><Zap className="h-5 w-5 text-muted-foreground"/></div>
+                    <div className="p-2 bg-muted rounded-md"><Tag className="h-5 w-5 text-muted-foreground"/></div>
                     <div><p className="text-sm text-muted-foreground">Priority</p><p className="font-medium text-foreground capitalize">{task.priority || 'None'}</p></div>
                 </div>
                 {task.assignedTo && task.assignedTo.length > 0 && (
                     <div className="flex items-start gap-3 p-3 border rounded-lg">
-                        <div className="p-2 bg-muted rounded-md mt-1"><User className="h-5 w-5 text-muted-foreground"/></div>
+                        <div className="p-2 bg-muted rounded-md mt-1"><UsersIcon className="h-5 w-5 text-muted-foreground"/></div>
                         <div>
                           <p className="text-sm text-muted-foreground">Assigned To</p>
                           <div className="flex flex-wrap gap-x-2 gap-y-1 mt-1">
@@ -247,28 +251,44 @@ export function TaskDetail({ task, isOpen, onClose, onTaskUpdate, onOpenEdit, on
                     </div>
                 )}
               </div>
-              
-              <Separator />
-              
-              <div>
-                  <h4 className="font-semibold text-foreground mb-4">Activity</h4>
-                  {isLoadingActivities ? (
-                    <div className="flex justify-center items-center py-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
-                  ) : activities.length > 0 ? (
-                      <div className="space-y-6">
-                         {activities.map(act => <ActivityItem key={act.id} activity={act} />)}
-                      </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">No activity yet.</p>
-                  )}
-              </div>
           </div>
-        </ScrollArea>
-        
+
+          <Tabs defaultValue="comments" className="mt-4 flex-grow flex flex-col min-h-0">
+            <TabsList className="mx-6">
+                <TabsTrigger value="comments">Comments ({comments.length})</TabsTrigger>
+                <TabsTrigger value="activity">Activity ({otherActivities.length})</TabsTrigger>
+            </TabsList>
+             <ScrollArea className="flex-grow">
+                <TabsContent value="comments" className="p-6 pt-4 flex flex-col h-full">
+                    {isLoadingActivities ? (
+                        <div className="flex justify-center items-center py-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+                    ) : comments.length > 0 ? (
+                        <div className="space-y-6">
+                            {comments.map(act => <ActivityItem key={act.id} activity={act} />)}
+                        </div>
+                    ) : (
+                        <p className="text-sm text-muted-foreground text-center py-4">No comments yet. Start the conversation!</p>
+                    )}
+                </TabsContent>
+                <TabsContent value="activity" className="p-6 pt-4">
+                     {isLoadingActivities ? (
+                        <div className="flex justify-center items-center py-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+                    ) : otherActivities.length > 0 ? (
+                        <div className="space-y-6">
+                            {otherActivities.map(act => <ActivityItem key={act.id} activity={act} />)}
+                        </div>
+                    ) : (
+                        <p className="text-sm text-muted-foreground text-center py-4">No activity yet.</p>
+                    )}
+                </TabsContent>
+             </ScrollArea>
+          </Tabs>
+        </div>
+
         <SheetFooter className="p-4 border-t bg-background">
           <form onSubmit={handleCommentSubmit} className="w-full flex gap-3 items-start">
              <Avatar className="h-9 w-9 flex-shrink-0 mt-1">
-                <AvatarFallback className="text-sm bg-primary text-primary-foreground">{getUserInitials(task.assignedTo?.[0]?.name)}</AvatarFallback>
+                <AvatarFallback className="text-sm bg-primary text-primary-foreground">{getUserInitials(session?.user?.name)}</AvatarFallback>
             </Avatar>
             <div className="relative w-full">
                 <Textarea 
