@@ -239,7 +239,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskF
                             selected={field.value ?? []}
                             options={teamOptions}
                             onChange={field.onChange}
-                            placeholder="Select teams..."
+                            placeholder="Search or select teams..."
                             className="w-full"
                         />
                         <FormMessage />
@@ -259,7 +259,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskF
                             selected={field.value ?? []}
                             options={memberOptions}
                             onChange={field.onChange}
-                            placeholder={selectedTeamIds.length > 0 ? "Select members..." : "Select a team first"}
+                            placeholder={selectedTeamIds.length > 0 ? "Search or select members..." : "Select a team first"}
                             className="w-full"
                             disabled={isLoadingMembers || (selectedTeamIds.length === 0 && memberOptions.length <= 1)}
                         />
