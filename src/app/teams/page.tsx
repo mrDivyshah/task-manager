@@ -74,6 +74,8 @@ export default function TeamsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [teamToEdit, setTeamToEdit] = useState<Team | null>(null);
   const [editedTeamName, setEditedTeamName] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
 
   const [isJoinTeamDialogOpen, setIsJoinTeamDialogOpen] = useState(false);
   const [isJoinTeamLoading, setIsJoinTeamLoading] = useState(false);
@@ -196,6 +198,7 @@ export default function TeamsPage() {
       return;
     }
     
+    setIsSaving(true);
     try {
       const res = await fetch(`/api/teams/${teamToEdit.id}`, {
         method: 'PUT',
@@ -208,6 +211,8 @@ export default function TeamsPage() {
       handleCloseEditDialog();
     } catch (error) {
       toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -397,7 +402,21 @@ export default function TeamsPage() {
 
       {teamToEdit && (
         <Dialog open={isEditDialogOpen} onOpenChange={handleCloseEditDialog}>
-          <DialogContent className="sm:max-w-[425px] bg-card rounded-lg shadow-xl"><DialogHeader><DialogTitle className="font-headline text-2xl">Edit Team: {teamToEdit.name}</DialogTitle><DialogDescription>Modify the team's name. Only the team owner can do this.</DialogDescription></DialogHeader><form onSubmit={handleSaveTeamChanges} className="space-y-6 py-4"><div><Label htmlFor="edit-team-name" className="text-foreground/80">Team Name</Label><Input id="edit-team-name" value={editedTeamName} onChange={(e) => setEditedTeamName(e.target.value)} className="mt-1 bg-background border-input focus:ring-primary" required /></div><DialogFooter className="mt-8"><Button type="button" variant="outline" onClick={handleCloseEditDialog}><XCircle className="mr-2 h-4 w-4" />Cancel</Button><Button type="submit" variant="default"><Save className="mr-2 h-4 w-4" />Save Changes</Button></DialogFooter></form></DialogContent>
+          <DialogContent className="sm:max-w-[425px] bg-card rounded-lg shadow-xl"><DialogHeader><DialogTitle className="font-headline text-2xl">Edit Team: {teamToEdit.name}</DialogTitle><DialogDescription>Modify the team's name. Only the team owner can do this.</DialogDescription></DialogHeader>
+          <form onSubmit={handleSaveTeamChanges} className="space-y-6 py-4">
+            <div>
+              <Label htmlFor="edit-team-name" className="text-foreground/80">Team Name</Label>
+              <Input id="edit-team-name" value={editedTeamName} onChange={(e) => setEditedTeamName(e.target.value)} className="mt-1 bg-background border-input focus:ring-primary" required />
+            </div>
+            <DialogFooter className="mt-8">
+              <Button type="button" variant="outline" onClick={handleCloseEditDialog} disabled={isSaving}><XCircle className="mr-2 h-4 w-4" />Cancel</Button>
+              <Button type="submit" variant="default" disabled={isSaving}>
+                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                Save Changes
+              </Button>
+              </DialogFooter>
+          </form>
+          </DialogContent>
         </Dialog>
       )}
 
