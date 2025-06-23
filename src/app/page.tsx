@@ -11,8 +11,7 @@ import { TaskList } from "@/components/TaskList";
 import { TaskDetail } from "@/components/TaskDetail";
 import { useToast } from "@/hooks/use-toast";
 import type { Task, Team } from "@/types";
-import { PlusCircle, Wand2, Loader2, LogIn, Mail, Eye, EyeOff, Search, Filter, SearchX, CheckCircle2, AlertTriangle, Info, Plus, UserPlus, Users, UserCheck, XCircle, LayoutGrid, List } from "lucide-react";
-import { smartSortTasksAction } from "./actions";
+import { PlusCircle, Loader2, LogIn, Mail, Eye, EyeOff, Search, Filter, SearchX, CheckCircle2, AlertTriangle, Info, Plus, UserPlus, Users, UserCheck, XCircle, LayoutGrid, List } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -68,7 +67,6 @@ export default function Home() {
 
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | undefined>(undefined);
-  const [isSorting, setIsSorting] = useState(false);
   const { toast } = useToast();
 
   const [email, setEmail] = useState("");
@@ -333,57 +331,6 @@ export default function Home() {
     }
   };
 
-  const handleSmartSort = async () => {
-    if (tasks.length === 0) {
-      toast({
-        title: "No tasks to sort",
-        description: "Add some tasks before using Smart Sort.",
-        icon: <Info className="h-5 w-5 text-primary" />,
-      });
-      return;
-    }
-    setIsSorting(true);
-    try {
-      const sortedInfos = await smartSortTasksAction(tasks);
-      
-      const updatePromises = sortedInfos.map(info => 
-        fetch(`/api/tasks/${info.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ category: info.category, priority: info.priority })
-        })
-      );
-
-      const results = await Promise.all(updatePromises);
-      const failedUpdates = results.filter(res => !res.ok);
-
-      if (failedUpdates.length > 0) {
-        // Fetch to see what could be updated
-        await fetchData();
-        console.error(`${failedUpdates.length} tasks failed to update.`);
-        throw new Error(`Failed to update ${failedUpdates.length} task(s). You may not have permission to edit certain tasks.`);
-      }
-
-      await fetchData(); // Re-fetch all data to ensure consistency
-      
-      toast({
-        title: "Tasks Smart Sorted!",
-        description: "Categories and priorities have been updated.",
-        icon: <CheckCircle2 className="h-5 w-5 text-primary" />,
-      });
-    } catch (error) {
-      console.error("Smart Sort Error:", error);
-      toast({
-        title: "Smart Sort Failed",
-        description: (error as Error).message || "Could not sort tasks. Please try again.",
-        variant: "destructive",
-        icon: <AlertTriangle className="h-5 w-5" />,
-      });
-    } finally {
-      setIsSorting(false);
-    }
-  };
-
   const handleCredentialsLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsCredentialsLoading(true);
@@ -639,10 +586,6 @@ export default function Home() {
                 </Tooltip>
               </TooltipProvider>
             </div>
-            <Button onClick={handleSmartSort} disabled={isSorting || tasks.length === 0} variant="outline" className="shadow-sm hover:shadow-md transition-shadow w-full sm:w-auto">
-              {isSorting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4 text-accent" />}
-              Smart Sort
-            </Button>
             <Button onClick={() => handleOpenTaskForm()} className="shadow-sm hover:shadow-lg focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-150 bg-primary hover:bg-primary/90 text-primary-foreground w-full sm:w-auto">
               <PlusCircle className="mr-2 h-5 w-5" />
               Add New Task
