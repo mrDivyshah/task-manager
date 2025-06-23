@@ -127,6 +127,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         // --- End Notifications ---
 
         await task.populate([
+            { path: 'userId', model: User, select: 'name email' },
             { path: 'teamIds', model: Team, select: 'name' },
             { path: 'assignedTo', model: User, select: 'name email' }
         ]);
@@ -134,6 +135,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         
         const teamsData = taskObject.teamIds as any[];
         const assignedToData = taskObject.assignedTo as any[];
+        const creatorData = taskObject.userId as any;
 
         return NextResponse.json({
             ...taskObject,
@@ -144,6 +146,11 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
             teams: teamsData?.map(t => ({ id: t._id.toString(), name: t.name })),
             assignedTo: assignedToData?.map(a => ({ id: a._id.toString(), name: a.name, email: a.email })),
             teamIds: teamsData?.map(t => t._id.toString()),
+            createdBy: {
+                id: creatorData._id.toString(),
+                name: creatorData.name,
+                email: creatorData.email,
+            },
         }, { status: 200 });
 
     } catch (error) {

@@ -72,7 +72,7 @@ export function TaskItem({ task, onViewDetails, onDelete, onDragStart, onDragOve
   const hasTime = dueDate && (dueDate.getHours() !== 0 || dueDate.getMinutes() !== 0 || dueDate.getSeconds() !== 0);
 
   const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest('button, [role="combobox"], [role="button"]')) {
+    if ((e.target as HTMLElement).closest('button, [role="combobox"], [role="button"], a')) {
       return;
     }
     onViewDetails(task);
@@ -120,11 +120,18 @@ export function TaskItem({ task, onViewDetails, onDelete, onDragStart, onDragOve
                 <Calendar className="w-3 h-3 mr-1.5 flex-shrink-0" />
                 <span>Due {format(dueDate, hasTime ? 'MMM d, p' : 'MMM d')}</span>
               </div>
+            ) : task.createdBy ? (
+              <div className="flex items-center truncate">
+                  <User className="w-3 h-3 mr-1.5 flex-shrink-0" />
+                  <span className="truncate">{task.createdBy.name}</span>
+                  <span className="mx-1">•</span>
+                  <span>{formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}</span>
+              </div>
             ) : (
-              <>
-                <Clock className="w-3 h-3 mr-1.5 flex-shrink-0" />
-                <span>Created {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}</span>
-              </>
+                <div className="flex items-center">
+                    <Clock className="w-3 h-3 mr-1.5 flex-shrink-0" />
+                    <span>{formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}</span>
+                </div>
             )}
           </div>
         </div>
@@ -270,23 +277,43 @@ export function TaskItem({ task, onViewDetails, onDelete, onDragStart, onDragOve
           )}
         </div>
       </CardContent>
-      <CardFooter className="flex justify-end items-center gap-2 pt-2 border-t border-border/50 mt-auto">
-        <Select value={task.status} onValueChange={(newStatus: 'todo' | 'in-progress' | 'done') => onStatusChange(task.id, newStatus)}>
-            <SelectTrigger className="text-sm h-9 w-40 mr-auto bg-background/50 hover:bg-background/80" aria-label="Change status">
-              <div className="flex items-center gap-2">
-                <StatusIcon className={cn("h-4 w-4", currentStatusConfig.color)} />
-                <SelectValue placeholder="Change status..." />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem value="todo">To Do</SelectItem>
-                <SelectItem value="in-progress">In Progress</SelectItem>
-                <SelectItem value="done">Done</SelectItem>
-            </SelectContent>
-        </Select>
-        <Button variant="destructive" size="icon" className="h-9 w-9" onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} aria-label={`Delete task ${task.title}`}>
-          <Trash2 size={16} />
-        </Button>
+      <CardFooter className="flex justify-between items-center gap-2 pt-2 border-t border-border/50 mt-auto">
+        <div className="flex items-center gap-2">
+            <Select value={task.status} onValueChange={(newStatus: 'todo' | 'in-progress' | 'done') => onStatusChange(task.id, newStatus)}>
+                <SelectTrigger className="text-sm h-9 w-40 bg-background/50 hover:bg-background/80" aria-label="Change status">
+                  <div className="flex items-center gap-2">
+                    <StatusIcon className={cn("h-4 w-4", currentStatusConfig.color)} />
+                    <SelectValue placeholder="Change status..." />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="todo">To Do</SelectItem>
+                    <SelectItem value="in-progress">In Progress</SelectItem>
+                    <SelectItem value="done">Done</SelectItem>
+                </SelectContent>
+            </Select>
+        </div>
+        <div className="flex items-center gap-2">
+            {task.createdBy && (
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <Avatar className="h-7 w-7 border-2 border-card">
+                                <AvatarFallback className="text-xs bg-muted">
+                                    {getUserInitials(task.createdBy.name)}
+                                </AvatarFallback>
+                            </Avatar>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Created by {task.createdBy.name}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            )}
+            <Button variant="destructive" size="icon" className="h-9 w-9" onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} aria-label={`Delete task ${task.title}`}>
+              <Trash2 size={16} />
+            </Button>
+        </div>
       </CardFooter>
     </Card>
   );

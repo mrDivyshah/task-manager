@@ -33,6 +33,7 @@ export async function GET(req: Request) {
         { assignedTo: userObjectId },
       ]
     })
+      .populate({ path: 'userId', model: User, select: 'name email' })
       .populate({ path: 'teamIds', model: Team, select: 'name' })
       .populate({ path: 'assignedTo', model: User, select: 'name email' })
       .sort({ createdAt: -1 });
@@ -40,6 +41,7 @@ export async function GET(req: Request) {
     const formattedTasks = tasks.map(task => {
         const teamsData = task.teamIds as any[];
         const assignedToData = task.assignedTo as any[];
+        const creatorData = task.userId as any;
         return {
             id: task._id.toString(),
             title: task.title,
@@ -52,6 +54,11 @@ export async function GET(req: Request) {
             teamIds: teamsData?.map(t => t._id.toString()),
             teams: teamsData?.map(t => ({ id: t._id.toString(), name: t.name })),
             assignedTo: assignedToData?.map(a => ({ id: a._id.toString(), name: a.name, email: a.email })),
+            createdBy: {
+                id: creatorData._id.toString(),
+                name: creatorData.name,
+                email: creatorData.email,
+            }
         };
     });
 
@@ -116,6 +123,7 @@ export async function POST(req: Request) {
         }
         
         await task.populate([
+            { path: 'userId', model: User, select: 'name email' },
             { path: 'teamIds', model: Team, select: 'name' },
             { path: 'assignedTo', model: User, select: 'name email' }
         ]);
@@ -123,6 +131,7 @@ export async function POST(req: Request) {
         const taskObject = task.toObject();
         const teamsData = taskObject.teamIds as any[];
         const assignedToData = taskObject.assignedTo as any[];
+        const creatorData = taskObject.userId as any;
 
         return NextResponse.json({
             ...taskObject,
@@ -133,6 +142,11 @@ export async function POST(req: Request) {
             teams: teamsData?.map(t => ({ id: t._id.toString(), name: t.name })),
             assignedTo: assignedToData?.map(a => ({ id: a._id.toString(), name: a.name, email: a.email })),
             teamIds: teamsData?.map(t => t._id.toString()),
+            createdBy: {
+                id: creatorData._id.toString(),
+                name: creatorData.name,
+                email: creatorData.email,
+            }
         }, { status: 201 });
 
     } catch (error) {

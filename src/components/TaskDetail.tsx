@@ -175,8 +175,16 @@ export function TaskDetail({ task, isOpen, onClose, onTaskUpdate, onOpenEdit, on
           <div className="flex justify-between items-start gap-4">
              <div className="flex-grow">
                 <SheetTitle className="font-headline text-2xl break-all">{task.title}</SheetTitle>
-                <SheetDescription className="mt-1">
-                    In teams: {task.teams && task.teams.length > 0 ? task.teams.map(t => t.name).join(', ') : 'Personal'}
+                <SheetDescription className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                    {task.createdBy && (
+                        <span>Created by <span className="font-medium text-foreground">{task.createdBy.name}</span> on {format(new Date(task.createdAt), "MMM d, yyyy")}</span>
+                    )}
+                    {task.teams && task.teams.length > 0 && (
+                    <>
+                        <span className="text-muted-foreground hidden sm:inline">•</span>
+                        <span>In teams: <span className="font-medium text-foreground">{task.teams.map(t => t.name).join(', ')}</span></span>
+                    </>
+                    )}
                 </SheetDescription>
              </div>
              <AlertDialog>

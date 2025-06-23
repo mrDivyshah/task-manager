@@ -17,6 +17,7 @@ export interface Task {
   teamIds?: string[];
   teams?: { id: string; name: string; }[];
   assignedTo?: UserSubset[];
+  createdBy?: UserSubset;
 }
 
 export interface TeamMember extends UserSubset {}
