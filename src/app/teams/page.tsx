@@ -325,10 +325,13 @@ export default function TeamsPage() {
                     return (
                         <Card key={team.id} className="shadow-md rounded-lg flex flex-col">
                             <CardHeader>
-                                <div className="flex justify-between items-start">
-                                    <CardTitle className="font-semibold text-xl break-all">{team.name}</CardTitle>
+                                <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-start">
+                                    <div>
+                                      <CardTitle className="font-semibold text-xl break-all">{team.name}</CardTitle>
+                                      <CardDescription className="pt-1">Code: <span className="font-mono text-primary">{team.code}</span></CardDescription>
+                                    </div>
                                     {isOwner && (
-                                        <div className="flex gap-2">
+                                        <div className="flex gap-2 flex-shrink-0">
                                             <Button variant="outline" size="sm" onClick={() => handleOpenEditDialog(team)}><Edit3 className="mr-2 h-4 w-4" /> Edit</Button>
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild><Button variant="destructive" size="icon" className="h-9 w-9"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
@@ -337,8 +340,7 @@ export default function TeamsPage() {
                                         </div>
                                     )}
                                 </div>
-                                <CardDescription>Code: <span className="font-mono text-primary">{team.code}</span></CardDescription>
-                                <div className="text-xs text-muted-foreground pt-1">Created: {formatDistanceToNow(new Date(team.createdAt), { addSuffix: true })}</div>
+                                <div className="text-xs text-muted-foreground pt-2">Created: {formatDistanceToNow(new Date(team.createdAt), { addSuffix: true })}</div>
                             </CardHeader>
                             <CardContent className="flex-grow space-y-4">
                             <div>

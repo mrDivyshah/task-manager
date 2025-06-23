@@ -185,167 +185,169 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskF
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 py-4">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-foreground/80">Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Finalize project report" {...field} className="bg-background border-input focus:ring-primary" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-foreground/80">Notes (Optional)</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Add any relevant details or context..." className="resize-none bg-background border-input focus:ring-primary" rows={3} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Controller
+          <form onSubmit={form.handleSubmit(handleSubmit)}>
+            <div className="space-y-6 py-4 max-h-[65vh] overflow-y-auto -mr-6 pr-6">
+              <FormField
                 control={form.control}
-                name="teamIds"
+                name="title"
                 render={({ field }) => (
-                   <FormItem>
-                    <FormLabel className="text-foreground/80">Assign to Team(s)</FormLabel>
-                    <MultiSelect
-                        selected={field.value ?? []}
-                        options={teamOptions}
-                        onChange={field.onChange}
-                        placeholder="Select teams..."
-                        className="w-full"
-                    />
+                  <FormItem>
+                    <FormLabel className="text-foreground/80">Title</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Finalize project report" {...field} className="bg-background border-input focus:ring-primary" />
+                    </FormControl>
                     <FormMessage />
-                   </FormItem>
+                  </FormItem>
                 )}
               />
-              <Controller
+              <FormField
                 control={form.control}
-                name="assignedTo"
+                name="notes"
                 render={({ field }) => (
-                   <FormItem>
-                    <div className="flex justify-between items-center">
-                      <FormLabel className="text-foreground/80">Assign to Member(s)</FormLabel>
-                      {isLoadingMembers && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                    </div>
-                    <MultiSelect
-                        selected={field.value ?? []}
-                        options={memberOptions}
-                        onChange={field.onChange}
-                        placeholder="Select members..."
-                        className="w-full"
-                        disabled={isLoadingMembers || selectedTeamIds.length === 0}
-                    />
-                     <FormMessage />
-                   </FormItem>
+                  <FormItem>
+                    <FormLabel className="text-foreground/80">Notes (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Add any relevant details or context..." className="resize-none bg-background border-input focus:ring-primary" rows={3} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
-            </div>
-             <div className="flex items-center space-x-2">
-              <Checkbox
-                id="assignToAll"
-                onCheckedChange={(checked) => setAssignToAll(Boolean(checked))}
-                disabled={members.length === 0}
-              />
-              <label
-                htmlFor="assignToAll"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Assign to all members in selected team(s)
-              </label>
-            </div>
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Controller
                   control={form.control}
-                  name="priority"
+                  name="teamIds"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-foreground/80">Priority</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || "none"}>
-                        <FormControl>
-                          <SelectTrigger className="bg-background border-input focus:ring-primary"><SelectValue placeholder="Select priority" /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="none">None</SelectItem>
-                          <SelectItem value="low">Low</SelectItem>
-                          <SelectItem value="medium">Medium</SelectItem>
-                          <SelectItem value="high">High</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <FormLabel className="text-foreground/80">Assign to Team(s)</FormLabel>
+                      <MultiSelect
+                          selected={field.value ?? []}
+                          options={teamOptions}
+                          onChange={field.onChange}
+                          placeholder="Select teams..."
+                          className="w-full"
+                      />
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <div className="grid grid-cols-2 gap-x-2">
-                    <FormField
-                      control={form.control}
-                      name="dueDate"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-col justify-between">
-                          <FormLabel className="text-foreground/80">Due Date</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant={"outline"}
-                                  className={cn(
-                                    "w-full pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                >
-                                  {field.value ? (
-                                    format(field.value, "PPP")
-                                  ) : (
-                                    <span>Pick a date</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value ?? undefined}
-                                onSelect={field.onChange}
-                                disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() - 1)) }
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
-                          <FormMessage className="mt-1"/>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
+                <Controller
+                  control={form.control}
+                  name="assignedTo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex justify-between items-center">
+                        <FormLabel className="text-foreground/80">Assign to Member(s)</FormLabel>
+                        {isLoadingMembers && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                      </div>
+                      <MultiSelect
+                          selected={field.value ?? []}
+                          options={memberOptions}
+                          onChange={field.onChange}
+                          placeholder="Select members..."
+                          className="w-full"
+                          disabled={isLoadingMembers || selectedTeamIds.length === 0}
+                      />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="assignToAll"
+                  onCheckedChange={(checked) => setAssignToAll(Boolean(checked))}
+                  disabled={members.length === 0}
+                />
+                <label
+                  htmlFor="assignToAll"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Assign to all members in selected team(s)
+                </label>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="priority"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-foreground/80">Priority</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || "none"}>
+                          <FormControl>
+                            <SelectTrigger className="bg-background border-input focus:ring-primary"><SelectValue placeholder="Select priority" /></SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            <SelectItem value="low">Low</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="high">High</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-2 gap-x-2">
+                      <FormField
                         control={form.control}
-                        name="dueTime"
+                        name="dueDate"
                         render={({ field }) => (
-                            <FormItem className="flex flex-col justify-between">
-                                <FormLabel className="text-foreground/80">Time</FormLabel>
+                          <FormItem className="flex flex-col justify-between">
+                            <FormLabel className="text-foreground/80">Due Date</FormLabel>
+                            <Popover>
+                              <PopoverTrigger asChild>
                                 <FormControl>
-                                    <Input
-                                        type="time"
-                                        className="bg-background border-input focus:ring-primary"
-                                        disabled={!form.watch('dueDate')}
-                                        {...field}
-                                    />
+                                  <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                      "w-full pl-3 text-left font-normal",
+                                      !field.value && "text-muted-foreground"
+                                    )}
+                                  >
+                                    {field.value ? (
+                                      format(field.value, "PPP")
+                                    ) : (
+                                      <span>Pick a date</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                  </Button>
                                 </FormControl>
-                                <FormMessage className="mt-1"/>
-                            </FormItem>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={field.value ?? undefined}
+                                  onSelect={field.onChange}
+                                  disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() - 1)) }
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            <FormMessage className="mt-1"/>
+                          </FormItem>
                         )}
-                    />
-                </div>
+                      />
+                      <FormField
+                          control={form.control}
+                          name="dueTime"
+                          render={({ field }) => (
+                              <FormItem className="flex flex-col justify-between">
+                                  <FormLabel className="text-foreground/80">Time</FormLabel>
+                                  <FormControl>
+                                      <Input
+                                          type="time"
+                                          className="bg-background border-input focus:ring-primary"
+                                          disabled={!form.watch('dueDate')}
+                                          {...field}
+                                      />
+                                  </FormControl>
+                                  <FormMessage className="mt-1"/>
+                              </FormItem>
+                          )}
+                      />
+                  </div>
+              </div>
             </div>
             <DialogFooter className="mt-8">
               <DialogClose asChild>
