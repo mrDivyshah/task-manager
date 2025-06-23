@@ -6,6 +6,7 @@ import { TaskItem } from "./TaskItem";
 import { FileText } from "lucide-react";
 import React from "react";
 import { cn } from "@/lib/utils";
+import { format, isToday, isYesterday } from 'date-fns';
 
 interface TaskListProps {
   tasks: Task[];
@@ -13,7 +14,7 @@ interface TaskListProps {
   onDeleteTask: (taskId: string) => void;
   onReorderTasks: (tasks: Task[]) => void;
   onStatusChange: (taskId: string, status: Task['status']) => void;
-  view: 'grid' | 'list';
+  view: 'grid' | 'list' | 'day';
 }
 
 export function TaskList({ tasks, onEditTask, onDeleteTask, onReorderTasks, onStatusChange, view }: TaskListProps) {
@@ -62,6 +63,61 @@ export function TaskList({ tasks, onEditTask, onDeleteTask, onReorderTasks, onSt
         <p className="max-w-sm">
           Looks like your task list is empty. Click the "Add New Task" button to get started and organize your day.
         </p>
+      </div>
+    );
+  }
+
+  if (view === 'day') {
+    const groupedTasks = tasks.reduce((acc, task) => {
+      const dayKey = format(new Date(task.createdAt), 'yyyy-MM-dd');
+      if (!acc[dayKey]) {
+        acc[dayKey] = [];
+      }
+      acc[dayKey].push(task);
+      return acc;
+    }, {} as Record<string, Task[]>);
+
+    const sortedGroupKeys = Object.keys(groupedTasks).sort().reverse();
+
+    return (
+      <div className="mt-8 space-y-8">
+        {sortedGroupKeys.map(dateKey => {
+          const groupTasks = groupedTasks[dateKey];
+          // By appending T00:00:00, we hint to the parser to treat this as a local date, avoiding timezone shifts.
+          const groupDate = new Date(dateKey + 'T00:00:00');
+          let groupTitle = '';
+          if (isToday(groupDate)) {
+            groupTitle = 'Today';
+          } else if (isYesterday(groupDate)) {
+            groupTitle = 'Yesterday';
+          } else {
+            groupTitle = format(groupDate, 'MMMM d, yyyy');
+          }
+
+          return (
+            <div key={dateKey} className="animate-subtle-appear">
+              <h2 className="text-xl font-bold text-foreground mb-4 pb-2 border-b border-border/50">
+                {groupTitle}
+              </h2>
+              <div className="flex flex-col gap-4">
+                {groupTasks.map(task => (
+                  <TaskItem
+                    key={task.id}
+                    task={task}
+                    onEdit={onEditTask}
+                    onDelete={onDeleteTask}
+                    onStatusChange={onStatusChange}
+                    onDragStart={handleDragStart}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    isDragging={draggedItemId === task.id}
+                    view="list" // Force list view for day grouping
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
     );
   }

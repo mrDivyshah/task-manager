@@ -10,7 +10,7 @@ import { TaskForm } from "@/components/TaskForm";
 import { TaskList } from "@/components/TaskList";
 import { useToast } from "@/hooks/use-toast";
 import type { Task, Team } from "@/types";
-import { PlusCircle, Wand2, Loader2, LogIn, Mail, Eye, EyeOff, Search, Filter, SearchX, CheckCircle2, AlertTriangle, Info, Plus, UserPlus, Users, UserCheck, XCircle, LayoutGrid, List } from "lucide-react";
+import { PlusCircle, Wand2, Loader2, LogIn, Mail, Eye, EyeOff, Search, Filter, SearchX, CheckCircle2, AlertTriangle, Info, Plus, UserPlus, Users, UserCheck, XCircle, LayoutGrid, List, CalendarDays } from "lucide-react";
 import { smartSortTasksAction } from "./actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,7 +54,7 @@ export default function Home() {
   const [assignedToMeFilter, setAssignedToMeFilter] = useState<boolean>(false);
   
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [viewMode, setViewMode] = useLocalStorage<'grid' | 'list'>('task-view-mode', 'grid');
+  const [viewMode, setViewMode] = useLocalStorage<'grid' | 'list' | 'day'>('task-view-mode', 'grid');
 
   useEffect(() => {
     setCurrentYear(new Date().getFullYear());
@@ -527,6 +527,16 @@ export default function Home() {
                     <p>List View</p>
                   </TooltipContent>
                 </Tooltip>
+                 <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant={viewMode === 'day' ? 'secondary' : 'ghost'} size="sm" onClick={() => setViewMode('day')} className="h-7 w-8 p-0">
+                      <CalendarDays className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Day View</p>
+                  </TooltipContent>
+                </Tooltip>
               </TooltipProvider>
             </div>
             <Button onClick={handleSmartSort} disabled={isSorting || tasks.length === 0} variant="outline" className="shadow-sm hover:shadow-md transition-shadow w-full sm:w-auto">
@@ -669,5 +679,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
