@@ -142,6 +142,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
             id: task._id.toString(),
             status: task.status,
             createdAt: task.createdAt.getTime(),
+            updatedAt: task.updatedAt.getTime(),
             dueDate: task.dueDate?.toISOString(),
             teams: teamsData?.map(t => ({ id: t._id.toString(), name: t.name })),
             assignedTo: assignedToData?.map(a => ({ id: a._id.toString(), name: a.name, email: a.email })),

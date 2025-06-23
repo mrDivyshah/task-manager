@@ -331,7 +331,7 @@ export default function ProfilePage() {
         </Card>
       </main>
       <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-        © 2025 TaskFlow. Developed By Dravya shah
+        © 2025 TaskFlow. All rights reserved.
       </footer>
     </div>
   );

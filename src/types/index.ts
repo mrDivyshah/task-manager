@@ -13,6 +13,7 @@ export interface Task {
   category?: string;
   priority?: 'high' | 'medium' | 'low' | string;
   createdAt: number; // timestamp
+  updatedAt: number; // timestamp
   dueDate?: string; // ISO date string
   teamIds?: string[];
   teams?: { id: string; name: string; }[];

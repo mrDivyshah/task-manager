@@ -274,7 +274,7 @@ export default function TeamsPage() {
            <Loader2 className="h-16 w-16 animate-spin text-primary" />
         </main>
         <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-          © 2025 TaskFlow. Developed By Dravya shah
+          © 2025 TaskFlow. All rights reserved.
         </footer>
       </div>
     );
@@ -424,7 +424,7 @@ export default function TeamsPage() {
       </Dialog>
 
        <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-        © 2025 TaskFlow. Developed By Dravya shah
+        © 2025 TaskFlow. All rights reserved.
       </footer>
     </div>
   );
