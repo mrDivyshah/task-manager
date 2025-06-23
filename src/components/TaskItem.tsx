@@ -9,8 +9,9 @@ import type { Task } from "@/types";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from 'date-fns';
 import React, { useEffect, useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 interface TaskItemProps {
@@ -22,9 +23,10 @@ interface TaskItemProps {
   onDrop: (event: React.DragEvent<HTMLDivElement>, targetTaskId: string) => void;
   onStatusChange: (taskId: string, status: Task['status']) => void;
   isDragging?: boolean;
+  view: 'grid' | 'list';
 }
 
-export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDrop, onStatusChange, isDragging }: TaskItemProps) {
+export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDrop, onStatusChange, isDragging, view }: TaskItemProps) {
   const [animationDelay, setAnimationDelay] = useState('0s');
 
   useEffect(() => {
@@ -64,6 +66,88 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
     }
     return names[0][0].toUpperCase();
   };
+
+  if (view === 'list') {
+    return (
+      <Card
+        draggable
+        onDragStart={(e) => onDragStart(e, task.id)}
+        onDragOver={onDragOver}
+        onDrop={(e) => onDrop(e, task.id)}
+        className={cn(
+          "w-full shadow-md rounded-lg transition-all duration-300 ease-in-out hover:shadow-lg bg-card animate-subtle-appear flex items-center p-3 gap-3",
+          isDragging ? "opacity-50 ring-2 ring-primary" : "opacity-100",
+          task.status === 'done' && 'opacity-60 bg-card/80'
+        )}
+        style={{ animationDelay }}
+      >
+        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary cursor-grab h-8 w-8 flex-shrink-0" aria-label="Drag to reorder">
+          <GripVertical size={20} />
+        </Button>
+        
+        <Select value={task.status} onValueChange={(newStatus: 'todo' | 'in-progress' | 'done') => onStatusChange(task.id, newStatus)}>
+          <SelectTrigger className="h-9 w-9 p-0 flex-shrink-0 bg-transparent border-none shadow-none focus:ring-0 focus:ring-offset-0" aria-label="Change status">
+            <SelectValue asChild>
+              <StatusIcon className={cn("h-6 w-6", currentStatusConfig.color)} />
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todo">To Do</SelectItem>
+            <SelectItem value="in-progress">In Progress</SelectItem>
+            <SelectItem value="done">Done</SelectItem>
+          </SelectContent>
+        </Select>
+        
+        <div className="flex-1 min-w-0" onClick={() => onEdit(task)}>
+          <p className={cn("font-medium truncate cursor-pointer", task.status === 'done' && 'line-through text-muted-foreground')}>
+            {task.title}
+          </p>
+          <div className="flex items-center text-xs text-muted-foreground truncate">
+            <Clock className="w-3 h-3 mr-1.5 flex-shrink-0" />
+            <span>Created {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}</span>
+          </div>
+        </div>
+        
+        <div className="hidden sm:flex items-center gap-2 ml-auto flex-shrink-0">
+          {task.priority && task.priority !== "none" && (
+            <Badge variant="outline" className={cn("text-xs py-0.5 px-2 rounded-full", getPriorityColor(task.priority))}>
+              {task.priority}
+            </Badge>
+          )}
+          {assignedTeam && (
+            <Badge variant="outline" className="text-xs py-0.5 px-2 rounded-full border-primary/50 bg-primary/10 text-primary-foreground">
+              {assignedTeam.name}
+            </Badge>
+          )}
+          {assignedUser && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Avatar className="h-7 w-7 border-2 border-primary/20">
+                      <AvatarFallback className="text-xs bg-muted">
+                        {getUserInitials(assignedUser.name)}
+                      </AvatarFallback>
+                  </Avatar>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Assigned to {assignedUser.name}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
+  
+        <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => onEdit(task)} aria-label={`Edit task ${task.title}`}>
+            <Pencil size={14} />
+          </Button>
+          <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => onDelete(task.id)} aria-label={`Delete task ${task.title}`}>
+            <Trash2 size={14} />
+          </Button>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card 
@@ -105,7 +189,7 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
               {task.category}
             </Badge>
           )}
-          {task.priority && (
+          {task.priority && task.priority !== "none" && (
             <Badge variant="outline" className={cn("text-xs py-1 px-2.5 rounded-full", getPriorityColor(task.priority))}>
               <Zap size={14} className="mr-1.5" />
               Priority: {task.priority}

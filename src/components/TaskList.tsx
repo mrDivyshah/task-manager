@@ -3,8 +3,9 @@
 
 import type { Task } from "@/types";
 import { TaskItem } from "./TaskItem";
-import { FileText, Info } from "lucide-react";
+import { FileText } from "lucide-react";
 import React from "react";
+import { cn } from "@/lib/utils";
 
 interface TaskListProps {
   tasks: Task[];
@@ -12,9 +13,10 @@ interface TaskListProps {
   onDeleteTask: (taskId: string) => void;
   onReorderTasks: (tasks: Task[]) => void;
   onStatusChange: (taskId: string, status: Task['status']) => void;
+  view: 'grid' | 'list';
 }
 
-export function TaskList({ tasks, onEditTask, onDeleteTask, onReorderTasks, onStatusChange }: TaskListProps) {
+export function TaskList({ tasks, onEditTask, onDeleteTask, onReorderTasks, onStatusChange, view }: TaskListProps) {
   const [draggedItemId, setDraggedItemId] = React.useState<string | null>(null);
 
   const handleDragStart = (event: React.DragEvent<HTMLDivElement>, taskId: string) => {
@@ -65,7 +67,12 @@ export function TaskList({ tasks, onEditTask, onDeleteTask, onReorderTasks, onSt
   }
   
   return (
-    <div className="mt-8 grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className={cn(
+      "mt-8",
+      view === 'grid'
+        ? "grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        : "flex flex-col gap-4"
+    )}>
       {tasks.map((task) => (
         <TaskItem
           key={task.id}
@@ -77,6 +84,7 @@ export function TaskList({ tasks, onEditTask, onDeleteTask, onReorderTasks, onSt
           onDragOver={handleDragOver}
           onDrop={handleDrop}
           isDragging={draggedItemId === task.id}
+          view={view}
         />
       ))}
     </div>

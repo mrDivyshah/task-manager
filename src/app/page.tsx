@@ -10,7 +10,7 @@ import { TaskForm } from "@/components/TaskForm";
 import { TaskList } from "@/components/TaskList";
 import { useToast } from "@/hooks/use-toast";
 import type { Task, Team } from "@/types";
-import { PlusCircle, Wand2, Loader2, LogIn, Mail, Eye, EyeOff, Search, Filter, SearchX, CheckCircle2, AlertTriangle, Info, Plus, UserPlus, Users, UserCheck, XCircle } from "lucide-react";
+import { PlusCircle, Wand2, Loader2, LogIn, Mail, Eye, EyeOff, Search, Filter, SearchX, CheckCircle2, AlertTriangle, Info, Plus, UserPlus, Users, UserCheck, XCircle, LayoutGrid, List } from "lucide-react";
 import { smartSortTasksAction } from "./actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
+import useLocalStorage from "@/hooks/useLocalStorage";
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -51,6 +52,7 @@ export default function Home() {
   const [assignedToMeFilter, setAssignedToMeFilter] = useState<boolean>(false);
   
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [viewMode, setViewMode] = useLocalStorage<'grid' | 'list'>('task-view-mode', 'grid');
 
   useEffect(() => {
     setCurrentYear(new Date().getFullYear());
@@ -101,7 +103,7 @@ export default function Home() {
     })
     .filter(task => {
       if (priorityFilter === "all") return true;
-      if (priorityFilter === "none") return !task.priority || task.priority.trim() === "";
+      if (priorityFilter === "none") return !task.priority || task.priority.trim() === "" || task.priority === "none";
       return task.priority?.toLowerCase() === priorityFilter;
     })
     .filter(task => {
@@ -225,7 +227,7 @@ export default function Home() {
   };
   
   const handleStatusChange = async (taskId: string, status: Task['status']) => {
-    const originalTasks = tasks;
+    const originalTasks = [...tasks];
     setTasks(prevTasks => prevTasks.map(t => 
       t.id === taskId ? { ...t, status } : t
     ));
@@ -279,8 +281,10 @@ export default function Home() {
       const failedUpdates = results.filter(res => !res.ok);
 
       if (failedUpdates.length > 0) {
+        // Fetch to see what could be updated
+        await fetchData();
         console.error(`${failedUpdates.length} tasks failed to update.`);
-        throw new Error(`Failed to update ${failedUpdates.length} task(s). You may not have permission to edit tasks in some teams.`);
+        throw new Error(`Failed to update ${failedUpdates.length} task(s). You may not have permission to edit certain tasks.`);
       }
 
       await fetchData(); // Re-fetch all data to ensure consistency
@@ -491,6 +495,30 @@ export default function Home() {
             </span>
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="hidden sm:flex items-center gap-1 bg-muted p-1 rounded-lg">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="sm" onClick={() => setViewMode('grid')} className="h-7 w-8 p-0">
+                      <LayoutGrid className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Grid View</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant={viewMode === 'list' ? 'secondary' : 'ghost'} size="sm" onClick={() => setViewMode('list')} className="h-7 w-8 p-0">
+                      <List className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>List View</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Button onClick={handleSmartSort} disabled={isSorting || tasks.length === 0} variant="outline" className="shadow-sm hover:shadow-md transition-shadow w-full sm:w-auto">
               {isSorting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4 text-accent" />}
               Smart Sort
@@ -591,7 +619,8 @@ export default function Home() {
 
         { (tasks.length === 0 || displayedTasks.length > 0) && (
             <TaskList 
-              tasks={displayedTasks} 
+              tasks={displayedTasks}
+              view={viewMode}
               onEditTask={handleOpenTaskForm} 
               onDeleteTask={handleDeleteTask} 
               onReorderTasks={handleReorderTasks}
