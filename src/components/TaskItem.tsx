@@ -1,22 +1,11 @@
 
 "use client";
-
-<<<<<<< HEAD
-import { Pencil, Trash2, GripVertical, Tag, Zap, Clock, Users, User, CheckCircle, Circle, MoreHorizontal } from "lucide-react";
-=======
 import { Pencil, Trash2, GripVertical, Tag, Zap, Clock, Users, User, CheckCircle, Circle, MoreHorizontal, Calendar } from "lucide-react";
->>>>>>> master
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Task } from "@/types";
 import { cn } from "@/lib/utils";
-<<<<<<< HEAD
-import { formatDistanceToNow } from 'date-fns';
-import React, { useEffect, useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-=======
 import { format, formatDistanceToNow, isPast } from 'date-fns';
 import React, { useEffect, useState } from "react";
 import { Avatar, AvatarFallback } from "./ui/avatar";
@@ -33,45 +22,29 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
->>>>>>> master
 
 
 interface TaskItemProps {
   task: Task;
-<<<<<<< HEAD
-  onEdit: (task: Task) => void;
-=======
   onViewDetails: (task: Task) => void;
->>>>>>> master
   onDelete: (taskId: string) => void;
   onDragStart: (event: React.DragEvent<HTMLDivElement>, taskId: string) => void;
   onDragOver: (event: React.DragEvent<HTMLDivElement>) => void;
   onDrop: (event: React.DragEvent<HTMLDivElement>, targetTaskId: string) => void;
   onStatusChange: (taskId: string, status: Task['status']) => void;
   isDragging?: boolean;
-<<<<<<< HEAD
-}
-
-export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDrop, onStatusChange, isDragging }: TaskItemProps) {
-=======
   view: 'grid' | 'list';
 }
 
 export function TaskItem({ task, onViewDetails, onDelete, onDragStart, onDragOver, onDrop, onStatusChange, isDragging, view }: TaskItemProps) {
->>>>>>> master
   const [animationDelay, setAnimationDelay] = useState('0s');
 
   useEffect(() => {
     setAnimationDelay(`${Math.random() * 0.2}s`);
   }, []);
   
-<<<<<<< HEAD
-  const assignedTeam = task.team;
-  const assignedUser = task.assignedTo;
-=======
   const assignedTeams = task.teams;
   const assignedUsers = task.assignedTo;
->>>>>>> master
 
   const priorityColors: Record<string, string> = {
     high: "bg-red-500/20 text-red-700 border-red-500/50 dark:text-red-400 dark:border-red-500/70",
@@ -103,8 +76,6 @@ export function TaskItem({ task, onViewDetails, onDelete, onDragStart, onDragOve
     }
     return names[0][0].toUpperCase();
   };
-<<<<<<< HEAD
-=======
   
   const dueDate = task.dueDate ? new Date(task.dueDate) : null;
   const isOverdue = dueDate && isPast(dueDate) && task.status !== 'done';
@@ -253,7 +224,6 @@ export function TaskItem({ task, onViewDetails, onDelete, onDragStart, onDragOve
       </Card>
     );
   }
->>>>>>> master
 
   return (
     <Card 
@@ -261,14 +231,10 @@ export function TaskItem({ task, onViewDetails, onDelete, onDragStart, onDragOve
       onDragStart={(e) => onDragStart(e, task.id)}
       onDragOver={onDragOver}
       onDrop={(e) => onDrop(e, task.id)}
-<<<<<<< HEAD
-      className={cn(
-        "w-full shadow-lg rounded-xl transition-all duration-300 ease-in-out hover:shadow-xl bg-card animate-subtle-appear flex flex-col",
-=======
+
       onClick={handleCardClick}
       className={cn(
         "w-full shadow-lg rounded-xl transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1 bg-card animate-subtle-appear flex flex-col cursor-pointer",
->>>>>>> master
         isDragging ? "opacity-50 ring-2 ring-primary" : "opacity-100",
         task.status === 'done' && 'opacity-60 bg-card/80',
       )}
@@ -279,11 +245,7 @@ export function TaskItem({ task, onViewDetails, onDelete, onDragStart, onDragOve
           <CardTitle className={cn("font-headline text-xl mb-1 break-all", task.status === 'done' && 'line-through text-muted-foreground')}>
             {task.title}
           </CardTitle>
-<<<<<<< HEAD
-          <div className="flex items-center text-xs text-muted-foreground">
-            <Clock className="w-3 h-3 mr-1" />
-            Created {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}
-=======
+
            <div className="flex items-center text-xs text-muted-foreground">
             {dueDate ? (
               <div className={cn("flex items-center", isOverdue ? 'text-destructive font-medium' : '')}>
@@ -296,7 +258,6 @@ export function TaskItem({ task, onViewDetails, onDelete, onDragStart, onDragOve
                 Created {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}
                </div>
             )}
->>>>>>> master
           </div>
         </div>
         <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary cursor-grab p-1 h-8 w-8" aria-label="Drag to reorder">
@@ -316,57 +277,12 @@ export function TaskItem({ task, onViewDetails, onDelete, onDragStart, onDragOve
               {task.category}
             </Badge>
           )}
-<<<<<<< HEAD
-          {task.priority && (
-=======
           {task.priority && task.priority !== "none" && (
->>>>>>> master
             <Badge variant="outline" className={cn("text-xs py-1 px-2.5 rounded-full", getPriorityColor(task.priority))}>
               <Zap size={14} className="mr-1.5" />
               Priority: {task.priority}
             </Badge>
           )}
-<<<<<<< HEAD
-          {assignedTeam && (
-            <Badge variant="outline" className="text-xs py-1 px-2.5 rounded-full border-primary/50 bg-primary/10 text-primary-foreground">
-              <Users size={14} className="mr-1.5 text-primary" />
-              Team: {assignedTeam.name}
-            </Badge>
-          )}
-          {assignedUser && (
-            <div className="flex items-center gap-2" title={`Assigned to ${assignedUser.name}`}>
-              <Avatar className="h-6 w-6 border-2 border-primary/20">
-                  <AvatarFallback className="text-xs bg-muted">
-                    {getUserInitials(assignedUser.name)}
-                  </AvatarFallback>
-              </Avatar>
-              <span className="text-sm font-medium text-muted-foreground">{assignedUser.name}</span>
-            </div>
-          )}
-        </div>
-      </CardContent>
-      <CardFooter className="flex justify-end items-center gap-2 pt-2 border-t border-border/50 mt-auto">
-        <Select value={task.status} onValueChange={(newStatus: 'todo' | 'in-progress' | 'done') => onStatusChange(task.id, newStatus)}>
-            <SelectTrigger className="text-sm h-9 w-40 mr-auto bg-background/50 hover:bg-background/80" aria-label="Change status">
-              <div className="flex items-center gap-2">
-                <StatusIcon className={cn("h-4 w-4", currentStatusConfig.color)} />
-                <SelectValue placeholder="Change status..." />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem value="todo">To Do</SelectItem>
-                <SelectItem value="in-progress">In Progress</SelectItem>
-                <SelectItem value="done">Done</SelectItem>
-            </SelectContent>
-        </Select>
-        <Button variant="outline" size="sm" onClick={() => onEdit(task)} aria-label={`Edit task ${task.title}`}>
-          <Pencil size={16} className="mr-2" />
-          Edit
-        </Button>
-        <Button variant="destructive" size="icon" className="h-9 w-9" onClick={() => onDelete(task.id)} aria-label={`Delete task ${task.title}`}>
-          <Trash2 size={16} />
-        </Button>
-=======
           {assignedTeams && assignedTeams.length > 0 && (
             <Badge variant="outline" className="text-xs py-1 px-2.5 rounded-full border-primary/50 bg-primary/10 text-primary-foreground">
               <Users size={14} className="mr-1.5 text-primary" />
@@ -442,7 +358,6 @@ export function TaskItem({ task, onViewDetails, onDelete, onDragStart, onDragOve
               </AlertDialogContent>
             </AlertDialog>
         </div>
->>>>>>> master
       </CardFooter>
     </Card>
   );

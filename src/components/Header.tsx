@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-=======
-
->>>>>>> master
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -17,11 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-<<<<<<< HEAD
-import { Menu, LogIn, LogOut, User, Settings as SettingsIcon, Bell, Home as HomeIcon, Users, Info, Loader2, Check, X, CheckCircle2 } from "lucide-react";
-=======
 import { Menu, LogIn, LogOut, User, Settings as SettingsIcon, Bell, Home as HomeIcon, Users, Info, Loader2, Check, X, CheckCircle2, AreaChart, Shield } from "lucide-react";
->>>>>>> master
 import Link from 'next/link';
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
@@ -237,9 +229,6 @@ export function Header() {
                   <DropdownMenuItem asChild className={cn(pathname === "/profile" && "text-primary font-semibold")}><Link href="/profile" className="flex items-center"><User className="mr-2 h-4 w-4" />Profile</Link></DropdownMenuItem>
                   <DropdownMenuItem asChild className={cn(pathname === "/settings" && "text-primary font-semibold")}><Link href="/settings" className="flex items-center"><SettingsIcon className="mr-2 h-4 w-4" />Settings</Link></DropdownMenuItem>
                   <DropdownMenuItem asChild className={cn(pathname === "/teams" && "text-primary font-semibold")}><Link href="/teams" className="flex items-center"><Users className="mr-2 h-4 w-4" />Manage Teams</Link></DropdownMenuItem>
-<<<<<<< HEAD
-                  <DropdownMenuItem asChild className={cn(pathname === "/about" && "text-primary font-semibold")}><Link href="/about" className="flex items-center"><Info className="mr-2 h-4 w-4" />About</Link></DropdownMenuItem>
-=======
                   <DropdownMenuItem asChild className={cn(pathname === "/analytics" && "text-primary font-semibold")}><Link href="/analytics" className="flex items-center"><AreaChart className="mr-2 h-4 w-4" />Analytics</Link></DropdownMenuItem>
                   <DropdownMenuItem asChild className={cn(pathname === "/about" && "text-primary font-semibold")}><Link href="/about" className="flex items-center"><Info className="mr-2 h-4 w-4" />About</Link></DropdownMenuItem>
                   {session.user.role === 'admin' && (
@@ -253,7 +242,6 @@ export function Header() {
                       </DropdownMenuItem>
                     </>
                   )}
->>>>>>> master
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/' })} className="flex items-center cursor-pointer"><LogOut className="mr-2 h-4 w-4" />Logout</DropdownMenuItem>
                 </>

@@ -74,11 +74,8 @@ export default function TeamsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [teamToEdit, setTeamToEdit] = useState<Team | null>(null);
   const [editedTeamName, setEditedTeamName] = useState("");
-<<<<<<< HEAD
-=======
   const [isSaving, setIsSaving] = useState(false);
 
->>>>>>> master
 
   const [isJoinTeamDialogOpen, setIsJoinTeamDialogOpen] = useState(false);
   const [isJoinTeamLoading, setIsJoinTeamLoading] = useState(false);
@@ -90,11 +87,6 @@ export default function TeamsPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [isSendingInvite, setIsSendingInvite] = useState(false);
 
-<<<<<<< HEAD
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-
-=======
->>>>>>> master
   const getUserInitials = (name?: string | null) => {
     if (!name) return "U";
     const names = name.split(" ");
@@ -116,10 +108,7 @@ export default function TeamsPage() {
   }, [toast]);
 
   useEffect(() => {
-<<<<<<< HEAD
-    setCurrentYear(new Date().getFullYear());
-=======
->>>>>>> master
+
     if (status === 'authenticated') {
       fetchTeams();
     } else if (status === 'unauthenticated') {
@@ -207,10 +196,6 @@ export default function TeamsPage() {
       return;
     }
     
-<<<<<<< HEAD
-=======
-    setIsSaving(true);
->>>>>>> master
     try {
       const res = await fetch(`/api/teams/${teamToEdit.id}`, {
         method: 'PUT',
@@ -223,11 +208,8 @@ export default function TeamsPage() {
       handleCloseEditDialog();
     } catch (error) {
       toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
-<<<<<<< HEAD
-=======
     } finally {
       setIsSaving(false);
->>>>>>> master
     }
   };
 
@@ -292,11 +274,7 @@ export default function TeamsPage() {
            <Loader2 className="h-16 w-16 animate-spin text-primary" />
         </main>
         <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-<<<<<<< HEAD
-          © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
-=======
           © 2025 TaskFlow. All rights reserved.
->>>>>>> master
         </footer>
       </div>
     );
@@ -344,12 +322,6 @@ export default function TeamsPage() {
                     return (
                         <Card key={team.id} className="shadow-md rounded-lg flex flex-col">
                             <CardHeader>
-<<<<<<< HEAD
-                                <div className="flex justify-between items-start">
-                                    <CardTitle className="font-semibold text-xl break-all">{team.name}</CardTitle>
-                                    {isOwner && (
-                                        <div className="flex gap-2">
-=======
                                 <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-start">
                                     <div>
                                       <CardTitle className="font-semibold text-xl break-all">{team.name}</CardTitle>
@@ -357,7 +329,6 @@ export default function TeamsPage() {
                                     </div>
                                     {isOwner && (
                                         <div className="flex gap-2 flex-shrink-0">
->>>>>>> master
                                             <Button variant="outline" size="sm" onClick={() => handleOpenEditDialog(team)}><Edit3 className="mr-2 h-4 w-4" /> Edit</Button>
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild><Button variant="destructive" size="icon" className="h-9 w-9"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
@@ -366,12 +337,8 @@ export default function TeamsPage() {
                                         </div>
                                     )}
                                 </div>
-<<<<<<< HEAD
-                                <CardDescription>Code: <span className="font-mono text-primary">{team.code}</span></CardDescription>
-                                <div className="text-xs text-muted-foreground pt-1">Created: {formatDistanceToNow(new Date(team.createdAt), { addSuffix: true })}</div>
-=======
+
                                 <div className="text-xs text-muted-foreground pt-2">Created: {formatDistanceToNow(new Date(team.createdAt), { addSuffix: true })}</div>
->>>>>>> master
                             </CardHeader>
                             <CardContent className="flex-grow space-y-4">
                             <div>
@@ -435,9 +402,6 @@ export default function TeamsPage() {
 
       {teamToEdit && (
         <Dialog open={isEditDialogOpen} onOpenChange={handleCloseEditDialog}>
-<<<<<<< HEAD
-          <DialogContent className="sm:max-w-[425px] bg-card rounded-lg shadow-xl"><DialogHeader><DialogTitle className="font-headline text-2xl">Edit Team: {teamToEdit.name}</DialogTitle><DialogDescription>Modify the team's name. Only the team owner can do this.</DialogDescription></DialogHeader><form onSubmit={handleSaveTeamChanges} className="space-y-6 py-4"><div><Label htmlFor="edit-team-name" className="text-foreground/80">Team Name</Label><Input id="edit-team-name" value={editedTeamName} onChange={(e) => setEditedTeamName(e.target.value)} className="mt-1 bg-background border-input focus:ring-primary" required /></div><DialogFooter className="mt-8"><Button type="button" variant="outline" onClick={handleCloseEditDialog}><XCircle className="mr-2 h-4 w-4" />Cancel</Button><Button type="submit" variant="default"><Save className="mr-2 h-4 w-4" />Save Changes</Button></DialogFooter></form></DialogContent>
-=======
           <DialogContent className="sm:max-w-[425px] bg-card rounded-lg shadow-xl"><DialogHeader><DialogTitle className="font-headline text-2xl">Edit Team: {teamToEdit.name}</DialogTitle><DialogDescription>Modify the team's name. Only the team owner can do this.</DialogDescription></DialogHeader>
           <form onSubmit={handleSaveTeamChanges} className="space-y-6 py-4">
             <div>
@@ -453,7 +417,6 @@ export default function TeamsPage() {
               </DialogFooter>
           </form>
           </DialogContent>
->>>>>>> master
         </Dialog>
       )}
 
@@ -462,11 +425,7 @@ export default function TeamsPage() {
       </Dialog>
 
        <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-<<<<<<< HEAD
-        © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
-=======
         © 2025 TaskFlow. All rights reserved.
->>>>>>> master
       </footer>
     </div>
   );

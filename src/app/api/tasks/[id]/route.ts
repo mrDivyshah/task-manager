@@ -3,29 +3,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import dbConnect from '@/lib/mongodb';
-<<<<<<< HEAD
-import Task from '@/models/task';
-import User from '@/models/user';
-import Team from '@/models/team';
 
-async function checkTaskPermission(taskId: string, userId: string): Promise<boolean> {
-    const task = await Task.findById(taskId);
-    if (!task) {
-        return false; // Task doesn't exist
-    }
-
-    if (task.userId.toString() === userId) {
-        return true; // User is the owner
-    }
-
-    if (task.teamId) {
-        const team = await Team.findOne({ _id: task.teamId, members: userId });
-        if (team) {
-            return true; // User is a member of the team assigned to the task
-        }
-    }
-
-=======
 import Task, { type ITask } from '@/models/task';
 import User from '@/models/user';
 import Team from '@/models/team';
@@ -48,17 +26,13 @@ async function checkTaskPermission(taskId: string, userId: string): Promise<bool
         const teamCount = await Team.countDocuments({ _id: { $in: task.teamIds }, members: userObjectId });
         if (teamCount > 0) return true;
     }
->>>>>>> master
     return false;
 }
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
     const session = await getServerSession(authOptions);
-<<<<<<< HEAD
-    if (!session?.user?.id) {
-=======
+
     if (!session?.user?.id || !session?.user?.name) {
->>>>>>> master
         return NextResponse.json({ message: 'Not authenticated' }, { status: 401 });
     }
 
@@ -71,49 +45,33 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
             return NextResponse.json({ message: 'Task not found or you do not have permission to edit it' }, { status: 404 });
         }
         
-<<<<<<< HEAD
-        const task = await Task.findById(id);
-=======
+
         const task = await Task.findById(id).populate('assignedTo', 'name');
->>>>>>> master
         if (!task) {
              return NextResponse.json({ message: 'Task not found' }, { status: 404 });
         }
 
-<<<<<<< HEAD
-        const body = await req.json();
-        const { title, notes, priority, teamId, assignedTo, category, status } = body;
-=======
+
         const originalTask = task.toObject() as ITask & { assignedTo?: { _id: mongoose.Types.ObjectId, name: string }[] };
         const body = await req.json();
         const { title, notes, priority, teamIds, assignedTo, category, status, dueDate } = body;
->>>>>>> master
         
         task.title = title ?? task.title;
         task.notes = notes ?? task.notes;
         task.priority = (priority === 'none' || priority === '') ? undefined : (priority ?? task.priority);
-<<<<<<< HEAD
-        task.teamId = (teamId === '__none__' || teamId === "") ? undefined : (teamId ?? task.teamId);
-        task.assignedTo = (assignedTo === '__none__' || assignedTo === "") ? undefined : (assignedTo ?? task.assignedTo);
-        task.status = status ?? task.status;
-=======
         task.teamIds = teamIds ?? task.teamIds;
         task.assignedTo = assignedTo ?? task.assignedTo;
         task.status = status ?? task.status;
         if (dueDate !== undefined) {
           task.dueDate = dueDate ? new Date(dueDate) : undefined;
         }
->>>>>>> master
         
         if (category !== undefined) {
           task.category = category;
         }
         
         await task.save();
-<<<<<<< HEAD
-        await task.populate([
-            { path: 'teamId', model: Team, select: 'name' },
-=======
+
         
         // --- Activity Logging ---
         const createActivity = async (type: string, details: any) => {
@@ -176,30 +134,21 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         await task.populate([
             { path: 'userId', model: User, select: 'name email' },
             { path: 'teamIds', model: Team, select: 'name' },
->>>>>>> master
             { path: 'assignedTo', model: User, select: 'name email' }
         ]);
         const taskObject = task.toObject();
         
-<<<<<<< HEAD
-        const teamData = taskObject.teamId as any;
-        const assignedToData = taskObject.assignedTo as any;
-=======
+
         const teamsData = taskObject.teamIds as any[];
         const assignedToData = taskObject.assignedTo as any[];
         const creatorData = taskObject.userId as any;
->>>>>>> master
 
         return NextResponse.json({
             ...taskObject,
             id: task._id.toString(),
             status: task.status,
             createdAt: task.createdAt.getTime(),
-<<<<<<< HEAD
-            team: teamData ? { name: teamData.name } : undefined,
-            assignedTo: assignedToData ? { id: assignedToData._id.toString(), name: assignedToData.name, email: assignedToData.email } : undefined,
-            teamId: teamData?._id.toString(),
-=======
+
             updatedAt: task.updatedAt.getTime(),
             dueDate: task.dueDate?.toISOString(),
             teams: teamsData?.map(t => ({ id: t._id.toString(), name: t.name })),
@@ -210,7 +159,6 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
                 name: creatorData.name,
                 email: creatorData.email,
             },
->>>>>>> master
         }, { status: 200 });
 
     } catch (error) {
@@ -236,11 +184,9 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
         }
 
         await Task.deleteOne({ _id: id });
-<<<<<<< HEAD
-=======
+
         await Activity.deleteMany({ taskId: id });
 
->>>>>>> master
 
         return new NextResponse(null, { status: 204 });
 

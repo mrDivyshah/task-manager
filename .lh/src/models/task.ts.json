@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 1,
+            "activePatchIndex": 2,
             "patches": [
                 {
                     "date": 1750667082177,
@@ -12,6 +12,10 @@
                 {
                     "date": 1750667091745,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -7,13 +7,12 @@\n   notes: string;\r\n   category?: string;\r\n   priority?: 'high' | 'medium' | 'low' | string;\r\n   status: 'todo' | 'in-progress' | 'done';\r\n-\r\n   dueDate?: Date;\r\n   teamIds: Schema.Types.ObjectId[];\r\n   assignedTo: Schema.Types.ObjectId[];\r\n->>>>>>> master\r\n+\r\n }\r\n \r\n const TaskSchema = new Schema<ITask>({\r\n   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },\r\n@@ -21,12 +20,8 @@\n   notes: { type: String, default: \"\" },\r\n   category: { type: String },\r\n   priority: { type: String, enum: ['high', 'medium', 'low', 'none', ''] },\r\n   status: { type: String, enum: ['todo', 'in-progress', 'done'], default: 'todo' },\r\n-<<<<<<< HEAD\r\n-  teamId: { type: Schema.Types.ObjectId, ref: 'Team', default: null },\r\n-  assignedTo: { type: Schema.Types.ObjectId, ref: 'User', default: null },\r\n-=======\r\n   dueDate: { type: Date },\r\n   teamIds: [{ type: Schema.Types.ObjectId, ref: 'Team' }],\r\n   assignedTo: [{ type: Schema.Types.ObjectId, ref: 'User' }],\r\n >>>>>>> master\r\n"
+                },
+                {
+                    "date": 1750670107962,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -10,9 +10,8 @@\n   status: 'todo' | 'in-progress' | 'done';\r\n   dueDate?: Date;\r\n   teamIds: Schema.Types.ObjectId[];\r\n   assignedTo: Schema.Types.ObjectId[];\r\n-\r\n }\r\n \r\n const TaskSchema = new Schema<ITask>({\r\n   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },\r\n@@ -23,9 +22,8 @@\n   status: { type: String, enum: ['todo', 'in-progress', 'done'], default: 'todo' },\r\n   dueDate: { type: Date },\r\n   teamIds: [{ type: Schema.Types.ObjectId, ref: 'Team' }],\r\n   assignedTo: [{ type: Schema.Types.ObjectId, ref: 'User' }],\r\n->>>>>>> master\r\n }, { timestamps: true });\r\n \r\n const Task = models.Task || model<ITask>('Task', TaskSchema);\r\n export default Task;\r\n"
                 }
             ],
             "date": 1750667082177,

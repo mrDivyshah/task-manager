@@ -10,10 +10,7 @@ export interface INotification extends Document {
     teamName?: string;
     requestingUserId?: Schema.Types.ObjectId; // for JOIN_REQUEST
     invitingUserId?: Schema.Types.ObjectId; // for TEAM_INVITE
-<<<<<<< HEAD
-=======
     taskId?: Schema.Types.ObjectId; // for TASK_ASSIGNED
->>>>>>> master
     // User names are populated on the fly
   };
   isRead: boolean;
@@ -29,10 +26,7 @@ const NotificationSchema = new Schema<INotification>({
     teamName: { type: String },
     requestingUserId: { type: Schema.Types.ObjectId, ref: 'User' },
     invitingUserId: { type: Schema.Types.ObjectId, ref: 'User' },
-<<<<<<< HEAD
-=======
     taskId: { type: Schema.Types.ObjectId, ref: 'Task' },
->>>>>>> master
   },
   isRead: { type: Boolean, default: false },
 }, { timestamps: true });

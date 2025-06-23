@@ -11,7 +11,6 @@ export interface ITask extends Document {
   dueDate?: Date;
   teamIds: Schema.Types.ObjectId[];
   assignedTo: Schema.Types.ObjectId[];
-
 }
 
 const TaskSchema = new Schema<ITask>({

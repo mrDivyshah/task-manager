@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 2,
+            "activePatchIndex": 3,
             "patches": [
                 {
                     "date": 1750667115221,
@@ -16,6 +16,10 @@
                 {
                     "date": 1750667134279,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -59,10 +59,8 @@\n   };\r\n   isRead: boolean;\r\n   createdAt: string; // ISO date string\r\n }\r\n-<<<<<<< HEAD\r\n-=======\r\n \r\n export interface Activity {\r\n   id: string;\r\n   taskId?: string;\r\n"
+                },
+                {
+                    "date": 1750669217759,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -12,9 +12,8 @@\n   status: 'todo' | 'in-progress' | 'done';\r\n   category?: string;\r\n   priority?: 'high' | 'medium' | 'low' | string;\r\n   createdAt: number; // timestamp\r\n-\r\n   updatedAt: number; // timestamp\r\n   dueDate?: string; // ISO date string\r\n   teamIds?: string[];\r\n   teams?: { id: string; name: string; }[];\r\n@@ -55,9 +54,8 @@\n     requestingUserName?: string;\r\n     invitingUserId?: string;\r\n     invitingUserName?: string;\r\n     taskId?: string;\r\n->>>>>>> master\r\n   };\r\n   isRead: boolean;\r\n   createdAt: string; // ISO date string\r\n }\r\n@@ -75,5 +73,4 @@\n     userName: string;\r\n   };\r\n   createdAt: string; // ISO date string\r\n }\r\n->>>>>>> master\r\n"
                 }
             ],
             "date": 1750667115221,
