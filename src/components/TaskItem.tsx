@@ -12,6 +12,17 @@ import React, { useEffect, useState } from "react";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 
 interface TaskItemProps {
@@ -72,7 +83,7 @@ export function TaskItem({ task, onViewDetails, onDelete, onDragStart, onDragOve
   const hasTime = dueDate && (dueDate.getHours() !== 0 || dueDate.getMinutes() !== 0 || dueDate.getSeconds() !== 0);
 
   const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest('button, [role="combobox"], [role="button"], a')) {
+    if ((e.target as HTMLElement).closest('button, [role="combobox"], [role="button"], a, [role="dialog"]')) {
       return;
     }
     onViewDetails(task);
@@ -191,9 +202,25 @@ export function TaskItem({ task, onViewDetails, onDelete, onDragStart, onDragOve
         </div>
   
         <div className="flex items-center gap-1 ml-2 flex-shrink-0">
-          <Button variant="destructive" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} aria-label={`Delete task ${task.title}`}>
-            <Trash2 size={14} />
-          </Button>
+           <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()} aria-label={`Delete task ${task.title}`}>
+                <Trash2 size={14} />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete the task "{task.title}". This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => onDelete(task.id)}>Delete</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </Card>
     );
@@ -310,9 +337,25 @@ export function TaskItem({ task, onViewDetails, onDelete, onDragStart, onDragOve
                     </Tooltip>
                 </TooltipProvider>
             )}
-            <Button variant="destructive" size="icon" className="h-9 w-9" onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} aria-label={`Delete task ${task.title}`}>
-              <Trash2 size={16} />
-            </Button>
+             <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="icon" className="h-9 w-9" onClick={(e) => e.stopPropagation()} aria-label={`Delete task ${task.title}`}>
+                  <Trash2 size={16} />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete the task "{task.title}". This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => onDelete(task.id)}>Delete</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
         </div>
       </CardFooter>
     </Card>
