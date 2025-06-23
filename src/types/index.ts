@@ -62,6 +62,8 @@ export interface Notification {
 
 export interface Activity {
   id: string;
+  taskId?: string;
+  taskTitle?: string;
   type: 'CREATE' | 'STATUS_CHANGE' | 'ASSIGNMENT_CHANGE' | 'COMMENT' | 'UPDATE';
   details: {
     field?: string;

@@ -6,12 +6,15 @@ import { Bar, BarChart, CartesianGrid, LabelList, Line, LineChart, Pie, PieChart
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
+import { Calendar } from "@/components/ui/calendar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import type { Task } from "@/types";
+import type { Task, Activity } from "@/types";
 import { subDays, format, startOfDay } from 'date-fns';
-import { Loader2, AreaChart as AreaChartIcon, BarChart3, PieChart as PieChartIcon } from "lucide-react";
+import { Loader2, AreaChart as AreaChartIcon, BarChart3, PieChart as PieChartIcon, CalendarDays } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { ActivityLogItem } from "@/components/ActivityLogItem";
 
 // Define a type for chart configuration
 type ChartConfig = {
@@ -25,25 +28,39 @@ export default function AnalyticsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isActivitiesLoading, setIsActivitiesLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const { toast } = useToast();
 
   useEffect(() => {
     if (status === 'authenticated') {
-      const fetchTasks = async () => {
+      const fetchAllData = async () => {
         setIsLoading(true);
+        setIsActivitiesLoading(true);
         try {
-          const res = await fetch('/api/tasks');
-          if (!res.ok) throw new Error('Failed to fetch tasks');
-          const data = await res.json();
-          setTasks(data);
+          const [tasksRes, activitiesRes] = await Promise.all([
+            fetch('/api/tasks'),
+            fetch('/api/analytics/activities'),
+          ]);
+
+          if (!tasksRes.ok) throw new Error('Failed to fetch tasks');
+          if (!activitiesRes.ok) throw new Error('Failed to fetch activities');
+          
+          const tasksData = await tasksRes.json();
+          const activitiesData = await activitiesRes.json();
+          
+          setTasks(tasksData);
+          setActivities(activitiesData);
         } catch (error) {
           toast({ title: "Error", description: (error as Error).message, variant: "destructive" });
         } finally {
           setIsLoading(false);
+          setIsActivitiesLoading(false);
         }
       };
-      fetchTasks();
+      fetchAllData();
     } else if (status === 'unauthenticated') {
       router.push('/');
     }
@@ -92,6 +109,32 @@ export default function AnalyticsPage() {
     };
   }, [tasks]);
   
+  const activitiesByDate = useMemo(() => {
+    return activities.reduce((acc, activity) => {
+        const dateKey = format(new Date(activity.createdAt), 'yyyy-MM-dd');
+        if (!acc[dateKey]) {
+            acc[dateKey] = [];
+        }
+        acc[dateKey].push(activity);
+        return acc;
+    }, {} as Record<string, Activity[]>);
+  }, [activities]);
+
+  const daysWithActivity = useMemo(() => {
+      return Object.keys(activitiesByDate).map(dateStr => {
+        // Adjust for timezone issues by creating date in UTC
+        const [year, month, day] = dateStr.split('-').map(Number);
+        return new Date(Date.UTC(year, month - 1, day));
+      });
+  }, [activitiesByDate]);
+
+  const selectedDayActivities = useMemo(() => {
+      if (!selectedDate) return [];
+      const dateKey = format(selectedDate, 'yyyy-MM-dd');
+      return activitiesByDate[dateKey] || [];
+  }, [selectedDate, activitiesByDate]);
+
+
   const statusConfig: ChartConfig = {
     todo: { label: "To Do", color: "hsl(var(--chart-1))" },
     'in-progress': { label: "In Progress", color: "hsl(var(--chart-2))" },
@@ -209,12 +252,61 @@ export default function AnalyticsPage() {
                     </CardContent>
                     </Card>
                 </div>
+
+                <Card className="col-span-full">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><CalendarDays className="h-5 w-5 text-muted-foreground" /> Activity Timeline</CardTitle>
+                    <CardDescription>An interactive timeline of all task activities. Click a day to see details.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isActivitiesLoading ? (
+                        <div className="flex justify-center items-center py-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+                    ) : activities.length === 0 ? (
+                        <div className="text-center text-muted-foreground py-8">
+                            <p>No activity to display yet.</p>
+                            <p>Create or update some tasks to see your timeline.</p>
+                        </div>
+                    ) : (
+                      <div className="grid md:grid-cols-2 gap-x-8 gap-y-4">
+                        <Calendar
+                          mode="single"
+                          selected={selectedDate}
+                          onSelect={setSelectedDate}
+                          modifiers={{ hasActivity: daysWithActivity }}
+                          modifiersClassNames={{ hasActivity: 'day_hasActivity' }}
+                          className="p-0 flex justify-center"
+                          classNames={{
+                            month: 'space-y-4 border rounded-lg p-3 bg-muted/20 w-full',
+                          }}
+                        />
+                        <div>
+                          <h3 className="font-semibold text-lg mb-4 text-foreground">
+                            Activities for {selectedDate ? format(selectedDate, 'PPP') : '...'}
+                          </h3>
+                          <ScrollArea className="h-96 pr-4 -mr-4">
+                            <div className="space-y-4">
+                              {selectedDayActivities.length > 0 ? (
+                                selectedDayActivities.map(activity => (
+                                  <ActivityLogItem key={activity.id} activity={activity} />
+                                ))
+                              ) : (
+                                <div className="text-center text-muted-foreground pt-16">
+                                  <p>No activity on this day.</p>
+                                </div>
+                              )}
+                            </div>
+                          </ScrollArea>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
             </>
           )}
         </div>
       </main>
       <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-        © 2025 TaskFlow. All rights reserved.
+        © 2025 TaskFlow. Developed By Dravya shah
       </footer>
     </div>
   );
