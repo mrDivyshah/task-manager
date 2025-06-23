@@ -88,7 +88,7 @@ export function TaskItem({ task, onViewDetails, onDelete, onDragStart, onDragOve
         onDrop={(e) => onDrop(e, task.id)}
         onClick={handleCardClick}
         className={cn(
-          "w-full shadow-md rounded-lg transition-all duration-300 ease-in-out hover:shadow-lg bg-card animate-subtle-appear flex items-center p-3 gap-3 cursor-pointer",
+          "w-full shadow-md rounded-lg transition-all duration-300 ease-in-out hover:shadow-lg hover:-translate-y-1 bg-card animate-subtle-appear flex items-center p-3 gap-3 cursor-pointer",
           isDragging ? "opacity-50 ring-2 ring-primary" : "opacity-100",
           task.status === 'done' && 'opacity-60 bg-card/80'
         )}
@@ -177,7 +177,7 @@ export function TaskItem({ task, onViewDetails, onDelete, onDragStart, onDragOve
       onDrop={(e) => onDrop(e, task.id)}
       onClick={handleCardClick}
       className={cn(
-        "w-full shadow-lg rounded-xl transition-all duration-300 ease-in-out hover:shadow-xl bg-card animate-subtle-appear flex flex-col cursor-pointer",
+        "w-full shadow-lg rounded-xl transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1 bg-card animate-subtle-appear flex flex-col cursor-pointer",
         isDragging ? "opacity-50 ring-2 ring-primary" : "opacity-100",
         task.status === 'done' && 'opacity-60 bg-card/80',
       )}

@@ -23,6 +23,41 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Badge } from "@/components/ui/badge";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+
+function TaskItemSkeleton({ view }: { view: 'grid' | 'list' }) {
+  if (view === 'list') {
+    return (
+      <div className="flex items-center space-x-3 p-3 border rounded-lg bg-card">
+        <Skeleton className="h-8 w-8 rounded-md" />
+        <Skeleton className="h-6 w-6 rounded-full" />
+        <div className="space-y-2 flex-1">
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-3 w-1/2" />
+        </div>
+        <Skeleton className="h-8 w-8 rounded-md" />
+      </div>
+    )
+  }
+  return (
+    <div className="flex flex-col space-y-3 p-4 border rounded-xl bg-card shadow-md">
+      <div className="flex justify-between">
+        <Skeleton className="h-5 w-4/5" />
+        <Skeleton className="h-5 w-5" />
+      </div>
+      <div className="space-y-2 pt-2">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-2/3" />
+      </div>
+      <div className="flex items-center justify-between pt-4 mt-auto border-t">
+        <Skeleton className="h-8 w-24 rounded-md" />
+        <Skeleton className="h-8 w-8 rounded-md" />
+      </div>
+    </div>
+  )
+}
+
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -434,12 +469,45 @@ export default function Home() {
     setSelectedTaskDetails(updatedTask);
   };
 
-  if (status === "loading" || isDataLoading) {
+  if (status === "loading" || (status === "authenticated" && isDataLoading)) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Header />
-        <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex items-center justify-center">
-          <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-pulse">
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+               <Skeleton className="h-8 w-48 rounded-lg" />
+               <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <Skeleton className="h-9 w-20 rounded-lg" />
+                    <Skeleton className="h-9 w-32 rounded-lg" />
+                    <Skeleton className="h-9 w-36 rounded-lg" />
+               </div>
+            </div>
+            <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-4 mb-8">
+                <Skeleton className="h-10 w-full sm:w-96 rounded-lg" />
+                <Skeleton className="h-10 w-32 rounded-lg" />
+            </div>
+            <div className="space-y-8">
+              <div>
+                <Skeleton className="h-8 w-1/4 mb-4 rounded-lg" />
+                <div className={cn(
+                    viewMode === 'grid'
+                        ? "grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                        : "flex flex-col gap-4"
+                )}>
+                  {[...Array(4)].map((_, i) => <TaskItemSkeleton key={i} view={viewMode} />)}
+                </div>
+              </div>
+              <div>
+                <Skeleton className="h-8 w-1/4 mb-4 rounded-lg" />
+                 <div className={cn(
+                    viewMode === 'grid'
+                        ? "grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                        : "flex flex-col gap-4"
+                )}>
+                  {[...Array(4)].map((_, i) => <TaskItemSkeleton key={i} view={viewMode} />)}
+                </div>
+              </div>
+            </div>
         </main>
         <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
           © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
