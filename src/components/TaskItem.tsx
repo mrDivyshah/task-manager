@@ -1,38 +1,77 @@
 
 "use client";
 
+<<<<<<< HEAD
 import { Pencil, Trash2, GripVertical, Tag, Zap, Clock, Users, User, CheckCircle, Circle, MoreHorizontal } from "lucide-react";
+=======
+import { Pencil, Trash2, GripVertical, Tag, Zap, Clock, Users, User, CheckCircle, Circle, MoreHorizontal, Calendar } from "lucide-react";
+>>>>>>> master
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Task } from "@/types";
 import { cn } from "@/lib/utils";
+<<<<<<< HEAD
 import { formatDistanceToNow } from 'date-fns';
 import React, { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+=======
+import { format, formatDistanceToNow, isPast } from 'date-fns';
+import React, { useEffect, useState } from "react";
+import { Avatar, AvatarFallback } from "./ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+>>>>>>> master
 
 
 interface TaskItemProps {
   task: Task;
+<<<<<<< HEAD
   onEdit: (task: Task) => void;
+=======
+  onViewDetails: (task: Task) => void;
+>>>>>>> master
   onDelete: (taskId: string) => void;
   onDragStart: (event: React.DragEvent<HTMLDivElement>, taskId: string) => void;
   onDragOver: (event: React.DragEvent<HTMLDivElement>) => void;
   onDrop: (event: React.DragEvent<HTMLDivElement>, targetTaskId: string) => void;
   onStatusChange: (taskId: string, status: Task['status']) => void;
   isDragging?: boolean;
+<<<<<<< HEAD
 }
 
 export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDrop, onStatusChange, isDragging }: TaskItemProps) {
+=======
+  view: 'grid' | 'list';
+}
+
+export function TaskItem({ task, onViewDetails, onDelete, onDragStart, onDragOver, onDrop, onStatusChange, isDragging, view }: TaskItemProps) {
+>>>>>>> master
   const [animationDelay, setAnimationDelay] = useState('0s');
 
   useEffect(() => {
     setAnimationDelay(`${Math.random() * 0.2}s`);
   }, []);
   
+<<<<<<< HEAD
   const assignedTeam = task.team;
   const assignedUser = task.assignedTo;
+=======
+  const assignedTeams = task.teams;
+  const assignedUsers = task.assignedTo;
+>>>>>>> master
 
   const priorityColors: Record<string, string> = {
     high: "bg-red-500/20 text-red-700 border-red-500/50 dark:text-red-400 dark:border-red-500/70",
@@ -64,6 +103,157 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
     }
     return names[0][0].toUpperCase();
   };
+<<<<<<< HEAD
+=======
+  
+  const dueDate = task.dueDate ? new Date(task.dueDate) : null;
+  const isOverdue = dueDate && isPast(dueDate) && task.status !== 'done';
+  const hasTime = dueDate && (dueDate.getHours() !== 0 || dueDate.getMinutes() !== 0 || dueDate.getSeconds() !== 0);
+
+  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest('button, [role="combobox"], [role="button"], a, [role="dialog"]')) {
+      return;
+    }
+    onViewDetails(task);
+  };
+
+  if (view === 'list') {
+    return (
+      <Card
+        draggable
+        onDragStart={(e) => onDragStart(e, task.id)}
+        onDragOver={onDragOver}
+        onDrop={(e) => onDrop(e, task.id)}
+        onClick={handleCardClick}
+        className={cn(
+          "w-full shadow-md rounded-lg transition-all duration-300 ease-in-out hover:shadow-lg hover:-translate-y-1 bg-card animate-subtle-appear flex items-center p-3 gap-3 cursor-pointer",
+          isDragging ? "opacity-50 ring-2 ring-primary" : "opacity-100",
+          task.status === 'done' && 'opacity-60 bg-card/80'
+        )}
+        style={{ animationDelay }}
+      >
+        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary cursor-grab h-8 w-8 flex-shrink-0" aria-label="Drag to reorder">
+          <GripVertical size={20} />
+        </Button>
+        
+        <Select value={task.status} onValueChange={(newStatus: 'todo' | 'in-progress' | 'done') => onStatusChange(task.id, newStatus)}>
+          <SelectTrigger className="h-9 w-9 p-0 flex-shrink-0 bg-transparent border-none shadow-none focus:ring-0 focus:ring-offset-0" aria-label="Change status">
+            <SelectValue asChild>
+              <StatusIcon className={cn("h-6 w-6", currentStatusConfig.color)} />
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todo">To Do</SelectItem>
+            <SelectItem value="in-progress">In Progress</SelectItem>
+            <SelectItem value="done">Done</SelectItem>
+          </SelectContent>
+        </Select>
+        
+        <div className="flex-1 min-w-0">
+          <p className={cn("font-medium truncate", task.status === 'done' && 'line-through text-muted-foreground')}>
+            {task.title}
+          </p>
+          <div className="flex items-center text-xs text-muted-foreground truncate">
+            {dueDate ? (
+              <div className={cn("flex items-center", isOverdue ? 'text-destructive' : '')}>
+                <Calendar className="w-3 h-3 mr-1.5 flex-shrink-0" />
+                <span>Due {format(dueDate, hasTime ? 'MMM d, p' : 'MMM d')}</span>
+              </div>
+            ) : task.createdBy ? (
+              <div className="flex items-center truncate">
+                  <User className="w-3 h-3 mr-1.5 flex-shrink-0" />
+                  <span className="truncate">{task.createdBy.name}</span>
+                  <span className="mx-1">•</span>
+                  <span>{formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}</span>
+              </div>
+            ) : (
+                <div className="flex items-center">
+                    <Clock className="w-3 h-3 mr-1.5 flex-shrink-0" />
+                    <span>{formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}</span>
+                </div>
+            )}
+          </div>
+        </div>
+        
+        <div className="hidden sm:flex items-center gap-2 ml-auto flex-shrink-0">
+          {assignedTeams && assignedTeams.length > 0 && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Badge variant="outline" className="text-xs py-0.5 px-2 rounded-full border-primary/50 bg-primary/10 text-primary/80">
+                      <Users size={12} className="mr-1" />
+                      {assignedTeams.length} {assignedTeams.length > 1 ? 'Teams' : 'Team'}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{assignedTeams.map(t => t.name).join(', ')}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+          )}
+          {assignedUsers && assignedUsers.length > 0 && (
+            <div className="flex -space-x-2 overflow-hidden">
+              {assignedUsers.slice(0, 3).map(user => (
+                <TooltipProvider key={user.id}>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Avatar className="h-7 w-7 border-2 border-primary/20">
+                          <AvatarFallback className="text-xs bg-muted">
+                            {getUserInitials(user.name)}
+                          </AvatarFallback>
+                      </Avatar>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Assigned to {user.name}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ))}
+              {assignedUsers.length > 3 && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Avatar className="h-7 w-7 border-2 border-primary/20">
+                          <AvatarFallback className="text-xs bg-muted">
+                            +{assignedUsers.length - 3}
+                          </AvatarFallback>
+                      </Avatar>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{assignedUsers.slice(3).map(u => u.name).join(', ')}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
+          )}
+        </div>
+  
+        <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+           <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()} aria-label={`Delete task ${task.title}`}>
+                <Trash2 size={14} />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete the task "{task.title}". This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => onDelete(task.id)}>Delete</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </Card>
+    );
+  }
+>>>>>>> master
 
   return (
     <Card 
@@ -71,8 +261,14 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
       onDragStart={(e) => onDragStart(e, task.id)}
       onDragOver={onDragOver}
       onDrop={(e) => onDrop(e, task.id)}
+<<<<<<< HEAD
       className={cn(
         "w-full shadow-lg rounded-xl transition-all duration-300 ease-in-out hover:shadow-xl bg-card animate-subtle-appear flex flex-col",
+=======
+      onClick={handleCardClick}
+      className={cn(
+        "w-full shadow-lg rounded-xl transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1 bg-card animate-subtle-appear flex flex-col cursor-pointer",
+>>>>>>> master
         isDragging ? "opacity-50 ring-2 ring-primary" : "opacity-100",
         task.status === 'done' && 'opacity-60 bg-card/80',
       )}
@@ -83,9 +279,24 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
           <CardTitle className={cn("font-headline text-xl mb-1 break-all", task.status === 'done' && 'line-through text-muted-foreground')}>
             {task.title}
           </CardTitle>
+<<<<<<< HEAD
           <div className="flex items-center text-xs text-muted-foreground">
             <Clock className="w-3 h-3 mr-1" />
             Created {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}
+=======
+           <div className="flex items-center text-xs text-muted-foreground">
+            {dueDate ? (
+              <div className={cn("flex items-center", isOverdue ? 'text-destructive font-medium' : '')}>
+                <Calendar className="w-3 h-3 mr-1" />
+                Due {format(dueDate, hasTime ? "MMMM d, yyyy 'at' p" : "MMMM d, yyyy")}
+              </div>
+            ) : (
+               <div className="flex items-center">
+                <Clock className="w-3 h-3 mr-1" />
+                Created {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}
+               </div>
+            )}
+>>>>>>> master
           </div>
         </div>
         <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary cursor-grab p-1 h-8 w-8" aria-label="Drag to reorder">
@@ -105,12 +316,17 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
               {task.category}
             </Badge>
           )}
+<<<<<<< HEAD
           {task.priority && (
+=======
+          {task.priority && task.priority !== "none" && (
+>>>>>>> master
             <Badge variant="outline" className={cn("text-xs py-1 px-2.5 rounded-full", getPriorityColor(task.priority))}>
               <Zap size={14} className="mr-1.5" />
               Priority: {task.priority}
             </Badge>
           )}
+<<<<<<< HEAD
           {assignedTeam && (
             <Badge variant="outline" className="text-xs py-1 px-2.5 rounded-full border-primary/50 bg-primary/10 text-primary-foreground">
               <Users size={14} className="mr-1.5 text-primary" />
@@ -150,6 +366,83 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
         <Button variant="destructive" size="icon" className="h-9 w-9" onClick={() => onDelete(task.id)} aria-label={`Delete task ${task.title}`}>
           <Trash2 size={16} />
         </Button>
+=======
+          {assignedTeams && assignedTeams.length > 0 && (
+            <Badge variant="outline" className="text-xs py-1 px-2.5 rounded-full border-primary/50 bg-primary/10 text-primary-foreground">
+              <Users size={14} className="mr-1.5 text-primary" />
+              {assignedTeams.map(t => t.name).join(', ')}
+            </Badge>
+          )}
+          {assignedUsers && assignedUsers.length > 0 && (
+             <div className="flex items-center gap-2">
+                <div className="flex -space-x-2 overflow-hidden">
+                  {assignedUsers.map(user => (
+                    <Avatar key={user.id} className="h-6 w-6 border-2 border-card">
+                        <AvatarFallback className="text-xs bg-muted">
+                          {getUserInitials(user.name)}
+                        </AvatarFallback>
+                    </Avatar>
+                  ))}
+                </div>
+                {assignedUsers.length === 1 && <span className="text-sm font-medium text-muted-foreground">{assignedUsers[0].name}</span>}
+             </div>
+          )}
+        </div>
+      </CardContent>
+      <CardFooter className="flex justify-between items-center gap-2 pt-2 border-t border-border/50 mt-auto">
+        <div className="flex items-center gap-2">
+            <Select value={task.status} onValueChange={(newStatus: 'todo' | 'in-progress' | 'done') => onStatusChange(task.id, newStatus)}>
+                <SelectTrigger className="text-sm h-9 w-40 bg-background/50 hover:bg-background/80" aria-label="Change status">
+                  <div className="flex items-center gap-2">
+                    <StatusIcon className={cn("h-4 w-4", currentStatusConfig.color)} />
+                    <SelectValue placeholder="Change status..." />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="todo">To Do</SelectItem>
+                    <SelectItem value="in-progress">In Progress</SelectItem>
+                    <SelectItem value="done">Done</SelectItem>
+                </SelectContent>
+            </Select>
+        </div>
+        <div className="flex items-center gap-2">
+            {task.createdBy && (
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <Avatar className="h-7 w-7 border-2 border-card">
+                                <AvatarFallback className="text-xs bg-muted">
+                                    {getUserInitials(task.createdBy.name)}
+                                </AvatarFallback>
+                            </Avatar>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Created by {task.createdBy.name}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            )}
+             <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="icon" className="h-9 w-9" onClick={(e) => e.stopPropagation()} aria-label={`Delete task ${task.title}`}>
+                  <Trash2 size={16} />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete the task "{task.title}". This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => onDelete(task.id)}>Delete</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+        </div>
+>>>>>>> master
       </CardFooter>
     </Card>
   );

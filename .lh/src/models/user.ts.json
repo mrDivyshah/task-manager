@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/models/user.ts",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1750667102949,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1750667102949,
+            "name": "Commit-0",
+            "content": "\r\nimport mongoose, { Schema, models, model } from 'mongoose';\r\n\r\nconst UserSchema = new Schema({\r\n  name: {\r\n    type: String,\r\n    required: true,\r\n  },\r\n  email: {\r\n    type: String,\r\n    required: true,\r\n    unique: true,\r\n  },\r\n  password: {\r\n    type: String,\r\n    select: false, // Prevent password from being returned by default\r\n  },\r\n  image: {\r\n    type: String,\r\n  },\r\n  gender: {\r\n    type: String,\r\n    enum: ['male', 'female', 'other', 'prefer_not_to_say'],\r\n    default: 'prefer_not_to_say',\r\n  },\r\n\r\n  role: {\r\n    type: String,\r\n    enum: ['user', 'admin'],\r\n    default: 'user',\r\n  },\r\n>>>>>>> master\r\n  // User settings\r\n  notificationSoundEnabled: { type: Boolean, default: false },\r\n  notificationStyle: { type: String, enum: ['dock', 'float'], default: 'dock' },\r\n  advancedFeaturesEnabled: { type: Boolean, default: false },\r\n}, { timestamps: true });\r\n\r\nconst User = models.User || model('User', UserSchema);\r\nexport default User;\r\n"
+        }
+    ]
+}

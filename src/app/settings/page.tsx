@@ -25,7 +25,10 @@ export default function SettingsPage() {
   const { theme, setTheme, systemTheme } = useTheme();
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
+<<<<<<< HEAD
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+=======
+>>>>>>> master
   
   // Settings state, initialized from session
   const [notificationSoundEnabled, setNotificationSoundEnabled] = useState(false);
@@ -40,7 +43,10 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setMounted(true);
+<<<<<<< HEAD
     setCurrentYear(new Date().getFullYear());
+=======
+>>>>>>> master
     if (session) {
       setNotificationSoundEnabled(session.user.notificationSoundEnabled ?? false);
       setNotificationStyle(session.user.notificationStyle ?? 'dock');
@@ -131,7 +137,11 @@ export default function SettingsPage() {
            <Loader2 className="h-16 w-16 animate-spin text-primary" />
         </main>
         <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
+<<<<<<< HEAD
           © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
+=======
+          © 2025 TaskFlow. All rights reserved.
+>>>>>>> master
         </footer>
       </div>
     );
@@ -245,7 +255,11 @@ export default function SettingsPage() {
         </Card>
       </main>
       <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
+<<<<<<< HEAD
         © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
+=======
+        © 2025 TaskFlow. All rights reserved.
+>>>>>>> master
       </footer>
     </div>
   );

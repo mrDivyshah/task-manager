@@ -1,0 +1,22 @@
+{
+    "sourceFile": "src/models/task.ts",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1750667082177,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1750667091745,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -7,13 +7,12 @@\n   notes: string;\r\n   category?: string;\r\n   priority?: 'high' | 'medium' | 'low' | string;\r\n   status: 'todo' | 'in-progress' | 'done';\r\n-\r\n   dueDate?: Date;\r\n   teamIds: Schema.Types.ObjectId[];\r\n   assignedTo: Schema.Types.ObjectId[];\r\n->>>>>>> master\r\n+\r\n }\r\n \r\n const TaskSchema = new Schema<ITask>({\r\n   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },\r\n@@ -21,12 +20,8 @@\n   notes: { type: String, default: \"\" },\r\n   category: { type: String },\r\n   priority: { type: String, enum: ['high', 'medium', 'low', 'none', ''] },\r\n   status: { type: String, enum: ['todo', 'in-progress', 'done'], default: 'todo' },\r\n-<<<<<<< HEAD\r\n-  teamId: { type: Schema.Types.ObjectId, ref: 'Team', default: null },\r\n-  assignedTo: { type: Schema.Types.ObjectId, ref: 'User', default: null },\r\n-=======\r\n   dueDate: { type: Date },\r\n   teamIds: [{ type: Schema.Types.ObjectId, ref: 'Team' }],\r\n   assignedTo: [{ type: Schema.Types.ObjectId, ref: 'User' }],\r\n >>>>>>> master\r\n"
+                }
+            ],
+            "date": 1750667082177,
+            "name": "Commit-0",
+            "content": "\r\nimport mongoose, { Schema, models, model, Document } from 'mongoose';\r\n\r\nexport interface ITask extends Document {\r\n  userId: Schema.Types.ObjectId;\r\n  title: string;\r\n  notes: string;\r\n  category?: string;\r\n  priority?: 'high' | 'medium' | 'low' | string;\r\n  status: 'todo' | 'in-progress' | 'done';\r\n\r\n  dueDate?: Date;\r\n  teamIds: Schema.Types.ObjectId[];\r\n  assignedTo: Schema.Types.ObjectId[];\r\n>>>>>>> master\r\n}\r\n\r\nconst TaskSchema = new Schema<ITask>({\r\n  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },\r\n  title: { type: String, required: true },\r\n  notes: { type: String, default: \"\" },\r\n  category: { type: String },\r\n  priority: { type: String, enum: ['high', 'medium', 'low', 'none', ''] },\r\n  status: { type: String, enum: ['todo', 'in-progress', 'done'], default: 'todo' },\r\n<<<<<<< HEAD\r\n  teamId: { type: Schema.Types.ObjectId, ref: 'Team', default: null },\r\n  assignedTo: { type: Schema.Types.ObjectId, ref: 'User', default: null },\r\n=======\r\n  dueDate: { type: Date },\r\n  teamIds: [{ type: Schema.Types.ObjectId, ref: 'Team' }],\r\n  assignedTo: [{ type: Schema.Types.ObjectId, ref: 'User' }],\r\n>>>>>>> master\r\n}, { timestamps: true });\r\n\r\nconst Task = models.Task || model<ITask>('Task', TaskSchema);\r\nexport default Task;\r\n\r\n    \r\n"
+        }
+    ]
+}

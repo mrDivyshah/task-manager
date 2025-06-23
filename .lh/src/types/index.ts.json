@@ -1,0 +1,26 @@
+{
+    "sourceFile": "src/types/index.ts",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 2,
+            "patches": [
+                {
+                    "date": 1750667115221,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1750667127355,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -19,9 +19,8 @@\n   teamIds?: string[];\r\n   teams?: { id: string; name: string; }[];\r\n   assignedTo?: UserSubset[];\r\n   createdBy?: UserSubset;\r\n->>>>>>> master\r\n }\r\n \r\n export interface TeamMember extends UserSubset {}\r\n \r\n@@ -55,10 +54,8 @@\n     requestingUserId?: string;\r\n     requestingUserName?: string;\r\n     invitingUserId?: string;\r\n     invitingUserName?: string;\r\n-<<<<<<< HEAD\r\n-=======\r\n     taskId?: string;\r\n >>>>>>> master\r\n   };\r\n   isRead: boolean;\r\n"
+                },
+                {
+                    "date": 1750667134279,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -59,10 +59,8 @@\n   };\r\n   isRead: boolean;\r\n   createdAt: string; // ISO date string\r\n }\r\n-<<<<<<< HEAD\r\n-=======\r\n \r\n export interface Activity {\r\n   id: string;\r\n   taskId?: string;\r\n"
+                }
+            ],
+            "date": 1750667115221,
+            "name": "Commit-0",
+            "content": "\r\nexport interface UserSubset {\r\n  id: string;\r\n  name: string;\r\n  email: string;\r\n}\r\n\r\nexport interface Task {\r\n  id: string;\r\n  title: string;\r\n  notes: string;\r\n  status: 'todo' | 'in-progress' | 'done';\r\n  category?: string;\r\n  priority?: 'high' | 'medium' | 'low' | string;\r\n  createdAt: number; // timestamp\r\n\r\n  updatedAt: number; // timestamp\r\n  dueDate?: string; // ISO date string\r\n  teamIds?: string[];\r\n  teams?: { id: string; name: string; }[];\r\n  assignedTo?: UserSubset[];\r\n  createdBy?: UserSubset;\r\n>>>>>>> master\r\n}\r\n\r\nexport interface TeamMember extends UserSubset {}\r\n\r\nexport interface SmartSortTaskInput {\r\n  id: string;\r\n  title:string;\r\n  notes: string;\r\n}\r\n\r\nexport interface Team {\r\n  id: string;\r\n  name: string;\r\n  code: string;\r\n  members: TeamMember[];\r\n  createdAt: number; // timestamp\r\n  ownerId: string;\r\n  pendingRequests?: TeamMember[];\r\n}\r\n\r\nexport type NotificationStyle = \"dock\" | \"float\";\r\n\r\nexport type NotificationType = \"JOIN_REQUEST\" | \"TEAM_INVITE\" | \"TASK_ASSIGNED\";\r\n\r\nexport interface Notification {\r\n  id: string;\r\n  type: NotificationType;\r\n  message: string;\r\n  data: {\r\n    teamId?: string;\r\n    teamName?: string;\r\n    requestingUserId?: string;\r\n    requestingUserName?: string;\r\n    invitingUserId?: string;\r\n    invitingUserName?: string;\r\n<<<<<<< HEAD\r\n=======\r\n    taskId?: string;\r\n>>>>>>> master\r\n  };\r\n  isRead: boolean;\r\n  createdAt: string; // ISO date string\r\n}\r\n<<<<<<< HEAD\r\n=======\r\n\r\nexport interface Activity {\r\n  id: string;\r\n  taskId?: string;\r\n  taskTitle?: string;\r\n  type: 'CREATE' | 'STATUS_CHANGE' | 'ASSIGNMENT_CHANGE' | 'COMMENT' | 'UPDATE';\r\n  details: {\r\n    field?: string;\r\n    from?: string | null;\r\n    to?: string | null;\r\n    comment?: string;\r\n    userName: string;\r\n  };\r\n  createdAt: string; // ISO date string\r\n}\r\n>>>>>>> master\r\n"
+        }
+    ]
+}

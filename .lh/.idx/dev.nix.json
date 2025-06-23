@@ -1,0 +1,38 @@
+{
+    "sourceFile": ".idx/dev.nix",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 5,
+            "patches": [
+                {
+                    "date": 1750666783732,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1750666790083,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,5 +1,4 @@\n-\r\n # To learn more about how to use Nix to configure your environment\r\n # see: https://firebase.google.com/docs/studio/customize-workspace\r\n {pkgs}: {\r\n   # Which nixpkgs channel to use.\r\n@@ -41,5 +40,5 @@\n       };\r\n     };\r\n   };\r\n }\r\n->>>>>>> master\r\n+\r\n"
+                },
+                {
+                    "date": 1750666796627,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -39,6 +39,5 @@\n         };\r\n       };\r\n     };\r\n   };\r\n-}\r\n-\r\n+}\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1750666840167,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,43 +0,0 @@\n-# To learn more about how to use Nix to configure your environment\r\n-# see: https://firebase.google.com/docs/studio/customize-workspace\r\n-{pkgs}: {\r\n-  # Which nixpkgs channel to use.\r\n-  channel = \"stable-24.11\"; # or \"unstable\"\r\n-  # Use https://search.nixos.org/packages to find packages\r\n-  packages = [\r\n-    pkgs.nodejs_20\r\n-    pkgs.zulu\r\n-  ];\r\n-  # Sets environment variables in the workspace\r\n-  env = {};\r\n-  # This adds a file watcher to startup the firebase emulators. The emulators will only start if\r\n-  # a firebase.json file is written into the user's directory\r\n-  services.firebase.emulators = {\r\n-    detect = true;\r\n-    projectId = \"demo-app\";\r\n-    services = [\"auth\" \"firestore\"];\r\n-  };\r\n-  idx = {\r\n-    # Search for the extensions you want on https://open-vsx.org/ and use \"publisher.id\"\r\n-    extensions = [\r\n-      # \"vscodevim.vim\"\r\n-    ];\r\n-    workspace = {\r\n-      onCreate = {\r\n-        default.openFiles = [\r\n-          \"src/app/page.tsx\"\r\n-        ];\r\n-      };\r\n-    };\r\n-    # Enable previews and customize configuration\r\n-    previews = {\r\n-      enable = true;\r\n-      previews = {\r\n-        web = {\r\n-          command = [\"npm\" \"run\" \"dev\" \"--\" \"--port\" \"$PORT\" \"--hostname\" \"0.0.0.0\"];\r\n-          manager = \"web\";\r\n-        };\r\n-      };\r\n-    };\r\n-  };\r\n-}\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1750666853164,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -0,0 +1,43 @@\n+# To learn more about how to use Nix to configure your environment\r\n+# see: https://firebase.google.com/docs/studio/customize-workspace\r\n+{pkgs}: {\r\n+  # Which nixpkgs channel to use.\r\n+  channel = \"stable-24.11\"; # or \"unstable\"\r\n+  # Use https://search.nixos.org/packages to find packages\r\n+  packages = [\r\n+    pkgs.nodejs_20\r\n+    pkgs.zulu\r\n+  ];\r\n+  # Sets environment variables in the workspace\r\n+  env = {};\r\n+  # This adds a file watcher to startup the firebase emulators. The emulators will only start if\r\n+  # a firebase.json file is written into the user's directory\r\n+  services.firebase.emulators = {\r\n+    detect = true;\r\n+    projectId = \"demo-app\";\r\n+    services = [\"auth\" \"firestore\"];\r\n+  };\r\n+  idx = {\r\n+    # Search for the extensions you want on https://open-vsx.org/ and use \"publisher.id\"\r\n+    extensions = [\r\n+      # \"vscodevim.vim\"\r\n+    ];\r\n+    workspace = {\r\n+      onCreate = {\r\n+        default.openFiles = [\r\n+          \"src/app/page.tsx\"\r\n+        ];\r\n+      };\r\n+    };\r\n+    # Enable previews and customize configuration\r\n+    previews = {\r\n+      enable = true;\r\n+      previews = {\r\n+        web = {\r\n+          command = [\"npm\" \"run\" \"dev\" \"--\" \"--port\" \"$PORT\" \"--hostname\" \"0.0.0.0\"];\r\n+          manager = \"web\";\r\n+        };\r\n+      };\r\n+    };\r\n+  };\r\n+}\r\n"
+                },
+                {
+                    "date": 1750666933453,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -0,0 +1,43 @@\n+# To learn more about how to use Nix to configure your environment\r\n+# see: https://firebase.google.com/docs/studio/customize-workspace\r\n+{pkgs}: {\r\n+  # Which nixpkgs channel to use.\r\n+  channel = \"stable-24.11\"; # or \"unstable\"\r\n+  # Use https://search.nixos.org/packages to find packages\r\n+  packages = [\r\n+    pkgs.nodejs_20\r\n+    pkgs.zulu\r\n+  ];\r\n+  # Sets environment variables in the workspace\r\n+  env = {};\r\n+  # This adds a file watcher to startup the firebase emulators. The emulators will only start if\r\n+  # a firebase.json file is written into the user's directory\r\n+  services.firebase.emulators = {\r\n+    detect = true;\r\n+    projectId = \"demo-app\";\r\n+    services = [\"auth\" \"firestore\"];\r\n+  };\r\n+  idx = {\r\n+    # Search for the extensions you want on https://open-vsx.org/ and use \"publisher.id\"\r\n+    extensions = [\r\n+      # \"vscodevim.vim\"\r\n+    ];\r\n+    workspace = {\r\n+      onCreate = {\r\n+        default.openFiles = [\r\n+          \"src/app/page.tsx\"\r\n+        ];\r\n+      };\r\n+    };\r\n+    # Enable previews and customize configuration\r\n+    previews = {\r\n+      enable = true;\r\n+      previews = {\r\n+        web = {\r\n+          command = [\"npm\" \"run\" \"dev\" \"--\" \"--port\" \"$PORT\" \"--hostname\" \"0.0.0.0\"];\r\n+          manager = \"web\";\r\n+        };\r\n+      };\r\n+    };\r\n+  };\r\n+}\n\\ No newline at end of file\n"
+                }
+            ],
+            "date": 1750666783731,
+            "name": "Commit-0",
+            "content": "\r\n# To learn more about how to use Nix to configure your environment\r\n# see: https://firebase.google.com/docs/studio/customize-workspace\r\n{pkgs}: {\r\n  # Which nixpkgs channel to use.\r\n  channel = \"stable-24.11\"; # or \"unstable\"\r\n  # Use https://search.nixos.org/packages to find packages\r\n  packages = [\r\n    pkgs.nodejs_20\r\n    pkgs.zulu\r\n  ];\r\n  # Sets environment variables in the workspace\r\n  env = {};\r\n  # This adds a file watcher to startup the firebase emulators. The emulators will only start if\r\n  # a firebase.json file is written into the user's directory\r\n  services.firebase.emulators = {\r\n    detect = true;\r\n    projectId = \"demo-app\";\r\n    services = [\"auth\" \"firestore\"];\r\n  };\r\n  idx = {\r\n    # Search for the extensions you want on https://open-vsx.org/ and use \"publisher.id\"\r\n    extensions = [\r\n      # \"vscodevim.vim\"\r\n    ];\r\n    workspace = {\r\n      onCreate = {\r\n        default.openFiles = [\r\n          \"src/app/page.tsx\"\r\n        ];\r\n      };\r\n    };\r\n    # Enable previews and customize configuration\r\n    previews = {\r\n      enable = true;\r\n      previews = {\r\n        web = {\r\n          command = [\"npm\" \"run\" \"dev\" \"--\" \"--port\" \"$PORT\" \"--hostname\" \"0.0.0.0\"];\r\n          manager = \"web\";\r\n        };\r\n      };\r\n    };\r\n  };\r\n}\r\n>>>>>>> master\r\n"
+        }
+    ]
+}

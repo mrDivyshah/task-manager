@@ -3,6 +3,7 @@
 
 import type { Task } from "@/types";
 import { TaskItem } from "./TaskItem";
+<<<<<<< HEAD
 import { FileText, Info } from "lucide-react";
 import React from "react";
 
@@ -15,6 +16,23 @@ interface TaskListProps {
 }
 
 export function TaskList({ tasks, onEditTask, onDeleteTask, onReorderTasks, onStatusChange }: TaskListProps) {
+=======
+import { FileText } from "lucide-react";
+import React from "react";
+import { cn } from "@/lib/utils";
+import { format, isToday, isYesterday } from 'date-fns';
+
+interface TaskListProps {
+  tasks: Task[];
+  onViewDetails: (task: Task) => void;
+  onDeleteTask: (taskId: string) => void;
+  onReorderTasks: (tasks: Task[]) => void;
+  onStatusChange: (taskId: string, status: Task['status']) => void;
+  view: 'grid' | 'list';
+}
+
+export function TaskList({ tasks, onViewDetails, onDeleteTask, onReorderTasks, onStatusChange, view }: TaskListProps) {
+>>>>>>> master
   const [draggedItemId, setDraggedItemId] = React.useState<string | null>(null);
 
   const handleDragStart = (event: React.DragEvent<HTMLDivElement>, taskId: string) => {
@@ -63,6 +81,7 @@ export function TaskList({ tasks, onEditTask, onDeleteTask, onReorderTasks, onSt
       </div>
     );
   }
+<<<<<<< HEAD
   
   return (
     <div className="mt-8 grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -79,6 +98,63 @@ export function TaskList({ tasks, onEditTask, onDeleteTask, onReorderTasks, onSt
           isDragging={draggedItemId === task.id}
         />
       ))}
+=======
+
+  const groupedTasks = tasks.reduce((acc, task) => {
+    const dayKey = format(new Date(task.createdAt), 'yyyy-MM-dd');
+    if (!acc[dayKey]) {
+      acc[dayKey] = [];
+    }
+    acc[dayKey].push(task);
+    return acc;
+  }, {} as Record<string, Task[]>);
+
+  const sortedGroupKeys = Object.keys(groupedTasks).sort().reverse();
+
+  return (
+    <div className="mt-8 space-y-8">
+      {sortedGroupKeys.map(dateKey => {
+        const groupTasks = groupedTasks[dateKey];
+        // By appending T00:00:00, we hint to the parser to treat this as a local date, avoiding timezone shifts.
+        const groupDate = new Date(dateKey + 'T00:00:00');
+        let groupTitle = '';
+        if (isToday(groupDate)) {
+          groupTitle = 'Today';
+        } else if (isYesterday(groupDate)) {
+          groupTitle = 'Yesterday';
+        } else {
+          groupTitle = format(groupDate, 'MMMM d, yyyy');
+        }
+
+        return (
+          <div key={dateKey} className="animate-subtle-appear">
+            <h2 className="text-xl font-bold text-foreground mb-4 pb-2 border-b border-border/50">
+              {groupTitle}
+            </h2>
+            <div className={cn(
+              view === 'grid'
+                ? "grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+                : "flex flex-col gap-4"
+            )}>
+              {groupTasks.map(task => (
+                <TaskItem
+                  key={task.id}
+                  task={task}
+                  onViewDetails={onViewDetails}
+                  onDelete={onDeleteTask}
+                  onStatusChange={onStatusChange}
+                  onDragStart={handleDragStart}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  isDragging={draggedItemId === task.id}
+                  view={view}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+>>>>>>> master
     </div>
   );
 }

@@ -1,0 +1,26 @@
+{
+    "sourceFile": "src/types/next-auth.d.ts",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 2,
+            "patches": [
+                {
+                    "date": 1750667141482,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1750667149248,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -9,11 +9,9 @@\n       gender?: string;\r\n       notificationSoundEnabled?: boolean;\r\n       notificationStyle?: 'dock' | 'float';\r\n       advancedFeaturesEnabled?: boolean;\r\n-\r\n       role?: string;\r\n->>>>>>> master\r\n     } & DefaultSession[\"user\"];\r\n   }\r\n \r\n   interface User extends DefaultUser {\r\n@@ -21,10 +19,8 @@\n     gender?: string;\r\n     notificationSoundEnabled?: boolean;\r\n     notificationStyle?: 'dock' | 'float';\r\n     advancedFeaturesEnabled?: boolean;\r\n-<<<<<<< HEAD\r\n-=======\r\n     role?: string;\r\n >>>>>>> master\r\n   }\r\n }\r\n"
+                },
+                {
+                    "date": 1750667156270,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -20,9 +20,8 @@\n     notificationSoundEnabled?: boolean;\r\n     notificationStyle?: 'dock' | 'float';\r\n     advancedFeaturesEnabled?: boolean;\r\n     role?: string;\r\n->>>>>>> master\r\n   }\r\n }\r\n \r\n declare module \"next-auth/jwt\" {\r\n@@ -31,10 +30,8 @@\n     gender?: string;\r\n     notificationSoundEnabled?: boolean;\r\n     notificationStyle?: 'dock' | 'float';\r\n     advancedFeaturesEnabled?: boolean;\r\n-<<<<<<< HEAD\r\n-=======\r\n     role?: string;\r\n >>>>>>> master\r\n   }\r\n }\r\n"
+                }
+            ],
+            "date": 1750667141482,
+            "name": "Commit-0",
+            "content": "\r\nimport type { DefaultSession, DefaultUser } from \"next-auth\";\r\nimport type { JWT, DefaultJWT } from \"next-auth/jwt\";\r\n\r\ndeclare module \"next-auth\" {\r\n  interface Session {\r\n    user: {\r\n      id: string;\r\n      gender?: string;\r\n      notificationSoundEnabled?: boolean;\r\n      notificationStyle?: 'dock' | 'float';\r\n      advancedFeaturesEnabled?: boolean;\r\n\r\n      role?: string;\r\n>>>>>>> master\r\n    } & DefaultSession[\"user\"];\r\n  }\r\n\r\n  interface User extends DefaultUser {\r\n    id: string;\r\n    gender?: string;\r\n    notificationSoundEnabled?: boolean;\r\n    notificationStyle?: 'dock' | 'float';\r\n    advancedFeaturesEnabled?: boolean;\r\n<<<<<<< HEAD\r\n=======\r\n    role?: string;\r\n>>>>>>> master\r\n  }\r\n}\r\n\r\ndeclare module \"next-auth/jwt\" {\r\n  interface JWT extends DefaultJWT {\r\n    id: string;\r\n    gender?: string;\r\n    notificationSoundEnabled?: boolean;\r\n    notificationStyle?: 'dock' | 'float';\r\n    advancedFeaturesEnabled?: boolean;\r\n<<<<<<< HEAD\r\n=======\r\n    role?: string;\r\n>>>>>>> master\r\n  }\r\n}\r\n"
+        }
+    ]
+}

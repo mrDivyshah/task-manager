@@ -38,7 +38,10 @@ export default function ProfilePage() {
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+<<<<<<< HEAD
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+=======
+>>>>>>> master
 
   useEffect(() => {
     if (session?.user) {
@@ -48,7 +51,10 @@ export default function ProfilePage() {
         gender: (session.user as any).gender || "other", 
       });
     }
+<<<<<<< HEAD
     setCurrentYear(new Date().getFullYear());
+=======
+>>>>>>> master
   }, [session]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -333,7 +339,11 @@ export default function ProfilePage() {
         </Card>
       </main>
       <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
+<<<<<<< HEAD
         © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
+=======
+        © 2025 TaskFlow. All rights reserved.
+>>>>>>> master
       </footer>
     </div>
   );
