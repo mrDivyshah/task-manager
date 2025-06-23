@@ -13,6 +13,7 @@ export interface Task {
   category?: string;
   priority?: 'high' | 'medium' | 'low' | string;
   createdAt: number; // timestamp
+  dueDate?: string; // ISO date string
   teamId?: string;
   team?: { name: string };
   assignedTo?: UserSubset;
@@ -51,6 +52,7 @@ export interface Notification {
     requestingUserName?: string;
     invitingUserId?: string;
     invitingUserName?: string;
+    taskId?: string;
   };
   isRead: boolean;
   createdAt: string; // ISO date string

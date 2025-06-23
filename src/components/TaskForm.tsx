@@ -25,9 +25,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 import type { Task, Team, TeamMember } from "@/types";
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Calendar as CalendarIcon } from "lucide-react";
 
 const taskFormSchema = z.object({
   title: z.string().min(1, "Title is required").max(100, "Title must be 100 characters or less"),
@@ -35,6 +39,7 @@ const taskFormSchema = z.object({
   priority: z.string().optional(),
   teamId: z.string().optional(),
   assignedTo: z.string().optional(),
+  dueDate: z.date().optional().nullable(),
 });
 
 type TaskFormValues = z.infer<typeof taskFormSchema>;
@@ -42,7 +47,7 @@ type TaskFormValues = z.infer<typeof taskFormSchema>;
 interface TaskFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: TaskFormValues, existingTask?: Task) => void;
+  onSubmit: (data: Omit<TaskFormValues, 'dueDate'> & { dueDate?: string | null }, existingTask?: Task) => void;
   taskToEdit?: Task;
   teams: Team[];
 }
@@ -59,6 +64,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskF
       priority: "",
       teamId: "__none__",
       assignedTo: "__none__",
+      dueDate: null,
     },
   });
   
@@ -73,6 +79,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskF
           priority: taskToEdit.priority || "",
           teamId: taskToEdit.teamId || "__none__",
           assignedTo: taskToEdit.assignedTo?.id || "__none__",
+          dueDate: taskToEdit.dueDate ? new Date(taskToEdit.dueDate) : null,
         });
       } else {
         form.reset({
@@ -81,6 +88,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskF
           priority: "",
           teamId: "__none__",
           assignedTo: "__none__",
+          dueDate: null,
         });
       }
     }
@@ -114,13 +122,17 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskF
 
 
   const handleSubmit = (data: TaskFormValues) => {
-    onSubmit(data, taskToEdit);
+    const dataToSend = {
+      ...data,
+      dueDate: data.dueDate ? data.dueDate.toISOString() : null,
+    };
+    onSubmit(dataToSend, taskToEdit);
     form.reset();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if(!open) onClose(); }}>
-      <DialogContent className="sm:max-w-xl bg-card rounded-lg shadow-xl">
+      <DialogContent className="sm:max-w-2xl bg-card rounded-lg shadow-xl">
         <DialogHeader>
           <DialogTitle className="font-headline text-2xl">
             {taskToEdit ? "Edit Task" : "Create New Task"}
@@ -157,28 +169,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskF
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="priority"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-foreground/80">Priority</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""}>
-                      <FormControl>
-                        <SelectTrigger className="bg-background border-input focus:ring-primary"><SelectValue placeholder="Select priority" /></SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
                <FormField
                 control={form.control}
                 name="teamId"
@@ -225,6 +216,68 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskF
                 )}
               />
             </div>
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="priority"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-foreground/80">Priority</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                        <FormControl>
+                          <SelectTrigger className="bg-background border-input focus:ring-primary"><SelectValue placeholder="Select priority" /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="dueDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-foreground/80">Due Date</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value ?? undefined}
+                            onSelect={field.onChange}
+                            disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() - 1)) }
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+            </div>
             <DialogFooter className="mt-8">
               <DialogClose asChild>
                 <Button type="button" variant="outline">Cancel</Button>
@@ -239,5 +292,3 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskF
     </Dialog>
   );
 }
-
-    

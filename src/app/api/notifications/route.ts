@@ -35,6 +35,7 @@ export async function GET(req: Request) {
           requestingUserName: requestingUserData?.name,
           invitingUserId: invitingUserData?._id.toString(),
           invitingUserName: invitingUserData?.name,
+          taskId: notif.data.taskId?.toString(),
         },
         isRead: notif.isRead,
         createdAt: notif.createdAt.toISOString(),

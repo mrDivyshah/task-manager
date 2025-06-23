@@ -6,6 +6,8 @@ import dbConnect from '@/lib/mongodb';
 import Task from '@/models/task';
 import User from '@/models/user';
 import Team from '@/models/team';
+import Notification from '@/models/notification';
+import { format } from 'date-fns';
 
 async function checkTaskPermission(taskId: string, userId: string): Promise<boolean> {
     const task = await Task.findById(taskId);
@@ -29,7 +31,7 @@ async function checkTaskPermission(taskId: string, userId: string): Promise<bool
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user?.id || !session?.user?.name) {
         return NextResponse.json({ message: 'Not authenticated' }, { status: 401 });
     }
 
@@ -47,8 +49,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
              return NextResponse.json({ message: 'Task not found' }, { status: 404 });
         }
 
+        const originalAssignedTo = task.assignedTo?.toString();
         const body = await req.json();
-        const { title, notes, priority, teamId, assignedTo, category, status } = body;
+        const { title, notes, priority, teamId, assignedTo, category, status, dueDate } = body;
         
         task.title = title ?? task.title;
         task.notes = notes ?? task.notes;
@@ -56,12 +59,28 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         task.teamId = (teamId === '__none__' || teamId === "") ? undefined : (teamId ?? task.teamId);
         task.assignedTo = (assignedTo === '__none__' || assignedTo === "") ? undefined : (assignedTo ?? task.assignedTo);
         task.status = status ?? task.status;
+        if (dueDate !== undefined) {
+          task.dueDate = dueDate ? new Date(dueDate) : undefined;
+        }
         
         if (category !== undefined) {
           task.category = category;
         }
         
         await task.save();
+
+        const newAssignedTo = task.assignedTo?.toString();
+        // Notify user if they are newly assigned and a due date exists
+        if (newAssignedTo && newAssignedTo !== originalAssignedTo && newAssignedTo !== session.user.id && task.dueDate) {
+             const notification = new Notification({
+                userId: task.assignedTo,
+                type: 'TASK_ASSIGNED',
+                message: `${session.user.name} assigned you the task: "${task.title}", due on ${format(task.dueDate, 'PPP')}`,
+                data: { taskId: task._id },
+            });
+            await notification.save();
+        }
+
         await task.populate([
             { path: 'teamId', model: Team, select: 'name' },
             { path: 'assignedTo', model: User, select: 'name email' }
@@ -76,6 +95,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
             id: task._id.toString(),
             status: task.status,
             createdAt: task.createdAt.getTime(),
+            dueDate: task.dueDate?.toISOString(),
             team: teamData ? { name: teamData.name } : undefined,
             assignedTo: assignedToData ? { id: assignedToData._id.toString(), name: assignedToData.name, email: assignedToData.email } : undefined,
             teamId: teamData?._id.toString(),

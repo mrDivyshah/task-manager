@@ -165,7 +165,7 @@ export default function Home() {
   };
 
   const handleSaveTask = async (
-    data: { title: string; notes?: string; priority?: string; teamId?: string, assignedTo?: string },
+    data: { title: string; notes?: string; priority?: string; teamId?: string, assignedTo?: string, dueDate?: string | null },
     existingTask?: Task
   ) => {
     const url = existingTask ? `/api/tasks/${existingTask.id}` : '/api/tasks';

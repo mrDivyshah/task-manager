@@ -1,13 +1,13 @@
 
 "use client";
 
-import { Pencil, Trash2, GripVertical, Tag, Zap, Clock, Users, User, CheckCircle, Circle, MoreHorizontal } from "lucide-react";
+import { Pencil, Trash2, GripVertical, Tag, Zap, Clock, Users, User, CheckCircle, Circle, MoreHorizontal, Calendar } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Task } from "@/types";
 import { cn } from "@/lib/utils";
-import { formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, isPast } from 'date-fns';
 import React, { useEffect, useState } from "react";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -66,6 +66,9 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
     }
     return names[0][0].toUpperCase();
   };
+  
+  const dueDate = task.dueDate ? new Date(task.dueDate) : null;
+  const isOverdue = dueDate && isPast(dueDate) && task.status !== 'done';
 
   if (view === 'list') {
     return (
@@ -103,8 +106,17 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
             {task.title}
           </p>
           <div className="flex items-center text-xs text-muted-foreground truncate">
-            <Clock className="w-3 h-3 mr-1.5 flex-shrink-0" />
-            <span>Created {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}</span>
+            {dueDate ? (
+              <div className={cn("flex items-center", isOverdue ? 'text-destructive' : '')}>
+                <Calendar className="w-3 h-3 mr-1.5 flex-shrink-0" />
+                <span>Due {format(dueDate, 'MMM d')}</span>
+              </div>
+            ) : (
+              <>
+                <Clock className="w-3 h-3 mr-1.5 flex-shrink-0" />
+                <span>Created {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}</span>
+              </>
+            )}
           </div>
         </div>
         
@@ -115,7 +127,8 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
             </Badge>
           )}
           {assignedTeam && (
-            <Badge variant="outline" className="text-xs py-0.5 px-2 rounded-full border-primary/50 bg-primary/10 text-primary-foreground">
+            <Badge variant="outline" className="text-xs py-0.5 px-2 rounded-full border-primary/50 bg-primary/10 text-primary/80">
+              <Users size={12} className="mr-1" />
               {assignedTeam.name}
             </Badge>
           )}
@@ -167,9 +180,18 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
           <CardTitle className={cn("font-headline text-xl mb-1 break-all", task.status === 'done' && 'line-through text-muted-foreground')}>
             {task.title}
           </CardTitle>
-          <div className="flex items-center text-xs text-muted-foreground">
-            <Clock className="w-3 h-3 mr-1" />
-            Created {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}
+           <div className="flex items-center text-xs text-muted-foreground">
+            {dueDate ? (
+              <div className={cn("flex items-center", isOverdue ? 'text-destructive font-medium' : '')}>
+                <Calendar className="w-3 h-3 mr-1" />
+                Due {format(dueDate, "MMMM d, yyyy")}
+              </div>
+            ) : (
+               <div className="flex items-center">
+                <Clock className="w-3 h-3 mr-1" />
+                Created {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}
+               </div>
+            )}
           </div>
         </div>
         <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary cursor-grab p-1 h-8 w-8" aria-label="Drag to reorder">

@@ -6,6 +6,8 @@ import dbConnect from '@/lib/mongodb';
 import Task from '@/models/task';
 import Team from '@/models/team';
 import User from '@/models/user';
+import Notification from '@/models/notification';
+import { format } from 'date-fns';
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
@@ -42,6 +44,7 @@ export async function GET(req: Request) {
             category: task.category,
             priority: task.priority,
             createdAt: task.createdAt.getTime(),
+            dueDate: task.dueDate?.toISOString(),
             teamId: teamData?._id.toString(),
             team: teamData ? { name: teamData.name } : undefined,
             assignedTo: assignedToData ? { id: assignedToData._id.toString(), name: assignedToData.name, email: assignedToData.email } : undefined,
@@ -57,13 +60,13 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user?.id || !session?.user?.name) {
         return NextResponse.json({ message: 'Not authenticated' }, { status: 401 });
     }
 
     try {
         await dbConnect();
-        const { title, notes, priority, teamId, assignedTo } = await req.json();
+        const { title, notes, priority, teamId, assignedTo, dueDate } = await req.json();
 
         if (!title) {
             return NextResponse.json({ message: 'Title is required' }, { status: 400 });
@@ -74,6 +77,7 @@ export async function POST(req: Request) {
             title,
             notes,
             priority: priority && priority !== "none" ? priority : undefined,
+            dueDate: dueDate ? new Date(dueDate) : undefined,
             // status will be set by default in the schema
         };
 
@@ -87,6 +91,17 @@ export async function POST(req: Request) {
 
         const task = new Task(newTaskData);
         await task.save();
+
+        // Create notification if assigned to someone else with a due date
+        if (task.assignedTo && task.dueDate && task.assignedTo.toString() !== session.user.id) {
+            const notification = new Notification({
+                userId: task.assignedTo,
+                type: 'TASK_ASSIGNED',
+                message: `${session.user.name} assigned you a task: "${task.title}", due on ${format(task.dueDate, 'PPP')}`,
+                data: { taskId: task._id },
+            });
+            await notification.save();
+        }
         
         await task.populate([
             { path: 'teamId', model: Team, select: 'name' },
@@ -102,6 +117,7 @@ export async function POST(req: Request) {
             id: task._id.toString(),
             status: task.status,
             createdAt: task.createdAt.getTime(),
+            dueDate: task.dueDate?.toISOString(),
             team: teamData ? { name: teamData.name } : undefined,
             assignedTo: assignedToData ? { id: assignedToData._id.toString(), name: assignedToData.name, email: assignedToData.email } : undefined,
             teamId: teamData?._id.toString(),
