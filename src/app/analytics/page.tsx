@@ -131,79 +131,75 @@ export default function AnalyticsPage() {
             </p>
           </div>
       ) : (
-        <>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <Card className="lg:col-span-1">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><PieChartIcon className="h-5 w-5 text-muted-foreground" />Task Status Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <ChartContainer config={statusConfig} className="mx-auto aspect-square max-h-[250px]">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <Card className="lg:col-span-1">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><PieChartIcon className="h-5 w-5 text-muted-foreground" />Task Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <ChartContainer config={statusConfig} className="mx-auto aspect-square max-h-[300px]">
+                <PieChart>
+                    <RechartsTooltip content={<ChartTooltipContent nameKey="count" hideLabel />} />
+                    <Pie data={analyticsData.statusData} dataKey="count" nameKey="status" innerRadius={60} strokeWidth={5} >
+                        <LabelList dataKey="count" className="fill-background" stroke="none" fontSize={12} formatter={(value: string) => `${((parseInt(value) / tasks.length) * 100).toFixed(0)}%`} />
+                    </Pie>
+                    <ChartLegend content={<ChartLegendContent nameKey="status" />} className="-mt-4" />
+                </PieChart>
+                </ChartContainer>
+            </CardContent>
+            </Card>
+            <Card className="lg:col-span-2">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><AreaChartIcon className="h-5 w-5 text-muted-foreground" />Task Completion Trend</CardTitle>
+                <CardDescription>Tasks completed in the last 7 days.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <ChartContainer config={{ count: { label: "Completed", color: "hsl(var(--primary))" } }} className="aspect-auto h-[300px]">
+                <LineChart data={analyticsData.completionTrendData} margin={{ left: 12, right: 12 }}>
+                    <CartesianGrid vertical={false} />
+                    <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 3)} />
+                    <YAxis tickLine={false} axisLine={false} tickMargin={8} allowDecimals={false} />
+                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
+                    <Line dataKey="count" type="monotone" stroke="var(--color-count)" strokeWidth={2} dot={true} />
+                </LineChart>
+                </ChartContainer>
+            </CardContent>
+            </Card>
+            <Card className="lg:col-span-2">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><BarChart3 className="h-5 w-5 text-muted-foreground" />Top 10 Categories</CardTitle>
+                <CardDescription>Number of tasks per category.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <ChartContainer config={{ count: { label: "Tasks", color: "hsl(var(--primary))" } }} className="aspect-auto h-[400px]">
+                <BarChart data={analyticsData.categoryData} layout="vertical" margin={{ left: 10, right: 30 }}>
+                    <CartesianGrid horizontal={false} />
+                    <XAxis type="number" dataKey="count" hide />
+                    <YAxis dataKey="category" type="category" tickLine={false} axisLine={false} tickMargin={8} />
+                    <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+                    <Bar dataKey="count" fill="var(--color-count)" radius={4}>
+                        <LabelList position="right" offset={8} className="fill-foreground" fontSize={12} dataKey="count" />
+                    </Bar>
+                </BarChart>
+                </ChartContainer>
+            </CardContent>
+            </Card>
+            <Card className="lg:col-span-1">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><PieChartIcon className="h-5 w-5 text-muted-foreground" />Priorities</CardTitle>
+                <CardDescription>How tasks are prioritized.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex items-center justify-center">
+                 <ChartContainer config={priorityConfig} className="mx-auto aspect-square max-h-[400px]">
                     <PieChart>
                         <RechartsTooltip content={<ChartTooltipContent nameKey="count" hideLabel />} />
-                        <Pie data={analyticsData.statusData} dataKey="count" nameKey="status" innerRadius={60} strokeWidth={5} >
-                            <LabelList dataKey="count" className="fill-background" stroke="none" fontSize={12} formatter={(value: string) => `${((parseInt(value) / tasks.length) * 100).toFixed(0)}%`} />
-                        </Pie>
-                        <ChartLegend content={<ChartLegendContent nameKey="status" />} className="-mt-4" />
+                        <Pie data={analyticsData.priorityData} dataKey="count" nameKey="priority" />
+                        <ChartLegend content={<ChartLegendContent nameKey="priority" />} className="flex-wrap" />
                     </PieChart>
-                    </ChartContainer>
-                </CardContent>
-                </Card>
-                <Card className="lg:col-span-2">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><AreaChartIcon className="h-5 w-5 text-muted-foreground" />Task Completion Trend</CardTitle>
-                    <CardDescription>Tasks completed in the last 7 days.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <ChartContainer config={{ count: { label: "Completed", color: "hsl(var(--primary))" } }} className="aspect-auto h-[250px]">
-                    <LineChart data={analyticsData.completionTrendData} margin={{ left: 12, right: 12 }}>
-                        <CartesianGrid vertical={false} />
-                        <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 3)} />
-                        <YAxis tickLine={false} axisLine={false} tickMargin={8} allowDecimals={false} />
-                        <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
-                        <Line dataKey="count" type="monotone" stroke="var(--color-count)" strokeWidth={2} dot={true} />
-                    </LineChart>
-                    </ChartContainer>
-                </CardContent>
-                </Card>
-            </div>
-            <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-                <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><BarChart3 className="h-5 w-5 text-muted-foreground" />Top 10 Categories</CardTitle>
-                    <CardDescription>Number of tasks per category.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <ChartContainer config={{ count: { label: "Tasks", color: "hsl(var(--primary))" } }} className="aspect-auto h-[300px]">
-                    <BarChart data={analyticsData.categoryData} layout="vertical" margin={{ left: 10, right: 30 }}>
-                        <CartesianGrid horizontal={false} />
-                        <XAxis type="number" dataKey="count" hide />
-                        <YAxis dataKey="category" type="category" tickLine={false} axisLine={false} tickMargin={8} width={120} />
-                        <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
-                        <Bar dataKey="count" fill="var(--color-count)" radius={4}>
-                            <LabelList position="right" offset={8} className="fill-foreground" fontSize={12} dataKey="count" />
-                        </Bar>
-                    </BarChart>
-                    </ChartContainer>
-                </CardContent>
-                </Card>
-                <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><PieChartIcon className="h-5 w-5 text-muted-foreground" />Priority Distribution</CardTitle>
-                    <CardDescription>How tasks are prioritized across your workspace.</CardDescription>
-                </CardHeader>
-                <CardContent className="flex items-center justify-center">
-                     <ChartContainer config={priorityConfig} className="mx-auto aspect-square max-h-[300px]">
-                        <PieChart>
-                            <RechartsTooltip content={<ChartTooltipContent nameKey="count" hideLabel />} />
-                            <Pie data={analyticsData.priorityData} dataKey="count" nameKey="priority" />
-                            <ChartLegend content={<ChartLegendContent nameKey="priority" />} className="flex-wrap" />
-                        </PieChart>
-                    </ChartContainer>
-                </CardContent>
-                </Card>
-            </div>
-        </>
+                </ChartContainer>
+            </CardContent>
+            </Card>
+        </div>
       )}
     </div>
   );
