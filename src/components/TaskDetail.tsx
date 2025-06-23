@@ -82,7 +82,18 @@ const ActivityItem = ({ activity }: { activity: Activity }) => {
             case 'STATUS_CHANGE':
                 return <p><span className="font-semibold">{activity.details.userName}</span> changed status from <Badge variant="outline" className="capitalize">{activity.details.from}</Badge> to <Badge variant="outline" className="capitalize">{activity.details.to}</Badge>.</p>;
             case 'ASSIGNMENT_CHANGE':
-                 return <p><span className="font-semibold">{activity.details.userName}</span> changed assignment from <Badge variant="secondary">{activity.details.from}</Badge> to <Badge variant="secondary">{activity.details.to}</Badge>.</p>;
+                 return <p><span className="font-semibold">{activity.details.userName}</span> changed assignment from <Badge variant="secondary">{activity.details.from || 'Unassigned'}</Badge> to <Badge variant="secondary">{activity.details.to || 'Unassigned'}</Badge>.</p>;
+            case 'UPDATE':
+                if (activity.details.field === 'Notes') {
+                    return <p><span className="font-semibold">{activity.details.userName}</span> updated the notes.</p>;
+                }
+                return (
+                    <p>
+                        <span className="font-semibold">{activity.details.userName}</span>
+                        {' '}changed the <span className="lowercase font-medium">{activity.details.field}</span> from{' '}
+                        <Badge variant="secondary" className="capitalize">{activity.details.from || 'none'}</Badge> to <Badge variant="secondary" className="capitalize">{activity.details.to || 'none'}</Badge>.
+                    </p>
+                );
             default:
                 return <p><span className="font-semibold">{activity.details.userName}</span> made an update.</p>;
         }

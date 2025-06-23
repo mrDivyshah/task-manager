@@ -82,6 +82,24 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
             await activity.save();
         };
         
+        if (originalTask.title !== task.title) {
+            await createActivity('UPDATE', { field: 'Title', from: originalTask.title, to: task.title });
+        }
+        if (originalTask.notes !== task.notes) {
+            await createActivity('UPDATE', { field: 'Notes' });
+        }
+        const originalPriority = originalTask.priority || 'none';
+        const newPriority = task.priority || 'none';
+        if (originalPriority !== newPriority) {
+            await createActivity('UPDATE', { field: 'Priority', from: originalPriority, to: newPriority });
+        }
+        const originalDueDate = originalTask.dueDate ? new Date(originalTask.dueDate) : null;
+        const newDueDate = task.dueDate ? new Date(task.dueDate) : null;
+        if (originalDueDate?.getTime() !== newDueDate?.getTime()) {
+            const formatd = (d: Date | null) => d ? format(d, "MMM d, yyyy 'at' p") : 'none';
+            await createActivity('UPDATE', { field: 'Due Date', from: formatd(originalDueDate), to: formatd(newDueDate) });
+        }
+
         if (originalTask.status !== task.status) {
             await createActivity('STATUS_CHANGE', { from: originalTask.status, to: task.status });
         }
