@@ -69,6 +69,7 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
   
   const dueDate = task.dueDate ? new Date(task.dueDate) : null;
   const isOverdue = dueDate && isPast(dueDate) && task.status !== 'done';
+  const hasTime = dueDate && (dueDate.getHours() !== 0 || dueDate.getMinutes() !== 0 || dueDate.getSeconds() !== 0);
 
   if (view === 'list') {
     return (
@@ -109,7 +110,7 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
             {dueDate ? (
               <div className={cn("flex items-center", isOverdue ? 'text-destructive' : '')}>
                 <Calendar className="w-3 h-3 mr-1.5 flex-shrink-0" />
-                <span>Due {format(dueDate, 'MMM d')}</span>
+                <span>Due {format(dueDate, hasTime ? 'MMM d, p' : 'MMM d')}</span>
               </div>
             ) : (
               <>
@@ -184,7 +185,7 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
             {dueDate ? (
               <div className={cn("flex items-center", isOverdue ? 'text-destructive font-medium' : '')}>
                 <Calendar className="w-3 h-3 mr-1" />
-                Due {format(dueDate, "MMMM d, yyyy")}
+                Due {format(dueDate, hasTime ? "MMMM d, yyyy 'at' p" : "MMMM d, yyyy")}
               </div>
             ) : (
                <div className="flex items-center">

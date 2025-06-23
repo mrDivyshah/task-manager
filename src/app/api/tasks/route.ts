@@ -97,7 +97,7 @@ export async function POST(req: Request) {
             const notification = new Notification({
                 userId: task.assignedTo,
                 type: 'TASK_ASSIGNED',
-                message: `${session.user.name} assigned you a task: "${task.title}", due on ${format(task.dueDate, 'PPP')}`,
+                message: `${session.user.name} assigned you a task: "${task.title}", due on ${format(task.dueDate, "PPP 'at' p")}`,
                 data: { taskId: task._id },
             });
             await notification.save();

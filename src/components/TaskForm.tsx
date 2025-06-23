@@ -40,6 +40,7 @@ const taskFormSchema = z.object({
   teamId: z.string().optional(),
   assignedTo: z.string().optional(),
   dueDate: z.date().optional().nullable(),
+  dueTime: z.string().optional(),
 });
 
 type TaskFormValues = z.infer<typeof taskFormSchema>;
@@ -47,7 +48,7 @@ type TaskFormValues = z.infer<typeof taskFormSchema>;
 interface TaskFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: Omit<TaskFormValues, 'dueDate'> & { dueDate?: string | null }, existingTask?: Task) => void;
+  onSubmit: (data: any, existingTask?: Task) => void;
   taskToEdit?: Task;
   teams: Team[];
 }
@@ -65,6 +66,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskF
       teamId: "__none__",
       assignedTo: "__none__",
       dueDate: null,
+      dueTime: "",
     },
   });
   
@@ -73,13 +75,23 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskF
   useEffect(() => {
     if (isOpen) {
       if (taskToEdit) {
+        const dueDateObj = taskToEdit.dueDate ? new Date(taskToEdit.dueDate) : null;
+        let timeString = "";
+        if (dueDateObj) {
+            const hours = dueDateObj.getHours();
+            const minutes = dueDateObj.getMinutes();
+            if (hours !== 0 || minutes !== 0) {
+                 timeString = format(dueDateObj, "HH:mm");
+            }
+        }
         form.reset({
           title: taskToEdit.title,
           notes: taskToEdit.notes,
           priority: taskToEdit.priority || "",
           teamId: taskToEdit.teamId || "__none__",
           assignedTo: taskToEdit.assignedTo?.id || "__none__",
-          dueDate: taskToEdit.dueDate ? new Date(taskToEdit.dueDate) : null,
+          dueDate: dueDateObj,
+          dueTime: timeString,
         });
       } else {
         form.reset({
@@ -89,6 +101,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskF
           teamId: "__none__",
           assignedTo: "__none__",
           dueDate: null,
+          dueTime: "",
         });
       }
     }
@@ -122,12 +135,27 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskF
 
 
   const handleSubmit = (data: TaskFormValues) => {
+    const { dueDate, dueTime, ...restOfData } = data;
+    let finalDueDateISO: string | null = null;
+
+    if (dueDate) {
+        const combinedDate = new Date(dueDate);
+        if (dueTime) {
+            const [hours, minutes] = dueTime.split(':').map(Number);
+            if (!isNaN(hours) && !isNaN(minutes)) {
+                combinedDate.setHours(hours, minutes, 0, 0);
+            }
+        } else {
+             combinedDate.setHours(0, 0, 0, 0);
+        }
+        finalDueDateISO = combinedDate.toISOString();
+    }
+    
     const dataToSend = {
-      ...data,
-      dueDate: data.dueDate ? data.dueDate.toISOString() : null,
+      ...restOfData,
+      dueDate: finalDueDateISO,
     };
     onSubmit(dataToSend, taskToEdit);
-    form.reset();
   };
 
   return (
@@ -216,7 +244,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskF
                 )}
               />
             </div>
-             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="priority"
@@ -238,45 +266,65 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskF
                     </FormItem>
                   )}
                 />
-                 <FormField
-                  control={form.control}
-                  name="dueDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-foreground/80">Due Date</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={"outline"}
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP")
-                              ) : (
-                                <span>Pick a date</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value ?? undefined}
-                            onSelect={field.onChange}
-                            disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() - 1)) }
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid grid-cols-2 gap-x-2">
+                    <FormField
+                      control={form.control}
+                      name="dueDate"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col justify-between">
+                          <FormLabel className="text-foreground/80">Due Date</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value ? (
+                                    format(field.value, "PPP")
+                                  ) : (
+                                    <span>Pick a date</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value ?? undefined}
+                                onSelect={field.onChange}
+                                disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() - 1)) }
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage className="mt-1"/>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="dueTime"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-col justify-between">
+                                <FormLabel className="text-foreground/80">Time</FormLabel>
+                                <FormControl>
+                                    <Input
+                                        type="time"
+                                        className="bg-background border-input focus:ring-primary"
+                                        disabled={!form.watch('dueDate')}
+                                        {...field}
+                                    />
+                                </FormControl>
+                                <FormMessage className="mt-1"/>
+                            </FormItem>
+                        )}
+                    />
+                </div>
             </div>
             <DialogFooter className="mt-8">
               <DialogClose asChild>
