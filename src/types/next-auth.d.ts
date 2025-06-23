@@ -10,6 +10,7 @@ declare module "next-auth" {
       notificationSoundEnabled?: boolean;
       notificationStyle?: 'dock' | 'float';
       advancedFeaturesEnabled?: boolean;
+      role?: string;
     } & DefaultSession["user"];
   }
 
@@ -19,6 +20,7 @@ declare module "next-auth" {
     notificationSoundEnabled?: boolean;
     notificationStyle?: 'dock' | 'float';
     advancedFeaturesEnabled?: boolean;
+    role?: string;
   }
 }
 
@@ -29,5 +31,6 @@ declare module "next-auth/jwt" {
     notificationSoundEnabled?: boolean;
     notificationStyle?: 'dock' | 'float';
     advancedFeaturesEnabled?: boolean;
+    role?: string;
   }
 }

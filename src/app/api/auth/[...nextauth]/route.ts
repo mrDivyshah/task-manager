@@ -48,6 +48,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           image: user.image,
           gender: user.gender,
+          role: user.role,
         };
       }
     })
@@ -91,6 +92,7 @@ export const authOptions: NextAuthOptions = {
           token.notificationSoundEnabled = dbUser.notificationSoundEnabled;
           token.notificationStyle = dbUser.notificationStyle;
           token.advancedFeaturesEnabled = dbUser.advancedFeaturesEnabled;
+          token.role = dbUser.role;
         }
       }
       
@@ -102,6 +104,7 @@ export const authOptions: NextAuthOptions = {
         if (session.user.notificationSoundEnabled !== undefined) token.notificationSoundEnabled = session.user.notificationSoundEnabled;
         if (session.user.notificationStyle) token.notificationStyle = session.user.notificationStyle;
         if (session.user.advancedFeaturesEnabled !== undefined) token.advancedFeaturesEnabled = session.user.advancedFeaturesEnabled;
+        if (session.user.role) token.role = session.user.role;
       }
       
       return token;
@@ -116,6 +119,7 @@ export const authOptions: NextAuthOptions = {
         session.user.notificationSoundEnabled = token.notificationSoundEnabled;
         session.user.notificationStyle = token.notificationStyle as 'dock' | 'float' | undefined;
         session.user.advancedFeaturesEnabled = token.advancedFeaturesEnabled;
+        session.user.role = token.role as string;
       }
       return session;
     },

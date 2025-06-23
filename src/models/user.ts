@@ -23,6 +23,11 @@ const UserSchema = new Schema({
     enum: ['male', 'female', 'other', 'prefer_not_to_say'],
     default: 'prefer_not_to_say',
   },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user',
+  },
   // User settings
   notificationSoundEnabled: { type: Boolean, default: false },
   notificationStyle: { type: String, enum: ['dock', 'float'], default: 'dock' },
