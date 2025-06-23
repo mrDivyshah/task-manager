@@ -9,12 +9,18 @@ import Team from '@/models/team';
 import mongoose from 'mongoose';
 
 async function checkTaskPermission(taskId: string, userId: string): Promise<boolean> {
-    const task = await Task.findById(taskId);
+    const task = await Task.findById(taskId).lean();
     if (!task) return false;
-    if (task.userId.toString() === userId) return true;
-    if (task.teamId) {
-        const team = await Team.findOne({ _id: task.teamId, members: userId });
-        if (team) return true;
+
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    if (task.userId.equals(userObjectId)) return true;
+    
+    if (task.assignedTo?.some((id: mongoose.Types.ObjectId) => id.equals(userObjectId))) return true;
+
+    if (task.teamIds && task.teamIds.length > 0) {
+        const teamCount = await Team.countDocuments({ _id: { $in: task.teamIds }, members: userObjectId });
+        if (teamCount > 0) return true;
     }
     return false;
 }

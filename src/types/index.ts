@@ -14,9 +14,9 @@ export interface Task {
   priority?: 'high' | 'medium' | 'low' | string;
   createdAt: number; // timestamp
   dueDate?: string; // ISO date string
-  teamId?: string;
-  team?: { name: string };
-  assignedTo?: UserSubset;
+  teamIds?: string[];
+  teams?: { id: string; name: string; }[];
+  assignedTo?: UserSubset[];
 }
 
 export interface TeamMember extends UserSubset {}

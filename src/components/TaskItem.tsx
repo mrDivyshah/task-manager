@@ -33,8 +33,8 @@ export function TaskItem({ task, onViewDetails, onDelete, onDragStart, onDragOve
     setAnimationDelay(`${Math.random() * 0.2}s`);
   }, []);
   
-  const assignedTeam = task.team;
-  const assignedUser = task.assignedTo;
+  const assignedTeams = task.teams;
+  const assignedUsers = task.assignedTo;
 
   const priorityColors: Record<string, string> = {
     high: "bg-red-500/20 text-red-700 border-red-500/50 dark:text-red-400 dark:border-red-500/70",
@@ -72,7 +72,6 @@ export function TaskItem({ task, onViewDetails, onDelete, onDragStart, onDragOve
   const hasTime = dueDate && (dueDate.getHours() !== 0 || dueDate.getMinutes() !== 0 || dueDate.getSeconds() !== 0);
 
   const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Prevent opening detail view if a button or select trigger was clicked
     if ((e.target as HTMLElement).closest('button, [role="combobox"], [role="button"]')) {
       return;
     }
@@ -131,32 +130,56 @@ export function TaskItem({ task, onViewDetails, onDelete, onDragStart, onDragOve
         </div>
         
         <div className="hidden sm:flex items-center gap-2 ml-auto flex-shrink-0">
-          {task.priority && task.priority !== "none" && (
-            <Badge variant="outline" className={cn("text-xs py-0.5 px-2 rounded-full", getPriorityColor(task.priority))}>
-              {task.priority}
-            </Badge>
+          {assignedTeams && assignedTeams.length > 0 && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Badge variant="outline" className="text-xs py-0.5 px-2 rounded-full border-primary/50 bg-primary/10 text-primary/80">
+                      <Users size={12} className="mr-1" />
+                      {assignedTeams.length} {assignedTeams.length > 1 ? 'Teams' : 'Team'}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{assignedTeams.map(t => t.name).join(', ')}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
           )}
-          {assignedTeam && (
-            <Badge variant="outline" className="text-xs py-0.5 px-2 rounded-full border-primary/50 bg-primary/10 text-primary/80">
-              <Users size={12} className="mr-1" />
-              {assignedTeam.name}
-            </Badge>
-          )}
-          {assignedUser && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger>
-                  <Avatar className="h-7 w-7 border-2 border-primary/20">
-                      <AvatarFallback className="text-xs bg-muted">
-                        {getUserInitials(assignedUser.name)}
-                      </AvatarFallback>
-                  </Avatar>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Assigned to {assignedUser.name}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+          {assignedUsers && assignedUsers.length > 0 && (
+            <div className="flex -space-x-2 overflow-hidden">
+              {assignedUsers.slice(0, 3).map(user => (
+                <TooltipProvider key={user.id}>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Avatar className="h-7 w-7 border-2 border-primary/20">
+                          <AvatarFallback className="text-xs bg-muted">
+                            {getUserInitials(user.name)}
+                          </AvatarFallback>
+                      </Avatar>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Assigned to {user.name}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ))}
+              {assignedUsers.length > 3 && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Avatar className="h-7 w-7 border-2 border-primary/20">
+                          <AvatarFallback className="text-xs bg-muted">
+                            +{assignedUsers.length - 3}
+                          </AvatarFallback>
+                      </Avatar>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{assignedUsers.slice(3).map(u => u.name).join(', ')}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
           )}
         </div>
   
@@ -225,21 +248,25 @@ export function TaskItem({ task, onViewDetails, onDelete, onDragStart, onDragOve
               Priority: {task.priority}
             </Badge>
           )}
-          {assignedTeam && (
+          {assignedTeams && assignedTeams.length > 0 && (
             <Badge variant="outline" className="text-xs py-1 px-2.5 rounded-full border-primary/50 bg-primary/10 text-primary-foreground">
               <Users size={14} className="mr-1.5 text-primary" />
-              Team: {assignedTeam.name}
+              {assignedTeams.map(t => t.name).join(', ')}
             </Badge>
           )}
-          {assignedUser && (
-            <div className="flex items-center gap-2" title={`Assigned to ${assignedUser.name}`}>
-              <Avatar className="h-6 w-6 border-2 border-primary/20">
-                  <AvatarFallback className="text-xs bg-muted">
-                    {getUserInitials(assignedUser.name)}
-                  </AvatarFallback>
-              </Avatar>
-              <span className="text-sm font-medium text-muted-foreground">{assignedUser.name}</span>
-            </div>
+          {assignedUsers && assignedUsers.length > 0 && (
+             <div className="flex items-center gap-2">
+                <div className="flex -space-x-2 overflow-hidden">
+                  {assignedUsers.map(user => (
+                    <Avatar key={user.id} className="h-6 w-6 border-2 border-card">
+                        <AvatarFallback className="text-xs bg-muted">
+                          {getUserInitials(user.name)}
+                        </AvatarFallback>
+                    </Avatar>
+                  ))}
+                </div>
+                {assignedUsers.length === 1 && <span className="text-sm font-medium text-muted-foreground">{assignedUsers[0].name}</span>}
+             </div>
           )}
         </div>
       </CardContent>

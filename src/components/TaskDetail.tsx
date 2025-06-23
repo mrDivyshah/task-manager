@@ -205,7 +205,7 @@ export function TaskDetail({ task, isOpen, onClose, onTaskUpdate, onOpenEdit, on
             </div>
           </div>
           <SheetDescription>
-            In team: {task.team?.name ?? 'Personal'}
+            In teams: {task.teams && task.teams.length > 0 ? task.teams.map(t => t.name).join(', ') : 'Personal'}
           </SheetDescription>
         </SheetHeader>
         
@@ -227,10 +227,17 @@ export function TaskDetail({ task, isOpen, onClose, onTaskUpdate, onOpenEdit, on
                     <div className="p-2 bg-muted rounded-md"><Zap className="h-5 w-5 text-muted-foreground"/></div>
                     <div><p className="text-sm text-muted-foreground">Priority</p><p className="font-medium text-foreground capitalize">{task.priority || 'None'}</p></div>
                 </div>
-                {task.assignedTo && (
-                    <div className="flex items-center gap-3 p-3 border rounded-lg">
-                        <div className="p-2 bg-muted rounded-md"><User className="h-5 w-5 text-muted-foreground"/></div>
-                        <div><p className="text-sm text-muted-foreground">Assigned To</p><p className="font-medium text-foreground">{task.assignedTo.name}</p></div>
+                {task.assignedTo && task.assignedTo.length > 0 && (
+                    <div className="flex items-start gap-3 p-3 border rounded-lg">
+                        <div className="p-2 bg-muted rounded-md mt-1"><User className="h-5 w-5 text-muted-foreground"/></div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Assigned To</p>
+                          <div className="flex flex-wrap gap-x-2 gap-y-1 mt-1">
+                            {task.assignedTo.map(user => (
+                              <Badge key={user.id} variant="secondary" className="font-medium">{user.name}</Badge>
+                            ))}
+                          </div>
+                        </div>
                     </div>
                 )}
                  {dueDate && (
@@ -261,7 +268,7 @@ export function TaskDetail({ task, isOpen, onClose, onTaskUpdate, onOpenEdit, on
         <SheetFooter className="p-4 border-t bg-background">
           <form onSubmit={handleCommentSubmit} className="w-full flex gap-3 items-start">
              <Avatar className="h-9 w-9 flex-shrink-0 mt-1">
-                <AvatarFallback className="text-sm bg-primary text-primary-foreground">{getUserInitials(task.assignedTo?.name)}</AvatarFallback>
+                <AvatarFallback className="text-sm bg-primary text-primary-foreground">{getUserInitials(task.assignedTo?.[0]?.name)}</AvatarFallback>
             </Avatar>
             <div className="relative w-full">
                 <Textarea 

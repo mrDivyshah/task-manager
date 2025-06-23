@@ -12,22 +12,19 @@ import { format } from 'date-fns';
 import mongoose from 'mongoose';
 
 async function checkTaskPermission(taskId: string, userId: string): Promise<boolean> {
-    const task = await Task.findById(taskId);
-    if (!task) {
-        return false; // Task doesn't exist
-    }
+    const task = await Task.findById(taskId).lean();
+    if (!task) return false;
 
-    if (task.userId.toString() === userId) {
-        return true; // User is the owner
-    }
+    const userObjectId = new mongoose.Types.ObjectId(userId);
 
-    if (task.teamId) {
-        const team = await Team.findOne({ _id: task.teamId, members: userId });
-        if (team) {
-            return true; // User is a member of the team assigned to the task
-        }
-    }
+    if (task.userId.equals(userObjectId)) return true;
+    
+    if (task.assignedTo?.some((id: mongoose.Types.ObjectId) => id.equals(userObjectId))) return true;
 
+    if (task.teamIds && task.teamIds.length > 0) {
+        const teamCount = await Team.countDocuments({ _id: { $in: task.teamIds }, members: userObjectId });
+        if (teamCount > 0) return true;
+    }
     return false;
 }
 
@@ -51,15 +48,15 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
              return NextResponse.json({ message: 'Task not found' }, { status: 404 });
         }
 
-        const originalTask = task.toObject() as ITask & { assignedTo?: { _id: mongoose.Types.ObjectId, name: string } };
+        const originalTask = task.toObject() as ITask & { assignedTo?: { _id: mongoose.Types.ObjectId, name: string }[] };
         const body = await req.json();
-        const { title, notes, priority, teamId, assignedTo, category, status, dueDate } = body;
+        const { title, notes, priority, teamIds, assignedTo, category, status, dueDate } = body;
         
         task.title = title ?? task.title;
         task.notes = notes ?? task.notes;
         task.priority = (priority === 'none' || priority === '') ? undefined : (priority ?? task.priority);
-        task.teamId = (teamId === '__none__' || teamId === "") ? undefined : (teamId ?? task.teamId);
-        task.assignedTo = (assignedTo === '__none__' || assignedTo === "") ? undefined : (assignedTo ?? task.assignedTo);
+        task.teamIds = teamIds ?? task.teamIds;
+        task.assignedTo = assignedTo ?? task.assignedTo;
         task.status = status ?? task.status;
         if (dueDate !== undefined) {
           task.dueDate = dueDate ? new Date(dueDate) : undefined;
@@ -104,39 +101,39 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
             await createActivity('STATUS_CHANGE', { from: originalTask.status, to: task.status });
         }
 
-        const originalAssignedToId = originalTask.assignedTo?._id?.toString();
-        const newAssignedToId = task.assignedTo?.toString();
-        if (originalAssignedToId !== newAssignedToId) {
-            let newAssignedToName = 'Unassigned';
-            if (newAssignedToId) {
-                const newUser = await User.findById(newAssignedToId).select('name');
-                if (newUser) newAssignedToName = newUser.name;
-            }
-            const oldAssignedToName = originalTask.assignedTo?.name || 'Unassigned';
-            await createActivity('ASSIGNMENT_CHANGE', { from: oldAssignedToName, to: newAssignedToName });
+        const originalAssignedIds = (originalTask.assignedTo || []).map(u => u._id.toString()).sort();
+        const newAssignedIds = (task.assignedTo || []).map(id => id.toString()).sort();
+
+        if (JSON.stringify(originalAssignedIds) !== JSON.stringify(newAssignedIds)) {
+             const oldUsers = await User.find({ _id: { $in: originalAssignedIds } }).select('name');
+             const newUsers = await User.find({ _id: { $in: newAssignedIds } }).select('name');
+             const oldNames = oldUsers.map(u => u.name).join(', ') || 'Unassigned';
+             const newNames = newUsers.map(u => u.name).join(', ') || 'Unassigned';
+             await createActivity('ASSIGNMENT_CHANGE', { from: oldNames, to: newNames });
         }
         // --- End Activity Logging ---
 
-        const newAssignedTo = task.assignedTo?.toString();
-        // Notify user if they are newly assigned and a due date exists
-        if (newAssignedTo && newAssignedTo !== originalTask.assignedTo?._id.toString() && newAssignedTo !== session.user.id && task.dueDate) {
-             const notification = new Notification({
-                userId: task.assignedTo,
-                type: 'TASK_ASSIGNED',
-                message: `${session.user.name} assigned you the task: "${task.title}", due on ${format(task.dueDate, "PPP 'at' p")}`,
+        // --- Notifications ---
+        const newlyAssignedUserIds = newAssignedIds.filter(id => !originalAssignedIds.includes(id) && id !== session.user.id);
+        if (newlyAssignedUserIds.length > 0 && task.dueDate) {
+             const notifications = newlyAssignedUserIds.map(userId => ({
+                userId: userId,
+                type: 'TASK_ASSIGNED' as const,
+                message: `${session.user.name} assigned you the task: "${task.title}", due on ${format(task.dueDate!, "PPP 'at' p")}`,
                 data: { taskId: task._id },
-            });
-            await notification.save();
+            }));
+            await Notification.insertMany(notifications);
         }
+        // --- End Notifications ---
 
         await task.populate([
-            { path: 'teamId', model: Team, select: 'name' },
+            { path: 'teamIds', model: Team, select: 'name' },
             { path: 'assignedTo', model: User, select: 'name email' }
         ]);
         const taskObject = task.toObject();
         
-        const teamData = taskObject.teamId as any;
-        const assignedToData = taskObject.assignedTo as any;
+        const teamsData = taskObject.teamIds as any[];
+        const assignedToData = taskObject.assignedTo as any[];
 
         return NextResponse.json({
             ...taskObject,
@@ -144,9 +141,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
             status: task.status,
             createdAt: task.createdAt.getTime(),
             dueDate: task.dueDate?.toISOString(),
-            team: teamData ? { name: teamData.name } : undefined,
-            assignedTo: assignedToData ? { id: assignedToData._id.toString(), name: assignedToData.name, email: assignedToData.email } : undefined,
-            teamId: teamData?._id.toString(),
+            teams: teamsData?.map(t => ({ id: t._id.toString(), name: t.name })),
+            assignedTo: assignedToData?.map(a => ({ id: a._id.toString(), name: a.name, email: a.email })),
+            teamIds: teamsData?.map(t => t._id.toString()),
         }, { status: 200 });
 
     } catch (error) {
@@ -172,7 +169,6 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
         }
 
         await Task.deleteOne({ _id: id });
-        // Optionally delete related activities
         await Activity.deleteMany({ taskId: id });
 
 

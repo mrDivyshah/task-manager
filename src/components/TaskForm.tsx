@@ -2,7 +2,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,15 +30,18 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { Task, Team, TeamMember } from "@/types";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Loader2, Calendar as CalendarIcon } from "lucide-react";
+import { MultiSelect, type Option } from "./ui/multi-select";
+import { Checkbox } from "./ui/checkbox";
+import { useSession } from "next-auth/react";
 
 const taskFormSchema = z.object({
   title: z.string().min(1, "Title is required").max(100, "Title must be 100 characters or less"),
   notes: z.string().max(500, "Notes must be 500 characters or less").optional(),
   priority: z.string().optional(),
-  teamId: z.string().optional(),
-  assignedTo: z.string().optional(),
+  teamIds: z.array(z.string()).optional(),
+  assignedTo: z.array(z.string()).optional(),
   dueDate: z.date().optional().nullable(),
   dueTime: z.string().optional(),
 });
@@ -54,23 +57,25 @@ interface TaskFormProps {
 }
 
 export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskFormProps) {
+  const { data: session } = useSession();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+  const [assignToAll, setAssignToAll] = useState(false);
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
       title: "",
       notes: "",
-      priority: "",
-      teamId: "__none__",
-      assignedTo: "__none__",
+      priority: "none",
+      teamIds: [],
+      assignedTo: [],
       dueDate: null,
       dueTime: "",
     },
   });
   
-  const selectedTeamId = form.watch('teamId');
+  const selectedTeamIds = form.watch('teamIds') || [];
 
   useEffect(() => {
     if (isOpen) {
@@ -87,9 +92,9 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskF
         form.reset({
           title: taskToEdit.title,
           notes: taskToEdit.notes,
-          priority: taskToEdit.priority || "",
-          teamId: taskToEdit.teamId || "__none__",
-          assignedTo: taskToEdit.assignedTo?.id || "__none__",
+          priority: taskToEdit.priority || "none",
+          teamIds: taskToEdit.teamIds || [],
+          assignedTo: taskToEdit.assignedTo?.map(a => a.id) || [],
           dueDate: dueDateObj,
           dueTime: timeString,
         });
@@ -97,29 +102,32 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskF
         form.reset({
           title: "",
           notes: "",
-          priority: "",
-          teamId: "__none__",
-          assignedTo: "__none__",
+          priority: "none",
+          teamIds: [],
+          assignedTo: [session?.user?.id ?? ""].filter(Boolean),
           dueDate: null,
           dueTime: "",
         });
       }
+      setAssignToAll(false);
     }
-  }, [taskToEdit, form, isOpen]);
+  }, [taskToEdit, form, isOpen, session]);
 
   useEffect(() => {
-    const fetchMembers = async (teamId: string) => {
-      if (teamId === '__none__') {
+    const fetchMembers = async (teamIds: string[]) => {
+      if (teamIds.length === 0) {
         setMembers([]);
-        form.setValue('assignedTo', '__none__');
         return;
       }
       setIsLoadingMembers(true);
       try {
-        const res = await fetch(`/api/teams/${teamId}/members`);
-        if (!res.ok) throw new Error('Failed to fetch team members');
-        const data = await res.json();
-        setMembers(data);
+        const memberPromises = teamIds.map(id => fetch(`/api/teams/${id}/members`).then(res => res.ok ? res.json() : []));
+        const memberArrays = await Promise.all(memberPromises);
+        
+        const allMembers = memberArrays.flat();
+        const uniqueMembers = Array.from(new Map(allMembers.map((item: TeamMember) => [item.id, item])).values());
+        
+        setMembers(uniqueMembers);
       } catch (error) {
         console.error(error);
         setMembers([]);
@@ -128,10 +136,17 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskF
       }
     };
     
-    if (selectedTeamId) {
-      fetchMembers(selectedTeamId);
+    fetchMembers(selectedTeamIds);
+  }, [selectedTeamIds]);
+
+  useEffect(() => {
+    if (assignToAll) {
+      form.setValue('assignedTo', members.map(m => m.id));
     }
-  }, [selectedTeamId, form]);
+  }, [assignToAll, members, form]);
+
+  const teamOptions: Option[] = useMemo(() => teams.map(t => ({ value: t.id, label: t.name })), [teams]);
+  const memberOptions: Option[] = useMemo(() => members.map(m => ({ value: m.id, label: m.name })), [members]);
 
 
   const handleSubmit = (data: TaskFormValues) => {
@@ -197,52 +212,58 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskF
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
-               <FormField
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Controller
                 control={form.control}
-                name="teamId"
+                name="teamIds"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-foreground/80">Assign to Team</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="bg-background border-input focus:ring-primary"><SelectValue placeholder="Select a team" /></SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="__none__">No Team / Personal</SelectItem>
-                        {teams.map((team) => (
-                          <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                   <FormItem>
+                    <FormLabel className="text-foreground/80">Assign to Team(s)</FormLabel>
+                    <MultiSelect
+                        selected={field.value ?? []}
+                        options={teamOptions}
+                        onChange={field.onChange}
+                        placeholder="Select teams..."
+                        className="w-full"
+                    />
                     <FormMessage />
-                  </FormItem>
+                   </FormItem>
                 )}
               />
-              <FormField
+              <Controller
                 control={form.control}
                 name="assignedTo"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-foreground/80">Assign to Member</FormLabel>
-                     <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingMembers || selectedTeamId === '__none__' || members.length === 0}>
-                      <FormControl>
-                        <SelectTrigger className="bg-background border-input focus:ring-primary">
-                          {isLoadingMembers && <Loader2 className="h-4 w-4 animate-spin mr-2"/>}
-                          <SelectValue placeholder="Select a member" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="__none__">Unassigned</SelectItem>
-                         {members.map((member) => (
-                          <SelectItem key={member.id} value={member.id}>{member.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
+                   <FormItem>
+                    <div className="flex justify-between items-center">
+                      <FormLabel className="text-foreground/80">Assign to Member(s)</FormLabel>
+                      {isLoadingMembers && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                    </div>
+                    <MultiSelect
+                        selected={field.value ?? []}
+                        options={memberOptions}
+                        onChange={field.onChange}
+                        placeholder="Select members..."
+                        className="w-full"
+                        disabled={isLoadingMembers || selectedTeamIds.length === 0}
+                    />
+                     <FormMessage />
+                   </FormItem>
                 )}
               />
+            </div>
+             <div className="flex items-center space-x-2">
+              <Checkbox
+                id="assignToAll"
+                onCheckedChange={(checked) => setAssignToAll(Boolean(checked))}
+                disabled={members.length === 0}
+              />
+              <label
+                htmlFor="assignToAll"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Assign to all members in selected team(s)
+              </label>
             </div>
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
@@ -251,7 +272,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskF
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-foreground/80">Priority</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <Select onValueChange={field.onChange} value={field.value || "none"}>
                         <FormControl>
                           <SelectTrigger className="bg-background border-input focus:ring-primary"><SelectValue placeholder="Select priority" /></SelectTrigger>
                         </FormControl>
@@ -330,7 +351,8 @@ export function TaskForm({ isOpen, onClose, onSubmit, taskToEdit, teams }: TaskF
               <DialogClose asChild>
                 <Button type="button" variant="outline">Cancel</Button>
               </DialogClose>
-              <Button type="submit" variant="default">
+              <Button type="submit" variant="default" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
                 {taskToEdit ? "Save Changes" : "Create Task"}
               </Button>
             </DialogFooter>
