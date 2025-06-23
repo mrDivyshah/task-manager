@@ -53,6 +53,9 @@ export async function DELETE(
     // Pull the member from the members array
     await Team.updateOne({ _id: teamId }, { $pull: { members: memberId } });
 
+    // Here you might also want to unassign tasks from the removed member in this team
+    // For now, we'll just remove them from the team.
+
     return NextResponse.json(
       { message: "Member removed successfully" },
       { status: 200 }

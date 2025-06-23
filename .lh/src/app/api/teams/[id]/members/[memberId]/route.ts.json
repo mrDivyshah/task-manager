@@ -3,7 +3,7 @@
     "activeCommit": 0,
     "commits": [
         {
-            "activePatchIndex": 1,
+            "activePatchIndex": 2,
             "patches": [
                 {
                     "date": 1750599736952,
@@ -12,6 +12,10 @@
                 {
                     "date": 1750599742683,
                     "content": "Index: \n===================================================================\n--- \n+++ \n@@ -28,9 +28,8 @@\n \n     // Only the team owner can remove members\n     if (team.ownerId.toString() !== session.user.id) {\n       return NextResponse.json({ message: 'You are not authorized to manage this team\\'s members' }, { status: 403 });\n-\n     }\n     \n     // The owner cannot remove themselves\n     if (memberId === team.ownerId.toString()) {\n"
+                },
+                {
+                    "date": 1750611848292,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -52,11 +52,8 @@\n \n     // Pull the member from the members array\n     await Team.updateOne({ _id: teamId }, { $pull: { members: memberId } });\n \n-    // Here you might also want to unassign tasks from the removed member in this team\n-    // For now, we'll just remove them from the team.\n-\n     return NextResponse.json(\n       { message: \"Member removed successfully\" },\n       { status: 200 }\n     );\n"
                 }
             ],
             "date": 1750599736952,
