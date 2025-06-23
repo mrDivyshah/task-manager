@@ -1,7 +1,6 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -11,11 +10,6 @@ import Image from "next/image";
 
 export default function AboutPage() {
   const router = useRouter();
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-
-  useEffect(() => {
-    setCurrentYear(new Date().getFullYear());
-  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -111,9 +105,8 @@ export default function AboutPage() {
         </Card>
       </main>
       <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-        © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
+        © 2025 TaskFlow. Developed By Dravya shah
       </footer>
     </div>
   );
 }
-

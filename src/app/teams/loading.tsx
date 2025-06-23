@@ -4,8 +4,6 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function TeamsLoading() {
-  const currentYear = new Date().getFullYear();
-
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
@@ -53,7 +51,7 @@ export default function TeamsLoading() {
         </Card>
       </main>
        <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-        © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
+        © 2025 TaskFlow. Developed By Dravya shah
       </footer>
     </div>
   );

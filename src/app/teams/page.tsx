@@ -87,8 +87,6 @@ export default function TeamsPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [isSendingInvite, setIsSendingInvite] = useState(false);
 
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-
   const getUserInitials = (name?: string | null) => {
     if (!name) return "U";
     const names = name.split(" ");
@@ -110,7 +108,6 @@ export default function TeamsPage() {
   }, [toast]);
 
   useEffect(() => {
-    setCurrentYear(new Date().getFullYear());
     if (status === 'authenticated') {
       fetchTeams();
     } else if (status === 'unauthenticated') {
@@ -277,7 +274,7 @@ export default function TeamsPage() {
            <Loader2 className="h-16 w-16 animate-spin text-primary" />
         </main>
         <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-          © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
+          © 2025 TaskFlow. Developed By Dravya shah
         </footer>
       </div>
     );
@@ -427,7 +424,7 @@ export default function TeamsPage() {
       </Dialog>
 
        <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-        © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
+        © 2025 TaskFlow. Developed By Dravya shah
       </footer>
     </div>
   );

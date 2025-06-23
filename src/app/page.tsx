@@ -89,7 +89,6 @@ export default function Home() {
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [assignedToMeFilter, setAssignedToMeFilter] = useState<boolean>(false);
   
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [viewMode, setViewMode] = useLocalStorage<'grid' | 'list'>('task-view-mode', 'grid');
   
   const [selectedTaskDetails, setSelectedTaskDetails] = useState<Task | null>(null);
@@ -97,7 +96,6 @@ export default function Home() {
 
 
   useEffect(() => {
-    setCurrentYear(new Date().getFullYear());
     if (status === "authenticated") {
       fetchData();
     } else if (status === "unauthenticated") {
@@ -158,12 +156,12 @@ export default function Home() {
     })
     .filter(task => {
       if (teamFilter === "all") return true;
-      if (teamFilter === "personal") return !task.teamId;
-      return task.teamId === teamFilter;
+      if (teamFilter === "personal") return !task.teamIds || task.teamIds.length === 0;
+      return task.teamIds?.includes(teamFilter)
     })
     .filter(task => {
       if (!assignedToMeFilter) return true;
-      return task.assignedTo?.id === session?.user?.id;
+      return task.assignedTo?.some(a => a.id === session?.user?.id);
     })
     .sort((a, b) => {
       if (a.status === 'done' && b.status !== 'done') return 1;
@@ -206,7 +204,7 @@ export default function Home() {
   };
 
   const handleSaveTask = async (
-    data: { title: string; notes?: string; priority?: string; teamId?: string, assignedTo?: string, dueDate?: string | null },
+    data: { title: string; notes?: string; priority?: string; teamIds?: string[], assignedTo?: string[], dueDate?: string | null },
     existingTask?: Task
   ) => {
     const url = existingTask ? `/api/tasks/${existingTask.id}` : '/api/tasks';
@@ -510,7 +508,7 @@ export default function Home() {
             </div>
         </main>
         <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-          © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
+          © 2025 TaskFlow. Developed By Dravya shah
         </footer>
       </div>
     );
@@ -597,7 +595,7 @@ export default function Home() {
           </div>
         </main>
         <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-          © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
+          © 2025 TaskFlow. Developed By Dravya shah
         </footer>
       </div>
     );
@@ -786,7 +784,7 @@ export default function Home() {
 
 
       <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-        © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
+        © 2025 TaskFlow. Developed By Dravya shah
       </footer>
     </div>
   );
