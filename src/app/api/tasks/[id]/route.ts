@@ -3,11 +3,13 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import dbConnect from '@/lib/mongodb';
-import Task from '@/models/task';
+import Task, { type ITask } from '@/models/task';
 import User from '@/models/user';
 import Team from '@/models/team';
 import Notification from '@/models/notification';
+import Activity from '@/models/activity';
 import { format } from 'date-fns';
+import mongoose from 'mongoose';
 
 async function checkTaskPermission(taskId: string, userId: string): Promise<boolean> {
     const task = await Task.findById(taskId);
@@ -44,12 +46,12 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
             return NextResponse.json({ message: 'Task not found or you do not have permission to edit it' }, { status: 404 });
         }
         
-        const task = await Task.findById(id);
+        const task = await Task.findById(id).populate('assignedTo', 'name');
         if (!task) {
              return NextResponse.json({ message: 'Task not found' }, { status: 404 });
         }
 
-        const originalAssignedTo = task.assignedTo?.toString();
+        const originalTask = task.toObject() as ITask & { assignedTo?: { _id: mongoose.Types.ObjectId, name: string } };
         const body = await req.json();
         const { title, notes, priority, teamId, assignedTo, category, status, dueDate } = body;
         
@@ -68,10 +70,38 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         }
         
         await task.save();
+        
+        // --- Activity Logging ---
+        const createActivity = async (type: string, details: any) => {
+            const activity = new Activity({
+                taskId: task._id,
+                userId: session.user!.id,
+                type,
+                details: { ...details, userName: session.user!.name },
+            });
+            await activity.save();
+        };
+        
+        if (originalTask.status !== task.status) {
+            await createActivity('STATUS_CHANGE', { from: originalTask.status, to: task.status });
+        }
+
+        const originalAssignedToId = originalTask.assignedTo?._id?.toString();
+        const newAssignedToId = task.assignedTo?.toString();
+        if (originalAssignedToId !== newAssignedToId) {
+            let newAssignedToName = 'Unassigned';
+            if (newAssignedToId) {
+                const newUser = await User.findById(newAssignedToId).select('name');
+                if (newUser) newAssignedToName = newUser.name;
+            }
+            const oldAssignedToName = originalTask.assignedTo?.name || 'Unassigned';
+            await createActivity('ASSIGNMENT_CHANGE', { from: oldAssignedToName, to: newAssignedToName });
+        }
+        // --- End Activity Logging ---
 
         const newAssignedTo = task.assignedTo?.toString();
         // Notify user if they are newly assigned and a due date exists
-        if (newAssignedTo && newAssignedTo !== originalAssignedTo && newAssignedTo !== session.user.id && task.dueDate) {
+        if (newAssignedTo && newAssignedTo !== originalTask.assignedTo?._id.toString() && newAssignedTo !== session.user.id && task.dueDate) {
              const notification = new Notification({
                 userId: task.assignedTo,
                 type: 'TASK_ASSIGNED',
@@ -124,6 +154,9 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
         }
 
         await Task.deleteOne({ _id: id });
+        // Optionally delete related activities
+        await Activity.deleteMany({ taskId: id });
+
 
         return new NextResponse(null, { status: 204 });
 

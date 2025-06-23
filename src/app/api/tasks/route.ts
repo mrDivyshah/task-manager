@@ -7,6 +7,7 @@ import Task from '@/models/task';
 import Team from '@/models/team';
 import User from '@/models/user';
 import Notification from '@/models/notification';
+import Activity from '@/models/activity';
 import { format } from 'date-fns';
 
 export async function GET(req: Request) {
@@ -91,6 +92,19 @@ export async function POST(req: Request) {
 
         const task = new Task(newTaskData);
         await task.save();
+        
+        // Log activity for task creation
+        const activity = new Activity({
+            taskId: task._id,
+            userId: session.user.id,
+            type: 'CREATE',
+            details: {
+                userName: session.user.name,
+                to: task.title,
+            }
+        });
+        await activity.save();
+
 
         // Create notification if assigned to someone else with a due date
         if (task.assignedTo && task.dueDate && task.assignedTo.toString() !== session.user.id) {

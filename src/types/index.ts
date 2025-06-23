@@ -57,3 +57,16 @@ export interface Notification {
   isRead: boolean;
   createdAt: string; // ISO date string
 }
+
+export interface Activity {
+  id: string;
+  type: 'CREATE' | 'STATUS_CHANGE' | 'ASSIGNMENT_CHANGE' | 'COMMENT' | 'UPDATE';
+  details: {
+    field?: string;
+    from?: string | null;
+    to?: string | null;
+    comment?: string;
+    userName: string;
+  };
+  createdAt: string; // ISO date string
+}

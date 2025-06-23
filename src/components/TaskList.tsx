@@ -10,14 +10,14 @@ import { format, isToday, isYesterday } from 'date-fns';
 
 interface TaskListProps {
   tasks: Task[];
-  onEditTask: (task: Task) => void;
+  onViewDetails: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
   onReorderTasks: (tasks: Task[]) => void;
   onStatusChange: (taskId: string, status: Task['status']) => void;
   view: 'grid' | 'list';
 }
 
-export function TaskList({ tasks, onEditTask, onDeleteTask, onReorderTasks, onStatusChange, view }: TaskListProps) {
+export function TaskList({ tasks, onViewDetails, onDeleteTask, onReorderTasks, onStatusChange, view }: TaskListProps) {
   const [draggedItemId, setDraggedItemId] = React.useState<string | null>(null);
 
   const handleDragStart = (event: React.DragEvent<HTMLDivElement>, taskId: string) => {
@@ -107,7 +107,7 @@ export function TaskList({ tasks, onEditTask, onDeleteTask, onReorderTasks, onSt
                 <TaskItem
                   key={task.id}
                   task={task}
-                  onEdit={onEditTask}
+                  onViewDetails={onViewDetails}
                   onDelete={onDeleteTask}
                   onStatusChange={onStatusChange}
                   onDragStart={handleDragStart}

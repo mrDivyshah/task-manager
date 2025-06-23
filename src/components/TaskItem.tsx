@@ -16,7 +16,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 interface TaskItemProps {
   task: Task;
-  onEdit: (task: Task) => void;
+  onViewDetails: (task: Task) => void;
   onDelete: (taskId: string) => void;
   onDragStart: (event: React.DragEvent<HTMLDivElement>, taskId: string) => void;
   onDragOver: (event: React.DragEvent<HTMLDivElement>) => void;
@@ -26,7 +26,7 @@ interface TaskItemProps {
   view: 'grid' | 'list';
 }
 
-export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDrop, onStatusChange, isDragging, view }: TaskItemProps) {
+export function TaskItem({ task, onViewDetails, onDelete, onDragStart, onDragOver, onDrop, onStatusChange, isDragging, view }: TaskItemProps) {
   const [animationDelay, setAnimationDelay] = useState('0s');
 
   useEffect(() => {
@@ -71,6 +71,14 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
   const isOverdue = dueDate && isPast(dueDate) && task.status !== 'done';
   const hasTime = dueDate && (dueDate.getHours() !== 0 || dueDate.getMinutes() !== 0 || dueDate.getSeconds() !== 0);
 
+  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Prevent opening detail view if a button or select trigger was clicked
+    if ((e.target as HTMLElement).closest('button, [role="combobox"], [role="button"]')) {
+      return;
+    }
+    onViewDetails(task);
+  };
+
   if (view === 'list') {
     return (
       <Card
@@ -78,8 +86,9 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
         onDragStart={(e) => onDragStart(e, task.id)}
         onDragOver={onDragOver}
         onDrop={(e) => onDrop(e, task.id)}
+        onClick={handleCardClick}
         className={cn(
-          "w-full shadow-md rounded-lg transition-all duration-300 ease-in-out hover:shadow-lg bg-card animate-subtle-appear flex items-center p-3 gap-3",
+          "w-full shadow-md rounded-lg transition-all duration-300 ease-in-out hover:shadow-lg bg-card animate-subtle-appear flex items-center p-3 gap-3 cursor-pointer",
           isDragging ? "opacity-50 ring-2 ring-primary" : "opacity-100",
           task.status === 'done' && 'opacity-60 bg-card/80'
         )}
@@ -102,8 +111,8 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
           </SelectContent>
         </Select>
         
-        <div className="flex-1 min-w-0" onClick={() => onEdit(task)}>
-          <p className={cn("font-medium truncate cursor-pointer", task.status === 'done' && 'line-through text-muted-foreground')}>
+        <div className="flex-1 min-w-0">
+          <p className={cn("font-medium truncate", task.status === 'done' && 'line-through text-muted-foreground')}>
             {task.title}
           </p>
           <div className="flex items-center text-xs text-muted-foreground truncate">
@@ -152,10 +161,7 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
         </div>
   
         <div className="flex items-center gap-1 ml-2 flex-shrink-0">
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => onEdit(task)} aria-label={`Edit task ${task.title}`}>
-            <Pencil size={14} />
-          </Button>
-          <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => onDelete(task.id)} aria-label={`Delete task ${task.title}`}>
+          <Button variant="destructive" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} aria-label={`Delete task ${task.title}`}>
             <Trash2 size={14} />
           </Button>
         </div>
@@ -169,8 +175,9 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
       onDragStart={(e) => onDragStart(e, task.id)}
       onDragOver={onDragOver}
       onDrop={(e) => onDrop(e, task.id)}
+      onClick={handleCardClick}
       className={cn(
-        "w-full shadow-lg rounded-xl transition-all duration-300 ease-in-out hover:shadow-xl bg-card animate-subtle-appear flex flex-col",
+        "w-full shadow-lg rounded-xl transition-all duration-300 ease-in-out hover:shadow-xl bg-card animate-subtle-appear flex flex-col cursor-pointer",
         isDragging ? "opacity-50 ring-2 ring-primary" : "opacity-100",
         task.status === 'done' && 'opacity-60 bg-card/80',
       )}
@@ -250,11 +257,7 @@ export function TaskItem({ task, onEdit, onDelete, onDragStart, onDragOver, onDr
                 <SelectItem value="done">Done</SelectItem>
             </SelectContent>
         </Select>
-        <Button variant="outline" size="sm" onClick={() => onEdit(task)} aria-label={`Edit task ${task.title}`}>
-          <Pencil size={16} className="mr-2" />
-          Edit
-        </Button>
-        <Button variant="destructive" size="icon" className="h-9 w-9" onClick={() => onDelete(task.id)} aria-label={`Delete task ${task.title}`}>
+        <Button variant="destructive" size="icon" className="h-9 w-9" onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} aria-label={`Delete task ${task.title}`}>
           <Trash2 size={16} />
         </Button>
       </CardFooter>

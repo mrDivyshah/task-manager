@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
 import { TaskForm } from "@/components/TaskForm";
 import { TaskList } from "@/components/TaskList";
+import { TaskDetail } from "@/components/TaskDetail";
 import { useToast } from "@/hooks/use-toast";
 import type { Task, Team } from "@/types";
 import { PlusCircle, Wand2, Loader2, LogIn, Mail, Eye, EyeOff, Search, Filter, SearchX, CheckCircle2, AlertTriangle, Info, Plus, UserPlus, Users, UserCheck, XCircle, LayoutGrid, List } from "lucide-react";
@@ -55,6 +56,10 @@ export default function Home() {
   
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [viewMode, setViewMode] = useLocalStorage<'grid' | 'list'>('task-view-mode', 'grid');
+  
+  const [selectedTaskDetails, setSelectedTaskDetails] = useState<Task | null>(null);
+  const [isDetailViewOpen, setIsDetailViewOpen] = useState(false);
+
 
   useEffect(() => {
     setCurrentYear(new Date().getFullYear());
@@ -157,6 +162,7 @@ export default function Home() {
   const handleOpenTaskForm = (task?: Task) => {
     setTaskToEdit(task);
     setIsTaskFormOpen(true);
+    setIsDetailViewOpen(false); // Close detail view if open
   };
 
   const handleCloseTaskForm = () => {
@@ -186,7 +192,12 @@ export default function Home() {
       const savedTask: Task = await res.json();
       
       if (existingTask) {
+        // If editing, update the task in the main list
         setTasks(prevTasks => prevTasks.map(t => t.id === savedTask.id ? savedTask : t));
+        // And if the detail view is open for this task, update it too
+        if (selectedTaskDetails?.id === savedTask.id) {
+          setSelectedTaskDetails(savedTask);
+        }
       } else {
         setTasks(prevTasks => [savedTask, ...prevTasks]);
       }
@@ -210,12 +221,21 @@ export default function Home() {
     const taskToDelete = tasks.find(t => t.id === taskId);
     if (!taskToDelete) return;
     
+    // Optimistically remove from UI
+    setTasks(tasks.filter((task) => task.id !== taskId));
+    
+    if (selectedTaskDetails?.id === taskId) {
+        setIsDetailViewOpen(false);
+        setSelectedTaskDetails(null);
+    }
+    
     try {
       const res = await fetch(`/api/tasks/${taskId}`, { method: 'DELETE' });
       if (!res.ok) {
+        // Revert UI change on failure
+        setTasks(prev => [...prev, taskToDelete].sort((a,b) => b.createdAt - a.createdAt));
         throw new Error('Failed to delete task from server.');
       }
-      setTasks(tasks.filter((task) => task.id !== taskId));
       toast({
         title: "Task Deleted",
         description: `"${taskToDelete.title}" has been removed.`,
@@ -238,9 +258,16 @@ export default function Home() {
   
   const handleStatusChange = async (taskId: string, status: Task['status']) => {
     const originalTasks = [...tasks];
-    setTasks(prevTasks => prevTasks.map(t => 
-      t.id === taskId ? { ...t, status } : t
-    ));
+    
+    const updateTaskState = (taskToUpdate: Task): Task => {
+        if(taskToUpdate.id === taskId) return { ...taskToUpdate, status };
+        return taskToUpdate;
+    }
+    
+    setTasks(prevTasks => prevTasks.map(updateTaskState));
+    if (selectedTaskDetails?.id === taskId) {
+        setSelectedTaskDetails(prev => prev ? updateTaskState(prev) : null);
+    }
 
     try {
       const res = await fetch(`/api/tasks/${taskId}`, {
@@ -255,9 +282,16 @@ export default function Home() {
       
       const updatedTask = await res.json();
       setTasks(prevTasks => prevTasks.map(t => t.id === updatedTask.id ? updatedTask : t));
+       if (selectedTaskDetails?.id === updatedTask.id) {
+        setSelectedTaskDetails(updatedTask);
+      }
       
     } catch (error) {
       setTasks(originalTasks);
+      if (selectedTaskDetails?.id === taskId) {
+        const originalTask = originalTasks.find(t => t.id === taskId);
+        if (originalTask) setSelectedTaskDetails(originalTask);
+      }
       toast({
         title: "Update Failed",
         description: (error as Error).message,
@@ -388,6 +422,16 @@ export default function Home() {
     } finally {
       setIsSignupLoading(false);
     }
+  };
+
+  const handleViewTaskDetails = (task: Task) => {
+    setSelectedTaskDetails(task);
+    setIsDetailViewOpen(true);
+  };
+  
+  const handleTaskUpdateFromDetail = (updatedTask: Task) => {
+    setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+    setSelectedTaskDetails(updatedTask);
   };
 
   if (status === "loading" || isDataLoading) {
@@ -639,7 +683,7 @@ export default function Home() {
             <TaskList 
               tasks={displayedTasks}
               view={viewMode}
-              onEditTask={handleOpenTaskForm} 
+              onViewDetails={handleViewTaskDetails} 
               onDeleteTask={handleDeleteTask} 
               onReorderTasks={handleReorderTasks}
               onStatusChange={handleStatusChange}
@@ -662,6 +706,16 @@ export default function Home() {
       </TooltipProvider>
 
       <TaskForm isOpen={isTaskFormOpen} onClose={handleCloseTaskForm} onSubmit={handleSaveTask} taskToEdit={taskToEdit} teams={teams} />
+
+      <TaskDetail
+        task={selectedTaskDetails}
+        isOpen={isDetailViewOpen}
+        onClose={() => setIsDetailViewOpen(false)}
+        onTaskUpdate={handleTaskUpdateFromDetail}
+        onOpenEdit={handleOpenTaskForm}
+        onDelete={handleDeleteTask}
+      />
+
 
       <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
         © {currentYear} TaskFlow. Crafted with 🧠 & ❤️.
