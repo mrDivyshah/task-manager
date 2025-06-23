@@ -28,7 +28,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string; m
 
     // Only the team owner can remove members
     if (team.ownerId.toString() !== session.user.id) {
-      return NextResponse.json({ message: "You are not authorized to manage this team's members" }, { status: 403 });
+      return NextResponse.json({ message: 'You are not authorized to manage this team's members' }, { status: 403 });
     }
     
     // The owner cannot remove themselves
