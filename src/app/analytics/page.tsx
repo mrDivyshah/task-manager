@@ -6,7 +6,6 @@ import { Bar, BarChart, CartesianGrid, LabelList, Line, LineChart, Pie, PieChart
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
-import { Calendar } from "@/components/ui/calendar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import type { Task, Activity } from "@/types";
@@ -15,6 +14,7 @@ import { Loader2, AreaChart as AreaChartIcon, BarChart3, PieChart as PieChartIco
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { ActivityLogItem } from "@/components/ActivityLogItem";
+import { ActivityHeatmap } from "@/components/ActivityHeatmap";
 
 // Define a type for chart configuration
 type ChartConfig = {
@@ -120,12 +120,11 @@ export default function AnalyticsPage() {
     }, {} as Record<string, Activity[]>);
   }, [activities]);
 
-  const daysWithActivity = useMemo(() => {
-      return Object.keys(activitiesByDate).map(dateStr => {
-        // Adjust for timezone issues by creating date in UTC
-        const [year, month, day] = dateStr.split('-').map(Number);
-        return new Date(Date.UTC(year, month - 1, day));
-      });
+  const activityCountsByDate = useMemo(() => {
+    return Object.entries(activitiesByDate).reduce((acc, [date, activities]) => {
+      acc[date] = activities.length;
+      return acc;
+    }, {} as Record<string, number>);
   }, [activitiesByDate]);
 
   const selectedDayActivities = useMemo(() => {
@@ -256,7 +255,7 @@ export default function AnalyticsPage() {
                 <Card className="col-span-full">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2"><CalendarDays className="h-5 w-5 text-muted-foreground" /> Activity Timeline</CardTitle>
-                    <CardDescription>An interactive timeline of all task activities. Click a day to see details.</CardDescription>
+                    <CardDescription>An interactive heatmap of all task activities. Click a day to see details.</CardDescription>
                   </CardHeader>
                   <CardContent>
                     {isActivitiesLoading ? (
@@ -267,18 +266,14 @@ export default function AnalyticsPage() {
                             <p>Create or update some tasks to see your timeline.</p>
                         </div>
                     ) : (
-                      <div className="grid md:grid-cols-2 gap-x-8 gap-y-4">
-                        <Calendar
-                          mode="single"
-                          selected={selectedDate}
-                          onSelect={setSelectedDate}
-                          modifiers={{ hasActivity: daysWithActivity }}
-                          modifiersClassNames={{ hasActivity: 'day_hasActivity' }}
-                          className="p-0 flex justify-center"
-                          classNames={{
-                            month: 'space-y-4 border rounded-lg p-3 bg-muted/20 w-full',
-                          }}
-                        />
+                      <div className="space-y-4">
+                        <div className="p-4 border rounded-lg bg-muted/20">
+                           <ActivityHeatmap 
+                             data={activityCountsByDate}
+                             selectedDate={selectedDate}
+                             onSelectDate={setSelectedDate}
+                           />
+                        </div>
                         <div>
                           <h3 className="font-semibold text-lg mb-4 text-foreground">
                             Activities for {selectedDate ? format(selectedDate, 'PPP') : '...'}
@@ -306,7 +301,7 @@ export default function AnalyticsPage() {
         </div>
       </main>
       <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border/50">
-        © 2025 TaskFlow. Developed By Dravya shah
+        © 2025 TaskFlow. All rights reserved.
       </footer>
     </div>
   );

@@ -87,23 +87,4 @@ body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
-  .day_hasActivity {
-    position: relative;
-  }
-
-  .day_hasActivity::after {
-    content: '';
-    position: absolute;
-    bottom: 4px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 5px;
-    height: 5px;
-    border-radius: 9999px;
-    background-color: hsl(var(--primary));
-  }
-
-  .rdp-day_selected.day_hasActivity::after {
-      background-color: hsl(var(--primary-foreground));
-  }
 }
