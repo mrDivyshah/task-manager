@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent, useMemo } from "react";
 import { useSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import useLocalStorage from "@/hooks/useLocalStorage";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -48,6 +49,7 @@ export default function Home() {
   const [rememberMe, setRememberMe] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [assignedToMeFilter, setAssignedToMeFilter] = useState<boolean>(false);
   
@@ -92,7 +94,15 @@ export default function Home() {
     }
   };
 
+  const taskCounts = useMemo(() => ({
+    todo: tasks.filter(t => t.status === 'todo').length,
+    'in-progress': tasks.filter(t => t.status === 'in-progress').length,
+    done: tasks.filter(t => t.status === 'done').length,
+    all: tasks.length
+  }), [tasks]);
+
   const displayedTasks = tasks
+    .filter(task => statusFilter === 'all' || task.status === statusFilter)
     .filter(task => {
       const term = searchTerm.toLowerCase();
       if (!term) return true;
@@ -489,7 +499,7 @@ export default function Home() {
           <div className="flex items-baseline gap-2">
             <h2 className="text-2xl font-headline font-semibold text-foreground">Your Tasks</h2>
             <span className="text-sm text-muted-foreground">
-              {activeFilterCount === 0
+              {activeFilterCount === 0 && statusFilter === 'all'
                 ? `(${tasks.length} task${tasks.length === 1 ? "" : "s"})`
                 : `(${displayedTasks.length} of ${tasks.length} task${tasks.length === 1 ? "" : "s"} shown)`}
             </span>
@@ -530,10 +540,18 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-4 mb-8">
+            <Tabs value={statusFilter} onValueChange={setStatusFilter}>
+              <TabsList className="grid w-full grid-cols-4 sm:w-auto">
+                  <TabsTrigger value="all" className="flex gap-2">All <Badge variant={statusFilter === 'all' ? 'default' : 'secondary'} className="px-2">{taskCounts.all}</Badge></TabsTrigger>
+                  <TabsTrigger value="todo" className="flex gap-2">To Do <Badge variant={statusFilter === 'todo' ? 'default' : 'secondary'} className="px-2">{taskCounts.todo || 0}</Badge></TabsTrigger>
+                  <TabsTrigger value="in-progress" className="flex gap-2">In Progress <Badge variant={statusFilter === 'in-progress' ? 'default' : 'secondary'} className="px-2">{taskCounts['in-progress'] || 0}</Badge></TabsTrigger>
+                  <TabsTrigger value="done" className="flex gap-2">Done <Badge variant={statusFilter === 'done' ? 'default' : 'secondary'} className="px-2">{taskCounts.done || 0}</Badge></TabsTrigger>
+              </TabsList>
+            </Tabs>
             <Popover>
                 <PopoverTrigger asChild>
-                    <Button variant="outline" className="shadow-sm">
+                    <Button variant="outline" className="shadow-sm w-full sm:w-auto">
                         <Filter className="mr-2 h-4 w-4" />
                         Filters
                         {activeFilterCount > 0 && (
@@ -543,7 +561,7 @@ export default function Home() {
                         )}
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-96" align="start">
+                <PopoverContent className="w-96" align="end">
                     <div className="grid gap-y-6">
                         <div className="space-y-2">
                             <h4 className="font-medium leading-none">Filter Tasks</h4>
@@ -651,3 +669,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
